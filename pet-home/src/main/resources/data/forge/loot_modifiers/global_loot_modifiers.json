@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "entries": [
+    "pet_home:sinister_carrot",
+    "pet_home:bubbling_enchanted_book",
+    "pet_home:vampirism_enchanted_book",
+    "pet_home:void_cloud_enchanted_book",
+    "pet_home:ore_scenting_enchanted_book",
+    "pet_home:muffled_enchanted_book",
+    "pet_home:blazing_enchanted_book"
+  ]
+}

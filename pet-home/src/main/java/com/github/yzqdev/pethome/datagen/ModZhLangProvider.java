@@ -1,0 +1,162 @@
+package com.github.yzqdev.pethome.datagen;
+
+
+import com.github.yzqdev.pethome.server.item.PHItemRegistry;
+import net.minecraft.data.PackOutput;
+import net.minecraftforge.common.data.LanguageProvider;
+
+
+public class ModZhLangProvider extends LanguageProvider {
+    public ModZhLangProvider(PackOutput output, String modid, String locale) {
+        super(output, modid, locale);
+    }
+
+    @Override
+    protected void addTranslations() {
+        add("itemGroup.pet_home", "驯养革新");
+        add("item.pet_home.collar_tag", "项圈标签");
+        add("item.pet_home.rotten_apple", "烂苹果");
+        add("item.pet_home.sinister_carrot", "阴恶胡萝卜");
+        add("item.pet_home.deflection_shield", "偏转护盾模型");
+        add("item.pet_home.magnet", "磁铁模型");
+        add("item.pet_home.feather_on_a_stick", "羽毛钓竿");
+        add("item.pet_home.deed_of_ownership", "所有权证书");
+        add("item.pet_home.deed_of_ownership.desc", "与 %s 绑定");
+        add("block.pet_home.pet_bed_white", "白色宠物床");
+        add("block.pet_home.pet_bed_orange", "橙色宠物床");
+        add("block.pet_home.pet_bed_magenta", "品红色宠物床");
+        add("block.pet_home.pet_bed_light_blue", "淡蓝色宠物床");
+        add("block.pet_home.pet_bed_yellow", "黄色宠物床");
+        add("block.pet_home.pet_bed_lime", "黄绿色宠物床");
+        add("block.pet_home.pet_bed_pink", "粉色宠物床");
+        add("block.pet_home.pet_bed_gray", "灰色宠物床");
+        add("block.pet_home.pet_bed_light_gray", "淡灰色宠物床");
+        add("block.pet_home.pet_bed_cyan", "青色宠物床");
+        add("block.pet_home.pet_bed_purple", "紫色宠物床");
+        add("block.pet_home.pet_bed_blue", "蓝色宠物床");
+        add("block.pet_home.pet_bed_brown", "棕色宠物床");
+        add("block.pet_home.pet_bed_green", "绿色宠物床");
+        add("block.pet_home.pet_bed_red", "红色宠物床");
+        add("block.pet_home.pet_bed_black", "黑色宠物床");
+        add("block.pet_home.drum", "指挥鼓");
+        add("block.pet_home.wayward_lantern", "Wayward Lantern");
+        add("message.pet_home.command_0", "%s 在游走");
+        add("message.pet_home.command_1", "%s 在停留 ");
+        add("message.pet_home.command_2", "%s 在跟随");
+        add("message.pet_home.drum_command_0", "命令 %s 游走");
+        add("message.pet_home.drum_command_1", "命令 %s 停留");
+        add("message.pet_home.drum_command_2", "命令 %s 跟随");
+        add("message.pet_home.respawn", "%s 在它的床上重生了");
+        add("message.pet_home.remove_respawn", "移除了 %s 重生记录的床");
+        add("message.pet_home.goodbye", "%s 将不会重生，永别了……");
+        add("message.pet_home.enchantments", "魔咒：");
+        add("message.pet_home.set_owner", "%s 现在是 %s 的所有者");
+        add("message.pet_home.wayward_lantern_return", "%s 发现了附近的 Wayward Lantern");
+        add("entity.minecraft.villager.pet_home.animal_tamer", "驯兽师");
+        add("entity.pet_home.chain_lightning", "闪电");
+        add("entity.pet_home.recall_ball", "召回宝盒");
+        add("entity.pet_home.feather", "羽毛");
+        add("entity.pet_home.following_jukebox", "漂浮唱片机");
+        add("entity.pet_home.psychic_wall", "心理墙");
+        add("enchantment.pet_home.health_boost", "额外生命");
+        add("enchantment.pet_home.health_boost.desc", "每升一级，宠物的生命值增加10点");
+        add("enchantment.pet_home.fireproof", "防火");
+        add("enchantment.pet_home.fireproof.desc", "火和岩浆造成的伤害对宠物无效");
+        add("enchantment.pet_home.immunity_frame", "免疫屏障");
+        add("enchantment.pet_home.immunity_frame.desc", "每升一级会使宠物在受到伤害后增加1秒对伤害的免疫");
+        add("enchantment.pet_home.deflection", "偏转");
+        add("enchantment.pet_home.deflection.desc", "使宠物受到一个无形的盾牌保护使其免受伤害");
+        add("enchantment.pet_home.poison_resistance", "抗毒");
+        add("enchantment.pet_home.poison_resistance.desc", "使宠物对中毒效果免疫");
+        add("enchantment.pet_home.chain_lightning", "连锁闪电");
+        add("enchantment.pet_home.chain_lightning.desc", "在宠物攻击敌对生物时会召唤一个闪电对怪物造成伤害，每升一级会增加敌对生物被闪电击中的次数");
+        add("enchantment.pet_home.speedster", "瞬速行者");
+        add("enchantment.pet_home.speedster.desc", "增加宠物的移动速度");
+        add("enchantment.pet_home.frost_fang", "冰霜利齿");
+        add("enchantment.pet_home.frost_fang.desc", "宠物在攻击时会对敌对生物减速并对会有冰冻效果");
+        add("enchantment.pet_home.magnetic", "磁性");
+        add("enchantment.pet_home.magnetic.desc", "使敌对生物吸引到宠物旁");
+        add("enchantment.pet_home.linked_inventory", "物品栏关联");
+        add("enchantment.pet_home.linked_inventory.desc", "宠物可以将拾的取物品放进到主人的背包中");
+        add("enchantment.pet_home.total_recall", "全面召回");
+        add("enchantment.pet_home.total_recall.desc", "当宠物生命值低于 2 点时，宠物会进入召回球体并受到保护，直到主人释放");
+        add("enchantment.pet_home.health_siphon", "生命虹吸");
+        add("enchantment.pet_home.health_siphon.desc", "对宠物造成的任何伤害都会转移给它的主人");
+        add("enchantment.pet_home.bubbling", "冒泡");
+        add("enchantment.pet_home.bubbling.desc", "会将宠物攻击的敌对生物困在向上漂浮的巨大气泡中");
+        add("enchantment.pet_home.herding", "群集");
+        add("enchantment.pet_home.herding.desc", "野生动物会被宠物吸引并跟随，每升一级会增加宠物可以被追随的数量");
+        add("enchantment.pet_home.amphibious", "两栖化");
+        add("enchantment.pet_home.amphibious.desc", "宠物在陆地或水中不会被缺氧而死，在水中宠物不会漂浮到水面并且会增加移动速度");
+        add("enchantment.pet_home.vampire", "类吸血鬼");
+        add("enchantment.pet_home.vampire.desc", "为宠物治疗它所造成的伤害，每升一级增加伤害与治疗的百分比");
+        add("enchantment.pet_home.void_cloud", "虚空之云");
+        add("enchantment.pet_home.void_cloud.desc", "宠物受到虚空之云的保护，并不会掉入悬崖或落入虚空，而是虚空之云会将宠物托起并送回主人身旁");
+        add("enchantment.pet_home.charisma", "魅力");
+        add("enchantment.pet_home.charisma.desc", "宠物为主人降低交易所需的货币，每升一级会降低一定交易所需的货币。");
+        add("enchantment.pet_home.undead_curse", "来世诅咒");
+        add("enchantment.pet_home.undead_curse.desc", "宠物死后会变为敌对的僵尸宠物");
+        add("enchantment.pet_home.infamy_curse", "恶名诅咒");
+        add("enchantment.pet_home.infamy_curse.desc", "宠物可以使附近的任何敌对生物对它产生敌意");
+        add("enchantment.pet_home.shadow_hands", "暗影之手");
+        add("enchantment.pet_home.shadow_hands.desc", "宠物使用黑暗魔法，用暗影之手攻击目标，每升一级会增加手的速度和手的数量");
+        add("enchantment.pet_home.disc_jockey", "唱片播放员");
+        add("enchantment.pet_home.disc_jockey.desc", "宠物身后是一个可以播放音乐光盘的漂浮唱片机");
+        add("enchantment.pet_home.defusal", "爆炸无效");
+        add("enchantment.pet_home.defusal.desc", "宠物可以使爆炸对地形和其他动物的伤害无效，每升一级增加无效的范围");
+        add("enchantment.pet_home.warping_bite", "幻影移形");
+        add("enchantment.pet_home.warping_bite.desc", "宠物会随机地把目标敌对生物从身边传送走");
+        add("enchantment.pet_home.ore_scenting", "矿物之味");
+        add("enchantment.pet_home.ore_scenting.desc", "宠物可以用嗅觉发现矿石并提醒主人，该效果的等级决定发现的矿石的距离、数量和使用次数");
+        add("enchantment.pet_home.gluttonous", "贪吃");
+        add("enchantment.pet_home.gluttonous.desc", "宠物可以吃任何的食物并不受限制");
+        add("enchantment.pet_home.psychic_wall", "心理墙");
+        add("enchantment.pet_home.psychic_wall.desc", "在战斗时宠物会召唤心理墙来以提供掩护，该效果的等级决定了墙体的大小和效果的时长。");
+        add("enchantment.pet_home.intimidation", "恐吓");
+        add("enchantment.pet_home.intimidation.desc", "宠物可以用可怕的外表吓跑敌对生物，该效果的等级决定了该效果的范围和使用次数");
+        add("enchantment.pet_home.blight_curse", "枯萎诅咒");
+        add("enchantment.pet_home.blight_curse.desc", "宠物周围的植物将会枯萎和死亡");
+        add("enchantment.pet_home.tethered_teleport", "连接传送");
+        add("enchantment.pet_home.tethered_teleport.desc", "宠物将与主人一起传送，也可以跨越维度传送");
+        add("enchantment.pet_home.immaturity_curse", "变小诅咒");
+        add("enchantment.pet_home.immaturity_curse.desc", "宠物出现时为宠物的小时候而且宠物的攻击伤害会降低");
+        add("enchantment.pet_home.muffled", "安静");
+        add("enchantment.pet_home.muffled.desc", "宠物在移动时并不会发出任何声音");
+        add("enchantment.pet_home.blazing_protection", "火焰保护");
+        add("enchantment.pet_home.blazing_protection.desc", "宠物每升一级会受到2个燃烧的棍的保护，燃烧的棍会击退并时攻击者燃烧");
+        add("enchantment.pet_home.healing_aura", "治疗之息");
+        add("enchantment.pet_home.xp_transfer", "经验转移");
+        add("enchantment.pet_home.healing_aura.desc", "宠物会在偶然间治疗主人或在主人周围的其他宠物，该效果的等级决定了治疗的效果");
+        add("enchantment.pet_home.rejuvenation", "恢复生命");
+        add("enchantment.pet_home.rejuvenation.desc", "在宠物受伤时会吸收周围的经验球来治疗自己");
+        add("pet_home.sound.subtitle.collar_tag", "已装备项圈标签");
+        add("pet_home.sound.subtitle.magnet_loop", "磁铁：呲呲");
+        add("pet_home.sound.subtitle.chain_lightning", "闪电：电击");
+        add("pet_home.sound.subtitle.giant_bubble_inflate", "大泡泡：膨胀");
+        add("pet_home.sound.subtitle.giant_bubble_pop", "大泡泡：爆炸");
+        add("pet_home.sound.subtitle.pet_bed_uses", "调整过的宠物床");
+        add("pet_home.sound.subtitle.drum", "指挥鼓鼓点");
+        add("pet_home.sound.subtitle.psychic_wall", "心理墙的嗡嗡声");
+        add("pet_home.sound.subtitle.psychic_wall_deflect", "心理墙的偏移");
+        add("pet_home.sound.subtitle.blazing_protection", "燃烧的棍消失了");
+        add("config.jade.plugin_pet_home.collar_tag", "显示项圈附魔");
+        add("notif.friendlyfire.protected", "这只%s受保护。潜行状态可绕过保护。");
+
+
+        add(LangDefinition.ConstantMsg.has_pet_bed_at_pos, "已绑定宠物床( %s )");
+        add(PHItemRegistry.NET_LAUNCHER_ITEM.get(), "生物捕捉发射器");
+        add(PHItemRegistry.NET_ITEM.get(), "生物球");
+        add(PHItemRegistry.NET_HAS_ITEM.get(), "生物球");
+        add(LangDefinition.ConstantMsg.capturing_text, "捕捉");
+        add(LangDefinition.ConstantMsg.release_text, "释放");
+        add(LangDefinition.ConstantMsg.health_text, "生命值");
+        add(LangDefinition.ConstantMsg.no_net_entity_text, "没有可以释放的生物球");
+        add(LangDefinition.ConstantMsg.net_launcher_tip, "[按住shift然后右击,可以切换释放和捕捉状态]");
+        add(LangDefinition.ConstantMsg.net_launcher_default_only_tamable, "默认只能捕捉可驯服的生物,可以在配置文件修改");
+        add( LangDefinition.conf("mobcatcherOnlyTamableAnimal"), "生物球只能捕捉可驯服的生物");
+        add( LangDefinition.conf("mobcatcherOnlyTamableAnimal.tooltip"), "设置为否可以捕捉所有生物");
+        add( LangDefinition.conf("mobcatcherBlacklist"), "生物球可捕捉黑名单");
+        add( LangDefinition.conf("mobcatcherBlacklist.tooltip"), "生物球不能捕捉的生物");
+
+    }
+}

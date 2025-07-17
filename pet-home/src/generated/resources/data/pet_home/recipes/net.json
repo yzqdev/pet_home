@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "e": {
+      "item": "minecraft:ender_pearl"
+    },
+    "w": {
+      "tag": "forge:ingots/iron"
+    }
+  },
+  "pattern": [
+    " w ",
+    "wew",
+    " w "
+  ],
+  "result": {
+    "item": "pet_home:net"
+  },
+  "show_notification": true
+}

@@ -1,0 +1,24 @@
+package com.github.yzqdev.pethome.server.misc;
+
+import com.github.yzqdev.pethome.PetHomeMod;
+import com.github.yzqdev.pethome.server.block.DIBlockRegistry;
+import com.google.common.collect.ImmutableSet;
+import net.minecraft.world.entity.ai.village.poi.PoiType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
+
+import java.util.Set;
+
+public class DIPOIRegistry {
+
+    public static final DeferredRegister<PoiType> DEF_REG = DeferredRegister.create(ForgeRegistries.POI_TYPES, PetHomeMod.MODID);
+    public static final RegistryObject<PoiType> PET_BED = DEF_REG.register("pet_bed", () -> new PoiType(getBeds(), 1, 1));
+
+    public static Set<BlockState> getBeds() {
+        return ImmutableSet.of(DIBlockRegistry.WHITE_PET_BED.get(), DIBlockRegistry.ORANGE_PET_BED.get(), DIBlockRegistry.MAGENTA_PET_BED.get(), DIBlockRegistry.LIGHT_BLUE_PET_BED.get(), DIBlockRegistry.YELLOW_PET_BED.get(), DIBlockRegistry.LIME_PET_BED.get(), DIBlockRegistry.PINK_PET_BED.get(), DIBlockRegistry.GRAY_PET_BED.get(), DIBlockRegistry.LIGHT_GRAY_PET_BED.get(), DIBlockRegistry.CYAN_PET_BED.get(), DIBlockRegistry.PURPLE_PET_BED.get(), DIBlockRegistry.BLUE_PET_BED.get(), DIBlockRegistry.BROWN_PET_BED.get(), DIBlockRegistry.GREEN_PET_BED.get(), DIBlockRegistry.RED_PET_BED.get(), DIBlockRegistry.BLACK_PET_BED.get()).stream().flatMap((p_27389_) -> {
+            return p_27389_.getStateDefinition().getPossibleStates().stream();
+        }).collect(ImmutableSet.toImmutableSet());
+    }
+}

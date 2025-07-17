@@ -1,0 +1,42 @@
+{
+  "required": true,
+  "package": "com.github.yzqdev.pethome.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "refmap": "pet_home.refmap.json",
+  "client": [
+  ],
+  "mixins": [
+    "AbstractHorseMixin",
+    "AgeableMobMixin",
+    "AnimalMixin",
+    "AxolotlAiMixin",
+    "AxolotlAttackablesSensorMixin",
+    "AxolotlMixin",
+    "CatMixin",
+    "EntityMixin",
+    "FishingHookMixin",
+    "FloatGoalMixin",
+    "FollowOwnerGoalMixin",
+    "FollowParentGoalMixin",
+    "FoxMixin",
+    "FrogAiMixin",
+    "FrogAttackablesSensorMixin",
+    "FrogMixin",
+    "LivingEntityMixin",
+    "MobMixin",
+    "PanicGoalMixin",
+    "ParrotMixin",
+
+    "RabbitMixin",
+    "SculkSensorBlockMixin",
+    "ShootTongueMixin",
+    "TameableAnimalMixin",
+    "VillagerMixin",
+    "WolfMixin",
+    "EntityMaidMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
