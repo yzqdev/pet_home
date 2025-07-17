@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "tag": "c:ingots/copper"
+    },
+    "I": {
+      "item": "minecraft:chain"
+    }
+  },
+  "pattern": [
+    "I",
+    "C"
+  ],
+  "result": {
+    "count": 1,
+    "id": "pet_home:collar_tag"
+  }
+}

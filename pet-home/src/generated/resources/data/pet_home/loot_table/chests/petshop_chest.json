@@ -1,0 +1,251 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "chance": 0.05,
+          "condition": "minecraft:random_chance"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "pet_home:rotten_apple"
+        }
+      ],
+      "name": "rotten_apple",
+      "rolls": 1.0
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "chance": 0.05,
+          "condition": "minecraft:random_chance"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "pet_home:sinister_carrot"
+        }
+      ],
+      "name": "sinister_carrot",
+      "rolls": 1.0
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "chance": 0.15,
+          "condition": "minecraft:random_chance"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "add": true,
+              "enchantments": {
+                "pet_home:bubbling": {
+                  "type": "minecraft:uniform",
+                  "max": 2.0,
+                  "min": 1.0
+                }
+              },
+              "function": "minecraft:set_enchantments"
+            }
+          ],
+          "name": "minecraft:book"
+        },
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "add": true,
+              "enchantments": {
+                "pet_home:amphibious": {
+                  "type": "minecraft:uniform",
+                  "max": 1.0,
+                  "min": 1.0
+                }
+              },
+              "function": "minecraft:set_enchantments"
+            }
+          ],
+          "name": "minecraft:book"
+        },
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "add": true,
+              "enchantments": {
+                "pet_home:vampire": {
+                  "type": "minecraft:uniform",
+                  "max": 2.0,
+                  "min": 1.0
+                }
+              },
+              "function": "minecraft:set_enchantments"
+            }
+          ],
+          "name": "minecraft:book"
+        }
+      ],
+      "name": "enchant",
+      "rolls": 1.0
+    },
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "chance": 0.5,
+          "condition": "minecraft:random_chance"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "function": "minecraft:enchant_randomly",
+              "options": "#pet_home:trade_enchantment_book"
+            }
+          ],
+          "name": "pet_home:collar_tag"
+        },
+        {
+          "type": "minecraft:item",
+          "name": "pet_home:collar_tag",
+          "weight": 2
+        }
+      ],
+      "name": "petshop_chest_collars",
+      "rolls": {
+        "type": "minecraft:uniform",
+        "max": 2.0,
+        "min": 1.0
+      }
+    },
+    {
+      "bonus_rolls": 0.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "add": false,
+              "count": {
+                "type": "minecraft:uniform",
+                "max": 5.0,
+                "min": 1.0
+              },
+              "function": "minecraft:set_count"
+            }
+          ],
+          "name": "minecraft:tropical_fish"
+        },
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "add": false,
+              "count": {
+                "type": "minecraft:uniform",
+                "max": 3.0,
+                "min": 1.0
+              },
+              "function": "minecraft:set_count"
+            }
+          ],
+          "name": "minecraft:bone",
+          "weight": 4
+        },
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "add": false,
+              "count": {
+                "type": "minecraft:uniform",
+                "max": 2.0,
+                "min": 1.0
+              },
+              "function": "minecraft:set_count"
+            }
+          ],
+          "name": "minecraft:lead",
+          "weight": 4
+        },
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "add": false,
+              "count": {
+                "type": "minecraft:uniform",
+                "max": 2.0,
+                "min": 1.0
+              },
+              "function": "minecraft:set_count"
+            }
+          ],
+          "name": "minecraft:iron_horse_armor",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:axolotl_bucket"
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:tadpole_bucket",
+          "weight": 2
+        },
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "add": false,
+              "count": {
+                "type": "minecraft:uniform",
+                "max": 2.0,
+                "min": 1.0
+              },
+              "function": "minecraft:set_count"
+            }
+          ],
+          "name": "minecraft:emerald",
+          "weight": 3
+        },
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "add": false,
+              "count": {
+                "type": "minecraft:uniform",
+                "max": 2.0,
+                "min": 1.0
+              },
+              "function": "minecraft:set_count"
+            }
+          ],
+          "name": "minecraft:carrot",
+          "weight": 4
+        }
+      ],
+      "name": "petshop_chest",
+      "rolls": {
+        "type": "minecraft:uniform",
+        "max": 12.0,
+        "min": 5.0
+      }
+    }
+  ],
+  "random_sequence": "pet_home:chests/petshop_chest"
+}

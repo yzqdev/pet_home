@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "minecraft:lantern"
+    },
+    "L": {
+      "tag": "c:ingots/iron"
+    }
+  },
+  "pattern": [
+    "LLL",
+    "LIL",
+    " L "
+  ],
+  "result": {
+    "count": 1,
+    "id": "pet_home:wayward_lantern"
+  }
+}

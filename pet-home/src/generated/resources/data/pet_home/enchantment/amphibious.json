@@ -1,0 +1,22 @@
+{
+  "anvil_cost": 2,
+  "description": {
+    "translate": "enchantment.pet_home.amphibious"
+  },
+  "exclusive_set": [
+    "pet_home:fireproof",
+    "pet_home:blazing_protection"
+  ],
+  "max_cost": {
+    "base": 25,
+    "per_level_above_first": 7
+  },
+  "max_level": 1,
+  "min_cost": {
+    "base": 6,
+    "per_level_above_first": 7
+  },
+  "slots": [],
+  "supported_items": "#pet_home:collar_tag_key",
+  "weight": 5
+}

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "command=0": {
+      "model": "pet_home:block/drum_wander"
+    },
+    "command=1": {
+      "model": "pet_home:block/drum_stay"
+    },
+    "command=2": {
+      "model": "pet_home:block/drum_follow"
+    }
+  }
+}

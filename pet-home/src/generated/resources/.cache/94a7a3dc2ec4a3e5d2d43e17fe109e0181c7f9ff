@@ -1,0 +1,6 @@
+// 1.21.1	2025-07-17T23:22:58.6584967	mod enchantment tags
+2b4eb419e0dabc32b43506c9c26cc20ceea960fd data/enchantinginfuser/tags/enchantment/infuse_extra.json
+fe5e9c2692db0307389b12109a99849cd71d9815 data/minecraft/tags/enchantment/curse.json
+3d17a2d385cf39d086bab4f29aa27fbd8db8f111 data/minecraft/tags/enchantment/in_enchanting_table.json
+f10015de35c8c504a350e5e69ad605a9c874d816 data/minecraft/tags/enchantment/treasure.json
+930d9227e91f490029b40b54d20d0d1a905ab16f data/pet_home/tags/enchantment/trade_enchantment_book.json

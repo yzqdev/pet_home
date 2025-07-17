@@ -1,0 +1,24 @@
+{
+  "anvil_cost": 2,
+  "description": {
+    "translate": "enchantment.pet_home.chain_lightning"
+  },
+  "exclusive_set": [
+    "pet_home:frost_fang",
+    "pet_home:bubbling",
+    "pet_home:magnetic",
+    "pet_home:shadow_hands"
+  ],
+  "max_cost": {
+    "base": 25,
+    "per_level_above_first": 7
+  },
+  "max_level": 2,
+  "min_cost": {
+    "base": 8,
+    "per_level_above_first": 7
+  },
+  "slots": [],
+  "supported_items": "#pet_home:collar_tag_key",
+  "weight": 5
+}

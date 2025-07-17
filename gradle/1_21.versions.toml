@@ -1,0 +1,71 @@
+[versions]
+
+
+[libraries]
+## implementation
+neoYsm='maven.modrinth:yes-steve-model:2.4.1-neoforge,1.21.1'
+neoJEC="maven.modrinth:justenoughcharacters:4.5.15-neoforge,1.21.1"
+neoJeiResource="maven.modrinth:just-enough-resources-jer:1.6.0.17-neoforge,1.21.1"
+neoJeiBreeding="maven.modrinth:justenoughbreeding:1.6.0-neoforge,1.21.1"
+neoJeiProfession="maven.modrinth:just-enough-professions-jep:4.0.4-neoforge,1.21.1"
+neoEasyvillager="maven.modrinth:easy-villagers:neoforge-1.21.1-1.1.23-neoforge,1.21.1"
+neoNoisium="maven.modrinth:noisium:2.3.0+mc1.21-1.21.1-neoforge,1.21.1"
+neoMousetweak="maven.modrinth:mouse-tweaks:1.21-2.26.1-neoforge"
+flattened = "maven.modrinth:flattened-dimensions:lo6wmF3s"
+neoHolefiller="maven.modrinth:hole-filler-mod:1.3.0-neoforge,1.21.1"
+neoClothConfig = "me.shedaniel.cloth:cloth-config-neoforge:15.0.140"
+neoTouhouLittleMaid =  "maven.modrinth:touhou-little-maid:1.3.5-neoforge,1.21.1"
+neoBadpackets = "maven.modrinth:badpackets:neo-0.8.1"
+neoMafglib = "maven.modrinth:mafglib:0.3.1-mc1.21.1"
+neoBocchud = "maven.modrinth:bocchud:0.3.1-mc1.21.1"
+neoTweakage = "maven.modrinth:tweakerge:0.2.4-mc1.21.1"
+neoBettermodlist = "maven.modrinth:better-modlist:1.1.12"
+neoModernui = "maven.modrinth:modern-ui:3.11.1.9-neoforge"
+neoDebugUtils = "maven.modrinth:debugutils:1.21-1.0.6-neoforge,1.21.1"
+neoCurios = 'top.theillusivec4.curios:curios-neoforge:9.4.2+1.21.1'
+neoBetterTag = "curse.maven:better-tips-nbt-tag-682363:5964249"
+neoJade = "maven.modrinth:jade:15.9.1+neoforge"
+neoCarryon = "maven.modrinth:carry-on:2.2.2-neoforge"
+neoNeat = "maven.modrinth:neat:1.21-40-neoforge"
+neoSodium = "maven.modrinth:sodium:mc1.21.1-0.6.5-neoforge"
+neoIris = "maven.modrinth:iris:1.8.1+1.21.1-neoforge"
+neoImmediately = "maven.modrinth:immediatelyfast:1.3.3+1.21.1-neoforge"
+neoEntityCulling = "maven.modrinth:entityculling:8BvicUz9"
+neoEntityTextureFeatures = "maven.modrinth:entitytexturefeatures:6.2.9-neoforge,1.21.1"
+neoEntityModelFeatures = "maven.modrinth:entity-model-features:2.4.1-neoforge,1.21.1"
+neoReesesSodium = "maven.modrinth:reeses-sodium-options:mc1.21.3-1.8.0+neoforge"
+neoXaeroMinimap = "maven.modrinth:xaeros-minimap:25.2.6_NeoForge_1.21"
+neoXaeroWorldmap = "maven.modrinth:xaeros-world-map:1.39.9_NeoForge_1.21"
+neoMelody = "maven.modrinth:melody:1.0.10-1.21-neoforge"
+neoEmi = "maven.modrinth:emi:1.1.22+1.21.1+neoforge"
+neoGeckolib = "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.7.5.1"
+neoJeiCommon = "mezz.jei:jei-1.21.1-common-api:19.21.0.247"
+neoJeiApi = "mezz.jei:jei-1.21.1-neoforge-api:19.21.0.247"
+neoJeiLib = "mezz.jei:jei-1.21.1-neoforge:19.21.0.247"
+neoConfigured = "curse.maven:configured-457570:5873783"
+neoDynamic = "maven.modrinth:dynamicsurroundingsfabric:0.4.2-neoforge,1.21.1"
+neoArchi = "maven.modrinth:architectury-api:13.0.8+neoforge"
+neoStxck = "maven.modrinth:staaaaaaaaaaaack:1.21-1.5-75+neoforge"
+neoAppleskin = "maven.modrinth:appleskin:3.0.5+mc1.21-neoforge,1.21.1"
+neoResourceful="maven.modrinth:resourceful-lib:3.0.12-neoforge,1.21.1"
+neoSilicone="maven.modrinth:silicone-dolls:1.0.0+build.49"
+neoRollingate="maven.modrinth:rolling-gate:1.1.0+build.55"
+neoNbtedit="maven.modrinth:nbtedit-reborn:5.2.11+mc1.21.1-neoforge,1.21.1"
+neoKubejs="maven.modrinth:kubejs:2101.7.1-build.181+KubeJS-1.21.1"
+neoRhino="maven.modrinth:rhino:2101.2.7-build.74+Rhino-1.21"
+neoProbejs="curse.maven:probejs-585406:5820894"
+[plugins]
+
+
+shadowJar = { id = "com.github.johnrengelman.shadow", version = "8.1.1" }
+ksp = { id = "com.google.devtools.ksp", version = "2.0.0-1.0.21" }
+
+[bundles]
+neo = ['neoNbtedit', 'neoNoisium','neoRollingate','neoSilicone', 'neoEasyvillager', 'neoJEC', 'neoJeiResource','neoJeiBreeding','neoJeiProfession', "neoBadpackets", "neoMafglib", "neoBocchud", "neoBettermodlist", "neoEntityModelFeatures", "neoModernui", "neoCarryon", "neoNeat", "neoSodium", "neoIris", "neoImmediately", "neoEntityCulling", "neoEntityTextureFeatures", "neoReesesSodium", "neoXaeroMinimap", "neoXaeroWorldmap", "neoJeiLib",
+    "neoJeiApi", "neoJeiCommon", "neoEmi", 'neoTweakage', "neoConfigured", "neoCurios", "neoDebugUtils", "neoArchi", "neoStxck", 'neoAppleskin']
+neoServerOnly=['neoNbtedit', 'neoNoisium','neoRollingate','neoSilicone', 'neoEasyvillager', 'neoJEC', 'neoJeiResource','neoJeiBreeding','neoJeiProfession', "neoBadpackets",    "neoCarryon",   "neoJeiLib",
+    "neoJeiApi", "neoJeiCommon", "neoEmi",   "neoConfigured", "neoCurios", "neoDebugUtils", "neoArchi", "neoStxck", 'neoAppleskin']
+implForge = ["neoGeckolib", "neoTouhouLittleMaid", "neoJade", "neoMelody"]
+apiForge = ["neoClothConfig"]
+
+

@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "package": "com.github.yzqdev.pet_home.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "minVersion": "0.8",
+  "client": [
+
+  ],
+  "mixins": [
+    "LivingEntityMixin",
+    "EntityMaidMixin",
+    "MobMixin",
+    "EntityMixin",
+    "FishingHookMixin",
+    "AgeableMobMixin"
+  ],
+  "refmap": "pet_home.refmap.json",
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
