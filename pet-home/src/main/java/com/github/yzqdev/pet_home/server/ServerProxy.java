@@ -2,11 +2,13 @@ package com.github.yzqdev.pet_home.server;
 
 import com.github.yzqdev.pet_home.PetHomeConfig;
 import com.github.yzqdev.pet_home.PetHomeMod;
-import com.github.yzqdev.pet_home.client.ClientProxy;
+import com.github.yzqdev.pet_home.client.ClientGameEvents;
 import com.github.yzqdev.pet_home.server.block.PetBedBlock;
 import com.github.yzqdev.pet_home.server.block.PetBedBlockEntity;
 import com.github.yzqdev.pet_home.datagen.ModEnchantments;
 
+import com.github.yzqdev.pet_home.server.item.NetItem;
+import com.github.yzqdev.pet_home.server.item.Type;
 import com.github.yzqdev.pet_home.server.entity.ChainLightningEntity;
 import com.github.yzqdev.pet_home.server.entity.PHEntityRegistry;
 import com.github.yzqdev.pet_home.server.entity.PHVillagerRegistry;
@@ -31,14 +33,21 @@ import com.github.yzqdev.pet_home.util.LivingUtils;
 import com.github.yzqdev.pet_home.util.TameableUtils;
 
 import com.github.yzqdev.pet_home.worldgen.VillageHouseManager;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -63,8 +72,10 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.VillagerTrades;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.item.EnchantedBookItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
@@ -73,7 +84,9 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.event.entity.*;
 import net.neoforged.neoforge.event.entity.item.ItemExpireEvent;
@@ -81,6 +94,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.ExplosionEvent;
@@ -760,7 +774,7 @@ public class ServerProxy {
             }
             int shadowHandsLevel = TameableUtils.getEnchantLevel(pet, ModEnchantments.SHADOW_HANDS);
             if (shadowHandsLevel > 0 && event.getEntity() instanceof Mob mob) {
-                ClientProxy.updateVisualDataForMob(event.getEntity(), TameableUtils.getShadowPunchTimes(mob));
+                ClientGameEvents.updateVisualDataForMob(event.getEntity(), TameableUtils.getShadowPunchTimes(mob));
                 if (!mob.level().isClientSide) {
                     var targetEntity = TameableUtils.getPetAttackTarget(mob);
                     Entity punching = ((targetEntity instanceof Player) || (targetEntity instanceof TamableAnimal)) ? null : targetEntity;
@@ -955,38 +969,67 @@ public class ServerProxy {
 
     }
 
+
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onInteractWithEntity(PlayerInteractEvent.EntityInteract event) {
         Player player = event.getEntity();
         var hand = event.getHand();
+        var level = event.getLevel();
         Entity pet = event.getTarget();
-        ItemStack stack = event.getItemStack();
+        ItemStack itemstack = event.getItemStack();
+        if (!level.isClientSide() && itemstack.is(PHItemRegistry.NET_ITEM)) {
+            if (!pet.isAlive() || NetItem.containsEntity(itemstack)) {
+                return;
+            }
+            var netItem = (NetItem) itemstack.getItem();
+            if (netItem.getType() == Type.EMPTY) {
+                EntityType<?> entityID = pet.getType();
+                if (NetItem.isBlacklisted(entityID)) {
+                    event.setCanceled(true);
+                    return;
+                }
+                ItemStack newStack = new ItemStack(PHItemRegistry.NET_HAS_ITEM.get());
+                CompoundTag nbt = NetItem.getNBTfromEntity(pet);
+                ItemStack newerStack = newStack.split(1);
+                newerStack.set(PHDataComponents.ENTITY_HOLDER, nbt);
 
+                player.swing(hand);
+                player.setItemInHand(hand, newStack);
+                if (!player.addItem(newerStack)) {
+                    ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), newerStack);
+                    player.level().addFreshEntity(itemEntity);
+                }
+                pet.discard();
+                player.getCooldowns().addCooldown(itemstack.getItem(), 5);
+
+            }
+
+        }
 
         if (event.getTarget() instanceof LivingEntity living && TameableUtils.isPetOf(player, pet)) {
             if (TameableUtils.hasEnchant(living, ModEnchantments.GLUTTONOUS)) {
-                var foodProperty = stack.getItem().getFoodProperties(stack, living);
+                var foodProperty = itemstack.getItem().getFoodProperties(itemstack, living);
                 if (foodProperty != null && living.getHealth() < living.getMaxHealth()) {
                     living.heal((float) Math.floor(foodProperty.nutrition() * 1.5F));
                     if (!event.getEntity().isCreative()) {
-                        stack.shrink(1);
+                        itemstack.shrink(1);
                     }
                     living.playSound(living.getRandom().nextBoolean() ? SoundEvents.PLAYER_BURP : SoundEvents.GENERIC_EAT, 1F, living.getVoicePitch());
                     event.setCanceled(true);
                     event.setCancellationResult(InteractionResult.SUCCESS);
                 }
             }
-            if (stack.is(PHItemRegistry.COLLAR_TAG.get())) {
+            if (itemstack.is(PHItemRegistry.COLLAR_TAG.get())) {
 
 
                 if (!event.getEntity().level().isClientSide && living.isAlive()) {
-                    var itemEnchantments = stack.getTagEnchantments();
+                    var itemEnchantments = itemstack.getTagEnchantments();
                     Map<ResourceLocation, Integer> entityEnchantments = TameableUtils.getEnchants(living);
-                    if (stack.has(DataComponents.CUSTOM_NAME)) {
-                        living.setCustomName(stack.getHoverName());
+                    if (itemstack.has(DataComponents.CUSTOM_NAME)) {
+                        living.setCustomName(itemstack.getHoverName());
                     }
                     if (!event.getEntity().isCreative()) {
-                        stack.shrink(1);
+                        itemstack.shrink(1);
                     }
                     if (TameableUtils.hasCollar(living)) {
                         ItemStack collarFrom = new ItemStack(PHItemRegistry.COLLAR_TAG.get());
@@ -1035,7 +1078,7 @@ public class ServerProxy {
         }
 
         if (pet instanceof LivingEntity living) {
-            if (pet.getType() == EntityType.HORSE && stack.is(PHItemRegistry.ROTTEN_APPLE) && EventHooks.canLivingConvert(living, EntityType.ZOMBIE_HORSE, (timer) -> {
+            if (pet.getType() == EntityType.HORSE && itemstack.is(PHItemRegistry.ROTTEN_APPLE) && EventHooks.canLivingConvert(living, EntityType.ZOMBIE_HORSE, (timer) -> {
             })) {
                 player.swing(hand);
                 Horse horse = (Horse) pet;
@@ -1067,11 +1110,11 @@ public class ServerProxy {
                 player.level().addFreshEntity(zombie);
                 horse.discard();
                 if (!player.isCreative()) {
-                    stack.shrink(1);
+                    itemstack.shrink(1);
                 }
 //           return InteractionResult.CONSUME;
             }
-            if (pet.getType() == EntityType.RABBIT && stack.is(PHItemRegistry.SINISTER_CARROT) && TameableUtils.isTamed(pet) && TameableUtils.isPetOf(player, pet) && EventHooks.canLivingConvert(living, EntityType.RABBIT, (timer) -> {
+            if (pet.getType() == EntityType.RABBIT && itemstack.is(PHItemRegistry.SINISTER_CARROT) && TameableUtils.isTamed(pet) && TameableUtils.isPetOf(player, pet) && EventHooks.canLivingConvert(living, EntityType.RABBIT, (timer) -> {
             })) {
                 if (pet instanceof Rabbit rabbit && rabbit.getVariant() != Rabbit.Variant.EVIL) {
                     player.swing(hand);
@@ -1079,12 +1122,12 @@ public class ServerProxy {
                     rabbit.playSound(SoundEvents.ZOMBIE_INFECT, 0.8F, rabbit.getVoicePitch());
                     rabbit.setVariant(Rabbit.Variant.EVIL);
                     if (!player.isCreative()) {
-                        stack.shrink(1);
+                        itemstack.shrink(1);
                     }
 //               return InteractionResult.CONSUME;
                 }
             }
-            if (pet.getType() == EntityType.ZOMBIE_HORSE && stack.is(PHItemRegistry.SINISTER_CARROT) && EventHooks.canLivingConvert(living, EntityType.SKELETON_HORSE, (timer) -> {
+            if (pet.getType() == EntityType.ZOMBIE_HORSE && itemstack.is(PHItemRegistry.SINISTER_CARROT) && EventHooks.canLivingConvert(living, EntityType.SKELETON_HORSE, (timer) -> {
             })) {
                 player.swing(hand);
                 ZombieHorse horse = (ZombieHorse) pet;
@@ -1112,7 +1155,7 @@ public class ServerProxy {
                 player.level().addFreshEntity(skeleton);
                 horse.discard();
                 if (!player.isCreative()) {
-                    stack.shrink(1);
+                    itemstack.shrink(1);
                 }
 //           return InteractionResult.CONSUME;
             }
@@ -1171,6 +1214,58 @@ public class ServerProxy {
             event.getTrades().put(3, level3);
             event.getTrades().put(4, level4);
             event.getTrades().put(5, level5);
+        }
+    }
+
+    private static final String[] KEY_TYPES = {"desc", "description", "info"};
+
+    private static MutableComponent getDescription(String baseKey, int level) {
+        for (String keyType : KEY_TYPES) {
+            String key = baseKey + keyType;
+            if (I18n.exists(key)) {
+                return Component.translatable(key).withStyle(ChatFormatting.DARK_GRAY);
+            }
+            key = key + "." + level;
+            if (I18n.exists(key)) {
+                return Component.translatable(key).withStyle(ChatFormatting.DARK_GRAY);
+            }
+        }
+        return null;
+    }
+
+    private static MutableComponent getDescription(Holder<Enchantment> enchantment, ResourceLocation id, int level) {
+        MutableComponent description = getDescription("enchantment." + id.getNamespace() + "." + id.getPath() + ".", level);
+        if (description == null && enchantment.value().description().getContents() instanceof TranslatableContents translatable) {
+            description = getDescription(translatable.getKey() + ".", level);
+        }
+        return description;
+    }
+
+    /**
+     * show enchantment description
+     * @param event
+     */
+    @SubscribeEvent
+    public static void onItemTooltip(ItemTooltipEvent event) {
+        var tooltip = event.getToolTip();
+        var stack = event.getItemStack();
+        if (!ModList.get().isLoaded("enchdesc")&& !stack.isEmpty() && stack.getItem() instanceof EnchantedBookItem) {
+            var enchantments = stack.get(DataComponents.STORED_ENCHANTMENTS);
+            if (enchantments != null && !enchantments.isEmpty()) {
+                for (Holder<Enchantment> enchantmentHolder : enchantments.keySet()) {
+                    var e = enchantmentHolder.value();
+                    if (enchantmentHolder.getKey().location().getNamespace().contains(PetHomeMod.MODID)) {
+                        final MutableComponent description = getDescription(enchantmentHolder, enchantmentHolder.unwrapKey().orElseThrow().location(), e.getMaxLevel());
+                        if (description != null) {
+
+                            tooltip.add(description);
+                        }
+                    }
+
+
+                }
+            }
+
         }
     }
 }
