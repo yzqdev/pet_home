@@ -1,4 +1,6 @@
-// 1.21.1	2025-07-17T23:22:58.6914999	Item Models: pet_home
+// 1.21.1	2025-07-18T13:09:03.7282441	Item Models: pet_home
 1041fffc2f42aeacdbd44335cf9f4f7002285434 assets/pet_home/models/item/collar_tag.json
 aeba58add7439190849cbeab1f90f37bb55c7ffc assets/pet_home/models/item/deed_of_ownership.json
 ffafe1922b91fcadb4269887eed78f4ea3a4f7fa assets/pet_home/models/item/deflection_shield.json
+8b75b367861f36cf18be62747ca3dccc3a38774f assets/pet_home/models/item/net.json
+079c731621abf2955961a377ed85a51e4121d286 assets/pet_home/models/item/net_has_item.json

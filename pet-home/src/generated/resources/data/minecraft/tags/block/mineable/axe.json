@@ -1,20 +1,20 @@
 {
   "values": [
-    "pet_home:pet_bed_purple",
-    "pet_home:pet_bed_light_gray",
-    "pet_home:pet_bed_orange",
-    "pet_home:pet_bed_red",
-    "pet_home:pet_bed_gray",
-    "pet_home:pet_bed_pink",
-    "pet_home:pet_bed_lime",
-    "pet_home:pet_bed_blue",
-    "pet_home:pet_bed_white",
-    "pet_home:pet_bed_brown",
-    "pet_home:pet_bed_cyan",
-    "pet_home:pet_bed_green",
-    "pet_home:pet_bed_light_blue",
     "pet_home:pet_bed_magenta",
+    "pet_home:pet_bed_purple",
+    "pet_home:pet_bed_brown",
     "pet_home:pet_bed_black",
-    "pet_home:pet_bed_yellow"
+    "pet_home:pet_bed_lime",
+    "pet_home:pet_bed_cyan",
+    "pet_home:pet_bed_yellow",
+    "pet_home:pet_bed_white",
+    "pet_home:pet_bed_pink",
+    "pet_home:pet_bed_blue",
+    "pet_home:pet_bed_light_blue",
+    "pet_home:pet_bed_gray",
+    "pet_home:pet_bed_light_gray",
+    "pet_home:pet_bed_green",
+    "pet_home:pet_bed_orange",
+    "pet_home:pet_bed_red"
   ]
 }

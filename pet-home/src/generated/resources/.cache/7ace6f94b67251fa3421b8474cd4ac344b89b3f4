@@ -1,3 +1,4 @@
-// 1.21.1	2025-07-17T23:22:58.6664967	mod item tags
+// 1.21.1	2025-07-18T13:37:26.4929337	mod item tags
+3099fda5144f3fd0ffcb6132c0f51dfcfffd4051 data/minecraft/tags/item/enchantable/durability.json
 72e4457d99e5f0e92133926cc151575ca982478b data/pet_home/tags/item/collar_tag_key.json
-c8e41f9162c9b898bb592a1ef50e4f858a492c97 data/pet_home/tags/item/pet_beds.json
+e68dfccdbca44aaf7aa6076027ab37fe824498f0 data/pet_home/tags/item/pet_beds.json

@@ -1,4 +1,6 @@
-// 1.21.1	2025-07-17T23:22:58.6855001	Recipes
+// 1.21.1	2025-07-18T12:48:24.9236136	Recipes
+9120f61d94a5d0cb7d27fb99ff09b6770df378e5 data/pet_home/advancement/recipes/building_blocks/net.json
+dca35904f7c89feaf86158af1c7b343ce29dbf9f data/pet_home/advancement/recipes/building_blocks/net_launcher.json
 b7eacd9b46e1c341490cc458fafd83acc58da34d data/pet_home/advancement/recipes/misc/collar_tag.json
 a81114ce09248c372d89b8fe523339ee2e983c26 data/pet_home/advancement/recipes/misc/feather_on_a_stick.json
 6218ce73656e8c6793f16ae914a449050c5cc2fc data/pet_home/advancement/recipes/misc/wayward_lantern.json
@@ -36,6 +38,8 @@ ee6a495a6d77a0c9df1cc74824d3110faa52bbaa data/pet_home/advancement/recipes/tools
 a4a2fbcb4977ae92ed89d8c969ac7b0984f619f1 data/pet_home/advancement/recipes/tools/pet_bed_item_yellow.json
 a3f68e529ba70919d0e8221a692e9eb0dda0ac68 data/pet_home/recipe/collar_tag.json
 ac85de4a78de6566b3172b7aa6552d0f0447335c data/pet_home/recipe/feather_on_a_stick.json
+9c48b8ee40e4f23944f96132c2391eb933d30f3e data/pet_home/recipe/net.json
+3c62d9705ebcfdc362c372071110e60f804a8c27 data/pet_home/recipe/net_launcher.json
 a062c43e6c26ae15eb09b959b40c354f57a85842 data/pet_home/recipe/pet_bed_from_dye_black.json
 f8fbc675757f17124aee52d776aadebdbde76fa4 data/pet_home/recipe/pet_bed_from_dye_blue.json
 714069658eed83dd6a1405f3e762e9ee2cf18641 data/pet_home/recipe/pet_bed_from_dye_brown.json

@@ -25,6 +25,7 @@ With this mod installed, no more will your pets have to sit out battles, explora
 - the new config screen
   ![config screen](https://cdn.modrinth.com/data/cached_images/1333f626af50bfd15233076c8b0e9c1a29e4ea1b_0.webp)
 - 7 new enchantment books
+- animal tamers sell mod enchantment books not the librarian
 ## other items want to add
 
 - a mob catcher item

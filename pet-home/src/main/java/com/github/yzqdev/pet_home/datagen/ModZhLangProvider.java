@@ -1,5 +1,6 @@
 package com.github.yzqdev.pet_home.datagen;
 
+import com.github.yzqdev.pet_home.server.item.PHItemRegistry;
 import net.minecraft.data.PackOutput;
 import net.neoforged.neoforge.common.data.LanguageProvider;
 
@@ -146,11 +147,11 @@ public class ModZhLangProvider extends LanguageProvider {
         add("config.jade.plugin_pet_home.collar_tag", "项圈描述:");
         add("notif.friendlyfire.protected", "这只%s受保护。潜行状态可绕过保护。");
         // new gen
-        add(Zhcn.conf("animal_tamer_villager"), "驯兽师");
-        add(Zhcn.conf("protectChildren.tooltip"), "是否保护幼年生物");
-        add(Zhcn.conf("displayHitWarning.tooltip"), "是否显示保护提示");
-        add(Zhcn.conf("rotten_apple"), "苹果消失的时候变成腐烂苹果");
-        add(Zhcn.conf("rotten_apple.tooltip"), "苹果消失的时候变成腐烂苹果");
+        add(LangDefinition.conf("animal_tamer_villager"), "驯兽师");
+        add(LangDefinition.conf("protectChildren.tooltip"), "是否保护幼年生物");
+        add(LangDefinition.conf("displayHitWarning.tooltip"), "是否显示保护提示");
+        add(LangDefinition.conf("rotten_apple"), "苹果消失的时候变成腐烂苹果");
+        add(LangDefinition.conf("rotten_apple.tooltip"), "苹果消失的时候变成腐烂苹果");
         add("pet_home.configuration.sinister_carrot_loot_chance.tooltip", "阴恶胡萝卜在宝箱中的概率");
         add("pet_home.configuration.sinister_carrot_loot_chance", "阴恶胡萝卜在宝箱中的概率");
         add("pet_home.configuration.petstore_village_weight.tooltip", "驯兽师屋子生成的权重,修改后需要推出世界再重新进入");
@@ -186,7 +187,7 @@ public class ModZhLangProvider extends LanguageProvider {
         add("pet_home.configuration.can_hurt_all.tooltip", "可以用来绕过模组的所有保护对生物造成的物品,不需要按shift进行攻击");
         add("pet_home.configuration.can_hurt_all", "可以用来绕过所有保护攻击的物品");
 
-        add(Zhcn.effect("drunk"), "混乱");
+        add(LangDefinition.effect("drunk"), "混乱");
         add("enchantment.pet_home.share", "平摊");
         add("enchantment.pet_home.share.desc", "宠物收到攻击时,会平摊伤害给周围的敌对生物");
         add("enchantment.pet_home.night_vision", "夜视");
@@ -209,6 +210,15 @@ public class ModZhLangProvider extends LanguageProvider {
         add("enchantment.pet_home.tough.desc", "增加宠物的防御和抗击退");
         add("enchantment.pet_home.violent", "暴力");
         add("enchantment.pet_home.violent.desc", "宠物攻击的生物会获得一些debuff");
-        add(Zhcn.ConstantMsg.has_pet_bed_at_pos, "已绑定宠物床( %s )");
+        add(LangDefinition.ConstantMsg.has_pet_bed_at_pos, "已绑定宠物床( %s )");
+        add(PHItemRegistry.NET_LAUNCHER_ITEM.get(), "生物捕捉发射器");
+        add(PHItemRegistry.NET_ITEM.get(), "生物球");
+        add(PHItemRegistry.NET_HAS_ITEM.get(), "生物球");
+        add(LangDefinition.ConstantMsg.capturing_text, "捕捉");
+        add(LangDefinition.ConstantMsg.release_text, "释放");
+        add(LangDefinition.ConstantMsg.health_text, "生命值");
+        add(LangDefinition.ConstantMsg.no_net_entity_text, "没有可以释放的生物球");
+        add(LangDefinition.ConstantMsg.net_launcher_tip, "[按住shift然后右击,可以切换释放和捕捉状态]");
+
     }
 }

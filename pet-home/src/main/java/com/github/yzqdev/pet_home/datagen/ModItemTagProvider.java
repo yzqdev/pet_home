@@ -1,10 +1,12 @@
 package com.github.yzqdev.pet_home.datagen;
 
 import com.github.yzqdev.pet_home.server.block.PHBlockRegistry;
+
 import com.github.yzqdev.pet_home.server.item.PHItemRegistry;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.tags.ItemTagsProvider;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
@@ -27,7 +29,7 @@ public class ModItemTagProvider extends ItemTagsProvider {
     protected void addTags(HolderLookup.Provider pProvider) {
         this.tag(ModTags.COLLAR_TAG_tagkey).add(PHItemRegistry.COLLAR_TAG.getKey());
         this.tag(ModTags.PetBedKey).add(PHBlockRegistry.PetBedItems.values().stream().map(i->i.get()).toArray(Item[]::new));
-
+        tag(ItemTags.DURABILITY_ENCHANTABLE).add(PHItemRegistry.NET_LAUNCHER_ITEM.get());
     }
 
     @Override

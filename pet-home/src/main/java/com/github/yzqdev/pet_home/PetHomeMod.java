@@ -1,6 +1,7 @@
 package com.github.yzqdev.pet_home;
 
 import com.github.yzqdev.pet_home.datagen.loot.PHLootRegistry;
+import com.github.yzqdev.pet_home.server.PHDataComponents;
 import com.github.yzqdev.pet_home.server.block.PHBlockRegistry;
 import com.github.yzqdev.pet_home.server.block.PHTileEntityRegistry;
 import com.github.yzqdev.pet_home.server.entity.PHEntityRegistry;
@@ -33,11 +34,13 @@ public class PetHomeMod {
 
         PHVillagePieceRegistry.DEF_REG.register(modEventBus);
         PHBlockRegistry.DEF_REG.register(modEventBus);
-        PHEntityRegistry.DEF_REG.register(modEventBus);
+
         PHPOIRegistry.DEF_REG.register(modEventBus);
         PHVillagerRegistry.DEF_REG.register(modEventBus);
         PHSoundRegistry.DEF_REG.register(modEventBus);
+        PHDataComponents.DATA_COMPONENT_TYPES.register(modEventBus);
         PHTileEntityRegistry.DEF_REG.register(modEventBus);
+        PHEntityRegistry.DEF_REG.register(modEventBus);
         PHItemRegistry.DEF_REG.register(modEventBus);
         PHParticleRegistry.DEF_REG.register(modEventBus);
         ModEffects.EFFECTS.register(modEventBus);

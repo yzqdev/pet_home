@@ -18,5 +18,7 @@ public class PHItemRegistry {
     public static final DeferredItem<Item> MAGNET = DEF_REG.register("magnet", () -> new InventoryOnlyItem(new Item.Properties()));
 
     public static final DeferredItem<Item> DEED_OF_OWNERSHIP = DEF_REG.register("deed_of_ownership", () ->  new DeedOfOwnershipItem());
-
+    public static DeferredItem<Item> NET_ITEM = DEF_REG.register("net", () -> new NetItem(Type.EMPTY));
+    public static DeferredItem<Item> NET_HAS_ITEM = DEF_REG.register("net_has_item", () -> new NetItem(Type.HAS_MOB));
+    public static DeferredItem<Item> NET_LAUNCHER_ITEM = DEF_REG.register("net_launcher", () -> new NetLauncherItem(new Item.Properties().durability(60)));
 }

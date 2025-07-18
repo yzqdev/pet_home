@@ -2,7 +2,7 @@ package com.github.yzqdev.pet_home.compat.jade;
 
 
 import com.github.yzqdev.pet_home.PetHomeMod;
-import com.github.yzqdev.pet_home.datagen.Zhcn;
+import com.github.yzqdev.pet_home.datagen.LangDefinition;
 import com.github.yzqdev.pet_home.util.TameableUtils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -23,7 +23,7 @@ public enum PetHomeComponentProvider implements IEntityComponentProvider {
             var enchants = TameableUtils.getEnchantDescriptions(livingEntity);
             var hasPetbed = TameableUtils.getPetBedPos(livingEntity);
             if (hasPetbed != null) {
-                iTooltip.add(Component.translatable(Zhcn.ConstantMsg.has_pet_bed_at_pos, hasPetbed.toShortString()).withStyle(ChatFormatting.RED));
+                iTooltip.add(Component.translatable(LangDefinition.ConstantMsg.has_pet_bed_at_pos, hasPetbed.toShortString()).withStyle(ChatFormatting.RED));
             }
             if (enchants.size() > 1) {
                 for (Component enchant : enchants) {

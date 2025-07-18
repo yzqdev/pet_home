@@ -18,6 +18,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Optional;
 
 public class PHCreativeTabRegistry {
@@ -33,11 +34,15 @@ public class PHCreativeTabRegistry {
             .title(Component.translatable("itemGroup." + PetHomeMod.MODID))
             .icon(() -> new ItemStack(PHItemRegistry.COLLAR_TAG.get()))
             .displayItems((enabledFeatures, output) -> {
+                var excludeItems= List.of(PHItemRegistry.NET_HAS_ITEM.getId());
                 for (var item : PHItemRegistry.DEF_REG.getEntries()) {
                     if (item.get() instanceof CustomTabBehavior customTabBehavior) {
                         customTabBehavior.fillItemCategory(output);
                     } else {
-                        output.accept(item.get());
+                        if (!excludeItems.contains(item.getId())){
+                            output.accept(item.get());
+                        }
+
                     }
                 }
                 enabledFeatures.holders().lookup(Registries.ENCHANTMENT).ifPresent(reg -> {

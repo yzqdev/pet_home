@@ -1,5 +1,6 @@
 package com.github.yzqdev.pet_home.datagen;
 
+import com.github.yzqdev.pet_home.server.item.PHItemRegistry;
 import net.minecraft.data.PackOutput;
 import net.neoforged.neoforge.common.data.LanguageProvider;
 
@@ -145,11 +146,11 @@ public class ModEnLangProvider extends LanguageProvider {
         add("notif.friendlyfire.protected","The %s is protected. Crouch to bypass.");
 
 
-        add(Zhcn.conf("animal_tamer_villager"), "Animal Tamer");
-        add(Zhcn.conf("protectChildren.tooltip"), "Whether to protect juvenile creatures");
-        add(Zhcn.conf("displayHitWarning.tooltip"), "Whether to display protection warnings");
-        add(Zhcn.conf("rotten_apple"), "Apples become rotten apples when disappearing");
-        add(Zhcn.conf("rotten_apple.tooltip"), "Apples become rotten apples when disappearing");
+        add(LangDefinition.conf("animal_tamer_villager"), "Animal Tamer");
+        add(LangDefinition.conf("protectChildren.tooltip"), "Whether to protect juvenile creatures");
+        add(LangDefinition.conf("displayHitWarning.tooltip"), "Whether to display protection warnings");
+        add(LangDefinition.conf("rotten_apple"), "Apples become rotten apples when disappearing");
+        add(LangDefinition.conf("rotten_apple.tooltip"), "Apples become rotten apples when disappearing");
         add("pet_home.configuration.sinister_carrot_loot_chance.tooltip", "Probability of Sinister Carrot in chests");
         add("pet_home.configuration.sinister_carrot_loot_chance", "Probability of Sinister Carrot in chests");
         add("pet_home.configuration.petstore_village_weight.tooltip", "Spawn weight of Animal Tamer buildings in villages,need to logout world and then login to take effect");
@@ -185,7 +186,7 @@ public class ModEnLangProvider extends LanguageProvider {
         add("pet_home.configuration.can_hurt_all.tooltip", "Items that bypass all mod protections to damage creatures without needing to press Shift");
         add("pet_home.configuration.can_hurt_all", "All-protection bypass items");
 
-        add(Zhcn.effect("drunk"), "Chaos");
+        add(LangDefinition.effect("drunk"), "Chaos");
         add("enchantment.pet_home.share", "Share");
         add("enchantment.pet_home.share.desc", "When the pet is attacked, it shares damage with nearby hostile mobs");
         add("enchantment.pet_home.night_vision", "Night Vision");
@@ -207,6 +208,14 @@ public class ModEnLangProvider extends LanguageProvider {
         add("enchantment.pet_home.tough.desc", "Increase pet defense and knockback resistance");
         add("enchantment.pet_home.violent", "violent");
         add("enchantment.pet_home.violent.desc", "monster will have some debuff when attacked by pet");
-        add(Zhcn.ConstantMsg.has_pet_bed_at_pos, "has petbed at ( %s )");
+        add(LangDefinition.ConstantMsg.has_pet_bed_at_pos, "has petbed at ( %s )");
+        add(PHItemRegistry.NET_LAUNCHER_ITEM.get(), "Creature Capture Launcher");
+        add(PHItemRegistry.NET_ITEM.get(), "Capture Ball");
+        add(PHItemRegistry.NET_HAS_ITEM.get(), "Capture Ball (Occupied)");
+        add(LangDefinition.ConstantMsg.capturing_text, "Capturing");
+        add(LangDefinition.ConstantMsg.release_text, "Release");
+        add(LangDefinition.ConstantMsg.health_text, "Health");
+        add(LangDefinition.ConstantMsg.no_net_entity_text, "No creature available to release");
+        add(LangDefinition.ConstantMsg.net_launcher_tip, "[Hold Shift + Right Click to toggle between Capture and Release modes]");
     }
 }

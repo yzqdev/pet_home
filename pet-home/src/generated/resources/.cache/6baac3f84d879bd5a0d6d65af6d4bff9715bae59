@@ -1,4 +1,5 @@
-// 1.21.1	2025-07-17T23:22:58.6704969	Tags for minecraft:entity_type mod id pet_home
+// 1.21.1	2025-07-18T12:48:24.9146138	Tags for minecraft:entity_type mod id pet_home
+ef6a7182fa47d054f3a27b406fbb300f506c3763 data/pet_home/tags/entity_type/blacklisted.json
 ddab3c39d4487c9e9e581c7f2a38bb927a988d90 data/pet_home/tags/entity_type/infamy_target_attracted.json
 64357ed455117906c91723a32fecce3f9ea0f0eb data/pet_home/tags/entity_type/petstore_cage_0.json
 35e9a2a79177042e5cecfdd7621ae6a49efb0283 data/pet_home/tags/entity_type/petstore_cage_1.json

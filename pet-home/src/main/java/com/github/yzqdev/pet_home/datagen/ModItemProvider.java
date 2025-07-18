@@ -27,7 +27,9 @@ public class ModItemProvider extends ItemModelProvider {
         simpleItem(PHItemRegistry.COLLAR_TAG);
         simpleItem(PHItemRegistry.DEED_OF_OWNERSHIP);
         simpleItem(PHItemRegistry.DEFLECTION_SHIELD);
+        handheldItem(PHItemRegistry.NET_ITEM.get());
 
+        handheldItem(PHItemRegistry.NET_HAS_ITEM.get());
 
     }
     private ItemModelBuilder simpleItem(DeferredItem<Item> item) {

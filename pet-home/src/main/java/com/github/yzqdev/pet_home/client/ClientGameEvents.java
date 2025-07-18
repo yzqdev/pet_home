@@ -34,10 +34,10 @@ import java.util.Map;
  */
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(value = Dist.CLIENT)
-public class ClientProxy {
+public class ClientGameEvents {
     public static Map<Entity, int[]> shadowPunchRenderData = new HashMap<>();
     public static void registerClientListeners(IEventBus iEventBus) {
-        iEventBus.addListener(ClientProxy::setupParticles);
+        iEventBus.addListener(ClientGameEvents::setupParticles);
 
 
     }

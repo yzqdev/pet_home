@@ -8,7 +8,7 @@ import com.github.yzqdev.pet_home.PetHomeMod;
  * @date time 2024/12/29 11:19
  * @modified By:
  */
-public class Zhcn {
+public class LangDefinition {
     public static String text(String name) {
         return "text." + PetHomeMod.MODID + "." + name;
 
@@ -31,6 +31,11 @@ public class Zhcn {
 
 
     public static class ConstantMsg{
-        public static String has_pet_bed_at_pos=Zhcn.text("has_petbed_at_pos");
+        public static String has_pet_bed_at_pos= LangDefinition.text("has_petbed_at_pos");
+        public static String capturing_text= LangDefinition.text("capturing");
+        public static String release_text= LangDefinition.text("releasing");
+        public static String health_text= LangDefinition.text("health");
+        public static String no_net_entity_text= LangDefinition.text("no_net_entity");
+        public static String net_launcher_tip= LangDefinition.text("net_launcher_tip");
     }
 }

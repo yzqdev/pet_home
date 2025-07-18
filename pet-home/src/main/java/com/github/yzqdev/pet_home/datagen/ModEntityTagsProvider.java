@@ -18,7 +18,7 @@ public class ModEntityTagsProvider extends EntityTypeTagsProvider {
 
     @Override
     protected void addTags(HolderLookup.Provider provider) {
-
+        tag(ModTags.blacklisted).add(EntityType.PAINTING);
         //For the plains & taiga pet store cage
         this.tag(ModTags.petstore_cage_0).add(EntityType.WOLF).add(EntityType.CAT).add(EntityType.RABBIT);
 //        For the desert pet store cage
