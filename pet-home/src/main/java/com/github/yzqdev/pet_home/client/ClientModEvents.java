@@ -13,7 +13,7 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 
 
-@EventBusSubscriber(bus = EventBusSubscriber.Bus.MOD,value = Dist.CLIENT)
+@EventBusSubscriber(value = Dist.CLIENT)
 public class ClientModEvents {
     @SubscribeEvent
     public static void registerModels(EntityRenderersEvent.RegisterRenderers event) {

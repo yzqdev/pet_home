@@ -114,7 +114,7 @@ dependencies {
 
 
   implementation(libs.bundles.implForge)
-  runtimeOnly(libs.bundles.neo)
+  runtimeOnly(libs.bundles.neoServerOnly)
   api(libs.bundles.apiForge)
 
   // Example optional mod dependency with JEI
