@@ -140,7 +140,17 @@ dependencies {
   // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
   // http://www.gradle.org/docs/current/userguide/dependency_management.html
 }
+tasks.register('copyParentLicense', Copy) {
+  from rootProject.file('LICENSE')
+  into "$buildDir/resources/main"
+}
 
+// 确保 processResources 依赖此任务
+afterEvaluate {
+  tasks.named('processResources') {
+    dependsOn copyParentLicense
+  }
+}
 // This block of code expands all declared replace properties in the specified resource targets.
 // A missing property will result in an error. Properties are expanded using ${} Groovy notation.
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
