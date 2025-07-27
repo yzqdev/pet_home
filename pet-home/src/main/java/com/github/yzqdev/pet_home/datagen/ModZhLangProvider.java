@@ -131,6 +131,7 @@ public class ModZhLangProvider extends LanguageProvider {
         add("enchantment.pet_home.blazing_protection.desc", "宠物每升一级会受到2个燃烧的棍的保护，燃烧的棍会击退并时攻击者燃烧");
         add("enchantment.pet_home.healing_aura", "治疗之息");
         add("enchantment.pet_home.xp_transfer", "经验转移");
+        add("enchantment.pet_home.xp_transfer.desc", "宠物带有此附魔的项圈能收集周围的经验球,并转移到主人身上");
         add("enchantment.pet_home.healing_aura.desc", "宠物会在偶然间治疗主人或在主人周围的其他宠物，该效果的等级决定了治疗的效果");
         add("enchantment.pet_home.rejuvenation", "恢复生命");
         add("enchantment.pet_home.rejuvenation.desc", "在宠物受伤时会吸收周围的经验球来治疗自己");
@@ -144,7 +145,7 @@ public class ModZhLangProvider extends LanguageProvider {
         add("pet_home.sound.subtitle.psychic_wall", "心理墙的嗡嗡声");
         add("pet_home.sound.subtitle.psychic_wall_deflect", "心理墙的偏移");
         add("pet_home.sound.subtitle.blazing_protection", "燃烧的棍消失了");
-        add("config.jade.plugin_pet_home.collar_tag", "项圈描述:");
+        add("config.jade.plugin_pet_home.collar_tag", "项圈描述");
         add("notif.friendlyfire.protected", "这只%s受保护。潜行状态可绕过保护。");
         // new gen
         add(LangDefinition.conf("animal_tamer_villager"), "驯兽师");
@@ -219,6 +220,11 @@ public class ModZhLangProvider extends LanguageProvider {
         add(LangDefinition.ConstantMsg.health_text, "生命值");
         add(LangDefinition.ConstantMsg.no_net_entity_text, "没有可以释放的生物球");
         add(LangDefinition.ConstantMsg.net_launcher_tip, "[按住shift然后右击,可以切换释放和捕捉状态]");
+        add(LangDefinition.ConstantMsg.net_launcher_default_only_tamable, "默认只能捕捉可驯服的生物,可以在配置文件修改");
+        add( LangDefinition.conf("mobcatcherOnlyTamableAnimal"), "生物球只能捕捉可驯服的生物");
+        add( LangDefinition.conf("mobcatcherOnlyTamableAnimal.tooltip"), "设置为否可以捕捉所有生物");
+        add( LangDefinition.conf("mobcatcherBlacklist"), "生物球可捕捉黑名单");
+        add( LangDefinition.conf("mobcatcherBlacklist.tooltip"), "生物球不能捕捉的生物");
 
     }
 }

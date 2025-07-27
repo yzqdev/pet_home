@@ -79,7 +79,7 @@ private String entityNbt="itemNbt";
             if (type == HitResult.Type.ENTITY) {
                 EntityHitResult entityRayTrace = (EntityHitResult) result;
                 Entity target = entityRayTrace.getEntity();
-                if (!target.isAlive() || NetItem.isBlacklisted(target.getType())) {
+                if (!target.isAlive() || (!NetItem.canCatchMob(target))) {
                     return;
                 }
 

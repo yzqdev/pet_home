@@ -984,7 +984,7 @@ public class ServerProxy {
             var netItem = (NetItem) itemstack.getItem();
             if (netItem.getType() == Type.EMPTY) {
                 EntityType<?> entityID = pet.getType();
-                if (NetItem.isBlacklisted(entityID)) {
+                if (!NetItem.canCatchMob(pet)) {
                     event.setCanceled(true);
                     return;
                 }

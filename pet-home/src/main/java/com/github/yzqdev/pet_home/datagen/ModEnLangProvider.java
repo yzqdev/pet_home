@@ -123,6 +123,7 @@ public class ModEnLangProvider extends LanguageProvider {
         add("enchantment.pet_home.blight_curse.desc","Plants will wither and die around the pet.");
         add("enchantment.pet_home.tethered_teleport","Tethered Teleport");
         add("enchantment.pet_home.tethered_teleport.desc","Pet will teleport with its owner, even across dimensions.");
+
         add("enchantment.pet_home.immaturity_curse","Curse of Immaturity");
         add("enchantment.pet_home.immaturity_curse.desc","Pet appears and behaves as a baby version of itself, with reduced attack damage.");
         add("enchantment.pet_home.muffled","Muffled");
@@ -145,7 +146,9 @@ public class ModEnLangProvider extends LanguageProvider {
         add("pet_home.sound.subtitle.blazing_protection","Blazing bar dissapears");
         add("notif.friendlyfire.protected","The %s is protected. Crouch to bypass.");
 
-
+        add("config.jade.plugin_pet_home.collar_tag", "Collar Description");
+        add("enchantment.pet_home.xp_transfer", "XP Transfer");
+        add("enchantment.pet_home.xp_transfer.desc", "Pets collect and transfer XP to owner");
         add(LangDefinition.conf("animal_tamer_villager"), "Animal Tamer");
         add(LangDefinition.conf("protectChildren.tooltip"), "Whether to protect juvenile creatures");
         add(LangDefinition.conf("displayHitWarning.tooltip"), "Whether to display protection warnings");
@@ -217,5 +220,10 @@ public class ModEnLangProvider extends LanguageProvider {
         add(LangDefinition.ConstantMsg.health_text, "Health");
         add(LangDefinition.ConstantMsg.no_net_entity_text, "No creature available to release");
         add(LangDefinition.ConstantMsg.net_launcher_tip, "[Hold Shift + Right Click to toggle between Capture and Release modes]");
+        add(LangDefinition.ConstantMsg.net_launcher_default_only_tamable, "By default, only tamable mobs can be captured (configurable in settings file).");
+        add(LangDefinition.conf("mobcatcherOnlyTamableAnimal"), "Only tamable mobs can be captured");
+        add(LangDefinition.conf("mobcatcherOnlyTamableAnimal.tooltip"), "Disable to allow capturing any mob");
+        add(LangDefinition.conf("mobcatcherBlacklist"), "Mob Catcher prohibited list");
+        add(LangDefinition.conf("mobcatcherBlacklist.tooltip"), "Mobs that are blocked from being captured");
     }
 }

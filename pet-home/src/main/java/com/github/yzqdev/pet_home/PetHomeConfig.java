@@ -22,7 +22,8 @@ public class PetHomeConfig {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
 
     private static final ModConfigSpec.BooleanValue ROTTEN_APPLE = BUILDER.comment("true if apples can turn into rotten apples if they despawn").define("rotten_apple", true);
-
+    private static final ModConfigSpec.BooleanValue MOBCATCHER_ONLY_TAMABLE_ANIMAL = BUILDER.comment("Mob catcher only catches tamable animal").define("mobcatcherOnlyTamableAnimal", true);
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> MOBCATCHER_BLACKLIST = BUILDER.comment("entities that can't be caught").defineListAllowEmpty("mobcatcherBlacklist", List.of("minecraft:painting"), () -> BuiltInRegistries.ENTITY_TYPE.getKey(EntityType.PAINTING).toString(), PetHomeConfig::validateEntityTypesName);
     private static final ModConfigSpec.DoubleValue BLAZING_PROTECTION_LOOT_CHANCE = BUILDER.comment("percent chance of nether fortress loot table containing Blazing Protection book:").defineInRange("blazing_protection_loot_chance", 0.2D, 0.0, 1.0D);
     private static final ModConfigSpec.IntValue PETSTORE_VILLAGE_WEIGHT = BUILDER.comment("the spawn weight of the pet store in villages, set to 0 to disable it entirely").defineInRange("petstore_village_weight", 17, 0, 1000);
 
@@ -123,9 +124,12 @@ public class PetHomeConfig {
     public static Set<EntityType<?>> playerCantHurtEntity;
     public static Set<Item> canHurtPetItem;
     public static Set<Item> canHurtAllItem;
-
+    public static boolean mobcatcherOnlyTamableAnimal;
+    public static Set<EntityType<?>> mobcatcherBlackList;
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
+        mobcatcherOnlyTamableAnimal=MOBCATCHER_ONLY_TAMABLE_ANIMAL.get();
+        mobcatcherBlackList=(MOBCATCHER_BLACKLIST.get()).stream().map((entityTypeName) -> BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(entityTypeName))).collect(Collectors.toSet());
         respectTeamRules = RESPECT_TEAM_RULES.get();
         protectPetsFromOwner = PROTECT_PETS_FROM_OWNER.get();
         protectChildren = PROTECT_CHILDREN.get();

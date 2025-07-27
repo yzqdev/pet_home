@@ -1,10 +1,10 @@
 package com.github.yzqdev.pet_home.server.item;
 
+import com.github.yzqdev.pet_home.PetHomeConfig;
 import com.github.yzqdev.pet_home.datagen.LangDefinition;
-import com.github.yzqdev.pet_home.datagen.ModTags;
 import com.github.yzqdev.pet_home.server.PHDataComponents;
-import com.github.yzqdev.pet_home.util.ItemMobTooltip;
 import com.github.yzqdev.pet_home.server.entity.NetEntity;
+import com.github.yzqdev.pet_home.util.ItemMobTooltip;
 import com.mojang.logging.LogUtils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -20,6 +20,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
@@ -34,7 +35,6 @@ import net.neoforged.neoforge.common.util.LogicalSidedProvider;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
-
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -85,7 +85,7 @@ public class NetItem extends Item {
         }
         if (this.type == Type.EMPTY) {
             EntityType<?> entityID = target.getType();
-            if (isBlacklisted(entityID)) {
+            if (!canCatchMob(target)) {
                 return InteractionResult.FAIL;
             }
             ItemStack newStack = new ItemStack(PHItemRegistry.NET_HAS_ITEM.get());
@@ -103,7 +103,7 @@ public class NetItem extends Item {
             player.getCooldowns().addCooldown(this, 5);
             return InteractionResult.SUCCESS;
         }
-        return super.interactLivingEntity(stack,player,target,hand);
+        return super.interactLivingEntity(stack, player, target, hand);
     }
 
     static Set<String> warned;
@@ -129,7 +129,7 @@ public class NetItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag tooltipFlag) {
 
-        if (type==Type.HAS_MOB){
+        if (type == Type.HAS_MOB) {
             if (containsEntity(stack)) {
                 CompoundTag holder = getEntityData(stack);
                 String id = holder.getString("id");
@@ -137,8 +137,9 @@ public class NetItem extends Item {
                 tooltip.add(type.getDescription());
                 tooltip.add(Component.translatable(LangDefinition.ConstantMsg.health_text).append(": " + String.format("%.1f", (getEntityData(stack).getDouble("Health")))));
             }
-        }else{
+        } else {
             super.appendHoverText(stack, context, tooltip, tooltipFlag);
+           tooltip.add(Component.translatable(LangDefinition.ConstantMsg.net_launcher_default_only_tamable).withStyle(ChatFormatting.GRAY));
         }
 
     }
@@ -204,8 +205,8 @@ public class NetItem extends Item {
 
     //helper methods
 
-    public static boolean containsEntity(  ItemStack stack) {
-        return stack!=null&& stack.has(PHDataComponents.ENTITY_HOLDER);
+    public static boolean containsEntity(ItemStack stack) {
+        return stack != null && stack.has(PHDataComponents.ENTITY_HOLDER);
     }
 
     public static CompoundTag getEntityData(ItemStack stack) {
@@ -217,7 +218,26 @@ public class NetItem extends Item {
     }
 
     public static boolean isBlacklisted(EntityType<?> type) {
-        return type == EntityType.PLAYER || type.is(ModTags.blacklisted);
+        return type == EntityType.PLAYER || PetHomeConfig.mobcatcherBlackList.contains(type);
+    }
+
+    public static boolean canCatchMob(Entity livingEntity) {
+        var type = livingEntity.getType();
+        if (PetHomeConfig.mobcatcherOnlyTamableAnimal) {
+            if (livingEntity instanceof TamableAnimal && !(isBlacklisted(type))) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            if (isBlacklisted(type)) {
+                return false;
+            } else {
+                return true;
+            }
+
+        }
+
     }
 
     public static Entity getEntityFromNBT(CompoundTag nbt, Level world, boolean withInfo) {

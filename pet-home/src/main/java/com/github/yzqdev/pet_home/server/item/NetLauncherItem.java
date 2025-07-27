@@ -33,6 +33,7 @@ public class NetLauncherItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable(LangDefinition.ConstantMsg.net_launcher_tip).withStyle(ChatFormatting.GREEN));
+        tooltipComponents.add(Component.translatable(LangDefinition.ConstantMsg.net_launcher_default_only_tamable).withStyle(ChatFormatting.GRAY));
 
     }
 

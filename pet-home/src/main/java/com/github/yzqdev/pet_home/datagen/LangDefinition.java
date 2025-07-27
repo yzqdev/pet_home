@@ -37,5 +37,6 @@ public class LangDefinition {
         public static String health_text= LangDefinition.text("health");
         public static String no_net_entity_text= LangDefinition.text("no_net_entity");
         public static String net_launcher_tip= LangDefinition.text("net_launcher_tip");
+        public static String net_launcher_default_only_tamable= LangDefinition.text("net_launcher_default_only_tamable");
     }
 }
