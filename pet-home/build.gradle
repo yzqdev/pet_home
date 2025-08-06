@@ -4,7 +4,7 @@ plugins {
   id 'net.neoforged.moddev'
   id 'idea'
 }
-apply from:"repo.gradle"
+
 
 
 version = "${mod_version}-neoforge-${minecraft_version}"
@@ -111,13 +111,25 @@ sourceSets.main.resources {
 configurations {
   runtimeClasspath.extendsFrom localRuntime
 }
-
+repositories{
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
 dependencies {
 
 
-  implementation(libs.bundles.implForge)
-  runtimeOnly(libs.bundles.neoServerOnly)
-  api(libs.bundles.apiForge)
+  implementation(libs.neoTouhouLittleMaid)
+  implementation(libs.neoJade)
+
 
   // Example optional mod dependency with JEI
   // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
@@ -145,7 +157,7 @@ tasks.register('copyParentLicense', Copy) {
   into "$buildDir/resources/main"
 }
 
-// 确保 processResources 依赖此任务
+
 afterEvaluate {
   tasks.named('processResources') {
     dependsOn copyParentLicense
