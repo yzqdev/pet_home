@@ -67,7 +67,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
                             entityFromChunk.teleportTo(putAt.getX() + 0.5F, putAt.getY(), putAt.getZ() + 0.5F);
                             Entity owner = TameableUtils.getOwnerOf(entityFromChunk);
                             if(owner instanceof Player){
-                                ((Player)owner).displayClientMessage(Component.translatable("message.domesticationinnovation.wayward_lantern_return", entityFromChunk.getName()), false);
+                                ((Player)owner).displayClientMessage(Component.translatable("message.pet_home.wayward_lantern_return", entityFromChunk.getName()), false);
                             }
                             te.finishedRequests.add(request.getPetUUID());
                         }
