@@ -2,7 +2,6 @@
 
 This is an unofficial high version rewrite of [Domestication Innovation](https://modrinth.com/mod/domestication-innovation)(seems not maintain any more), contains optimizations, new contents and rewrites. It's not the same with the origin mod, new features from the original mod may not be added.
 
-Note: DO NOT directly replace mod, or your saves will be corrupted!
 
 Related Links: [Origin CurseForge](https://www.curseforge.com/minecraft/mc-mods/domestication-innovation) | [Origin Modrinth](https://modrinth.com/mod/domestication-innovation)
 ## Description
@@ -28,7 +27,6 @@ With this mod installed, no more will your pets have to sit out battles, explora
 - animal tamers sell mod enchantment books not the librarian
 ## other items want to add
 
-- a mob catcher item
 - pet compass
 
 ## some pictures

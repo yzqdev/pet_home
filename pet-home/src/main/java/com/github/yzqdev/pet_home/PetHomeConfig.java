@@ -63,7 +63,7 @@ public class PetHomeConfig {
     private static final ModConfigSpec.ConfigValue<List<? extends String>> CAN_HURT_ALL_ITEM = BUILDER.comment("can always hurt item").defineListAllowEmpty("can_hurt_all", List.of(), () -> BuiltInRegistries.ITEM.getKey(Items.EGG).toString(), PetHomeConfig::validateItemName);
     private static final ModConfigSpec.ConfigValue<List<? extends String>> NO_PROTECTION_ENTITY = BUILDER.comment("can always hurt").defineListAllowEmpty("no_protection_entity", List.of(), () -> BuiltInRegistries.ENTITY_TYPE.getKey(EntityType.ZOMBIE).toString(), PetHomeConfig::validateEntityTypesName);
     ;
-    private static final ModConfigSpec.ConfigValue<List<? extends String>> OTHER_SHOULD_PROTECT_ENTITY = BUILDER.comment("other entities that can be protected").defineListAllowEmpty("other_should_protect_entity", List.of("minecraft:villager"), () -> BuiltInRegistries.ENTITY_TYPE.getKey(EntityType.VILLAGER).toString(), PetHomeConfig::validateEntityTypesName);
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> OTHER_SHOULD_PROTECT_ENTITY = BUILDER.comment("other entities that can be protected").defineListAllowEmpty("other_should_protect_entity", List.of(), () -> BuiltInRegistries.ENTITY_TYPE.getKey(EntityType.VILLAGER).toString(), PetHomeConfig::validateEntityTypesName);
     ;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> PLAYER_CANT_HURT_ENTITY = BUILDER.comment("entities player cant hurt").defineListAllowEmpty("player_cant_hurt_entity", List.of(), () -> BuiltInRegistries.ENTITY_TYPE.getKey(EntityType.ZOMBIFIED_PIGLIN).toString(), PetHomeConfig::validateEntityTypesName);
     ;

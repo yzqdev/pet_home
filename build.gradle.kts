@@ -1,5 +1,5 @@
 plugins {
     id("idea")
-    id("net.neoforged.moddev") version "2.0.195" apply (false)
+    id("net.neoforged.moddev") version "2.0.107" apply (false)
 }
 

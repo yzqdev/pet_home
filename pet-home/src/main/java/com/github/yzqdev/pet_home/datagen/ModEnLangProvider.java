@@ -178,8 +178,9 @@ public class ModEnLangProvider extends LanguageProvider {
         add("pet_home.configuration.blazing_protection_loot_chance", "Probability of Blazing Protection enchantment book");
         add("pet_home.configuration.vampirism_loot_chance", "Probability of Vampirism enchantment book");
         add("pet_home.configuration.vampirism_loot_chance.tooltip", "Probability of Vampirism enchantment book in woodland mansion chests");
-        add("pet_home.configuration.other_should_protect_entity.tooltip", "Other creatures to protect, e.g. villagers (immune to all attacks)");
-        add("pet_home.configuration.other_should_protect_entity", "Other protected creatures");
+        add("pet_home.configuration.other_should_protect_entity.tooltip", "Entities immune to all attacks");
+        add("pet_home.configuration.other_should_protect_entity", "Entities immune to all attacks");
+
         add("pet_home.configuration.no_protection_entity.tooltip", "Creatures not to protect, e.g. Piglins");
         add("pet_home.configuration.no_protection_entity", "Unprotected creatures");
         add("pet_home.configuration.player_cant_hurt_entity.tooltip", "Creatures players cannot attack, e.g. Zombified Piglins");

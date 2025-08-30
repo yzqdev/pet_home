@@ -177,8 +177,9 @@ public class ModZhLangProvider extends LanguageProvider {
         add("pet_home.configuration.blazing_protection_loot_chance", "抗火附魔书概率");
         add("pet_home.configuration.vampirism_loot_chance", "吸血鬼附魔书概率");
         add("pet_home.configuration.vampirism_loot_chance.tooltip", "吸血鬼附魔书在(林地府邸)宝箱中的概率");
-        add("pet_home.configuration.other_should_protect_entity.tooltip", "其他应该保护的生物,如村民(免疫所有生物的攻击)");
-        add("pet_home.configuration.other_should_protect_entity", "其他应该保护的生物");
+        add("pet_home.configuration.other_should_protect_entity.tooltip", "无敌的生物(免疫所有伤害)");
+        add("pet_home.configuration.other_should_protect_entity", "无敌的生物");
+
         add("pet_home.configuration.no_protection_entity.tooltip", "不应该保护的生物,如猪灵");
         add("pet_home.configuration.no_protection_entity", "不应该保护的生物");
         add("pet_home.configuration.player_cant_hurt_entity.tooltip", "玩家不能攻击的生物,如僵尸猪灵");
