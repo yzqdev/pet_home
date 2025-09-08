@@ -60,9 +60,13 @@ public class NetItem extends Item {
     public InteractionResult useOn(UseOnContext context) {
         Player player = context.getPlayer();
         Level world = context.getLevel();
-        if (player == null) return InteractionResult.FAIL;
+        if (player == null) {
+            return InteractionResult.FAIL;
+        }
         ItemStack stack = context.getItemInHand();
-        if (world.isClientSide || !containsEntity(stack)) return InteractionResult.FAIL;
+        if (world.isClientSide || !containsEntity(stack)) {
+            return InteractionResult.FAIL;
+        }
 
         Entity entity = getEntityFromStack(stack, world, true);
         BlockPos blockPos = context.getClickedPos();
@@ -189,12 +193,14 @@ public class NetItem extends Item {
     @Nonnull
     public Component getName(@Nonnull ItemStack stack) {
         Component nameC = super.getName(stack);
-        if (!containsEntity(stack))
+        if (!containsEntity(stack)) {
             return nameC;
-        else return ((MutableComponent) nameC)
-                .append(" (")
-                .append(getNameFromStoredEntity(stack))
-                .append(")");
+        } else {
+            return ((MutableComponent) nameC)
+                    .append(" (")
+                    .append(getNameFromStoredEntity(stack))
+                    .append(")");
+        }
     }
 
     public NetEntity createNet(Level worldIn, LivingEntity shooter, ItemStack stack) {
@@ -242,7 +248,9 @@ public class NetItem extends Item {
 
     public static Entity getEntityFromNBT(CompoundTag nbt, Level world, boolean withInfo) {
         Entity entity = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(getEntityID(nbt))).create(world);
-        if (withInfo) entity.load(nbt);
+        if (withInfo) {
+            entity.load(nbt);
+        }
         return entity;
     }
 

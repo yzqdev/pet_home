@@ -59,7 +59,9 @@ private String entityNbt="itemNbt";
      */
     @Override
     protected void onHit(@Nonnull HitResult result) {
-        if (level().isClientSide || !this.isAlive()) return;
+        if (level().isClientSide || !this.isAlive()) {
+            return;
+        }
         HitResult.Type type = result.getType();
         boolean containsEntity = NetItem.containsEntity(itemStack);
         if (containsEntity) {
@@ -109,6 +111,7 @@ private String entityNbt="itemNbt";
         return new ItemEntity(this.level(), entity.getX(), entity.getY(), entity.getZ(), stack);
     }
 
+    @Override
     public void addAdditionalSaveData(CompoundTag nbt) {
         super.addAdditionalSaveData(nbt);
 //        if (!stack.isEmpty()) {
@@ -121,6 +124,7 @@ private String entityNbt="itemNbt";
 
     }
 
+    @Override
     public void readAdditionalSaveData(CompoundTag nbt) {
         super.readAdditionalSaveData(nbt);
         itemStack = ItemStack.parse(level().registryAccess(), nbt.getCompound(PetHomeMod.MODID)).get();

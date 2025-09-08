@@ -40,12 +40,15 @@ public class NetLauncherItem extends Item {
     /**
      * Called when the player stops using an Item (stops holding the right mouse button).
      */
+    @Override
     public void releaseUsing(ItemStack stack, Level worldIn, LivingEntity entityLiving, int timeLeft) {
         if (entityLiving instanceof Player player) {
 
 
             int i = this.getUseDuration(stack, player) - timeLeft;
-            if (i < 0) return;
+            if (i < 0) {
+                return;
+            }
 
 
             float f = getNetVelocity(i);
@@ -74,7 +77,6 @@ public class NetLauncherItem extends Item {
 
                         if (netWithEntityStack.getItem() instanceof NetItem netItem) {
                             NetEntity netEntity = netItem.createNet(worldIn, player, netWithEntityStack);
-//
                             netEntity.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, f * 3.0F, 0);
 
                             worldIn.addFreshEntity(netEntity);
@@ -128,6 +130,7 @@ public class NetLauncherItem extends Item {
     /**
      * Called when the equipped item is right clicked.
      */
+    @Override
     @Nonnull
     public InteractionResultHolder<ItemStack> use(Level worldIn, Player player, @Nonnull InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);

@@ -1,8 +1,0 @@
-[versions]
-
-
-[libraries]
-
-neoTouhouLittleMaid =  "maven.modrinth:touhou-little-maid:1.3.5-neoforge,1.21.1"
-
-neoJade = "maven.modrinth:jade:15.9.1+neoforge"
