@@ -614,6 +614,10 @@ public class ServerProxy {
     }
 
     public static void mobTick(EntityTickEvent.Pre event, LivingEntity attacker) {
+        // 仅服务端执行：涉及 ServerLevel（粒子、目标选择）等逻辑，客户端 level 为 ClientLevel 会 ClassCastException
+        if (attacker.level().isClientSide()) {
+            return;
+        }
         List<Monster> genericMobs = attacker.level().getEntitiesOfClass(Monster.class, LivingUtils.getBoundingBoxAroundEntity(attacker, (double) 10.0F));
         Random random = new Random();
         if (attacker.hasEffect(ModEffects.DRUNK) && attacker instanceof Monster) {
@@ -672,7 +676,7 @@ public class ServerProxy {
 
             if (TameableUtils.hasEnchant(pet, ModEnchantments.NIGHT_VISION) && TameableUtils.isTamed(pet)) {
                 var owner = TameableUtils.getOwnerOf(pet);
-                if (owner.distanceToSqr(pet) < 10 && owner instanceof Player petOwner) {
+                if (owner != null && owner.distanceToSqr(pet) < 10 && owner instanceof Player petOwner) {
                     if (!petOwner.hasEffect(MobEffects.NIGHT_VISION) && pet.tickCount % 40 == 0) {
                         petOwner.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 20 * 60 * 5));
                     }
