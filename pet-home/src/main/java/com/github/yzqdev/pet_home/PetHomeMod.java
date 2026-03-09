@@ -22,7 +22,7 @@ public class PetHomeMod {
 
     public static final String MODID = "pet_home";
 
-    public static final Logger LOGGER = LogUtils.getLogger();
+    public static final PhModLogger LOGGER = PhModLogger.getInstance();
 
     public PetHomeMod(IEventBus modEventBus, ModContainer modContainer) {
 

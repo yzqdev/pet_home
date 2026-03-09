@@ -204,6 +204,7 @@
   "text.pet_home.health": "生命值",
   "text.pet_home.net_launcher_default_only_tamable": "默认只能捕捉可驯服的生物,可以在配置文件修改",
   "text.pet_home.net_launcher_tip": "[按住shift然后右击,可以切换释放和捕捉状态]",
+  "text.pet_home.network_failed": "网络错误",
   "text.pet_home.no_net_entity": "没有可以释放的生物球",
   "text.pet_home.releasing": "释放",
   "tooltips.pet_home.substitute_collar.desc": "[右击宠物佩戴项圈]",

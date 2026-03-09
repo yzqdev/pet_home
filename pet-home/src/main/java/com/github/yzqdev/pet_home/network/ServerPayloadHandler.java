@@ -1,6 +1,7 @@
 package com.github.yzqdev.pet_home.network;
 
 import com.github.yzqdev.pet_home.ModConstants;
+import com.github.yzqdev.pet_home.datagen.LangDefinition;
 import com.github.yzqdev.pet_home.util.CitadelEntityData;
 import com.mojang.logging.LogUtils;
 import net.minecraft.network.chat.Component;
@@ -29,7 +30,7 @@ public class ServerPayloadHandler {
                 })
                 .exceptionally(e -> {
                     // Handle exception
-                    context.disconnect(Component.translatable("my_mod.networking.failed", e.getMessage()));
+                    context.disconnect(Component.translatable(LangDefinition.network_failed, e.getMessage()));
                     return null;
                 });
     }

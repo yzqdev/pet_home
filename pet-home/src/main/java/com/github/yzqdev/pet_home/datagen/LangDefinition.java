@@ -1,43 +1,12 @@
 package com.github.yzqdev.pet_home.datagen;
 
-
-import com.github.yzqdev.pet_home.PetHomeMod;
-
-/**
- * @author yzqde
- * @date time 2024/12/29 11:19
- * @modified By:
- */
-public class LangDefinition {
-    public static String text(String name) {
-        return "text." + PetHomeMod.MODID + "." + name;
-
-    }
-
-    public static String conf(String name) {
-        return PetHomeMod.MODID + ".configuration." + name;
-    }
-
-    public static String gui(String number) {
-        return "gui." + PetHomeMod.MODID + "." + number;
-    }
-
-    public static String event(String name) {
-        return "event." + PetHomeMod.MODID + "." + name;
-    }
-
-    public static String effect(String name) {
-        return "effect." + PetHomeMod.MODID + "." + name;
-    }
-
-
-    public static class ConstantMsg {
-        public static String has_pet_bed_at_pos = LangDefinition.text("has_petbed_at_pos");
-        public static String capturing_text = LangDefinition.text("capturing");
-        public static String release_text = LangDefinition.text("releasing");
-        public static String health_text = LangDefinition.text("health");
-        public static String no_net_entity_text = LangDefinition.text("no_net_entity");
-        public static String net_launcher_tip = LangDefinition.text("net_launcher_tip");
-        public static String net_launcher_default_only_tamable = LangDefinition.text("net_launcher_default_only_tamable");
-    }
+public  interface LangDefinition {
+         String has_pet_bed_at_pos = LangUtil.text("has_petbed_at_pos");
+         String capturing_text = LangUtil.text("capturing");
+         String release_text = LangUtil.text("releasing");
+         String health_text = LangUtil.text("health");
+         String no_net_entity_text = LangUtil.text("no_net_entity");
+         String net_launcher_tip = LangUtil.text("net_launcher_tip");
+         String net_launcher_default_only_tamable = LangUtil.text("net_launcher_default_only_tamable");
+        String network_failed =LangUtil.text("network_failed") ;
 }

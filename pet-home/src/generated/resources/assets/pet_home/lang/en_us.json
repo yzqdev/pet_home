@@ -204,6 +204,7 @@
   "text.pet_home.health": "Health",
   "text.pet_home.net_launcher_default_only_tamable": "By default, only tamable mobs can be captured (configurable in settings file).",
   "text.pet_home.net_launcher_tip": "[Hold Shift + Right Click to toggle between Capture and Release modes]",
+  "text.pet_home.network_failed": "Network Failed",
   "text.pet_home.no_net_entity": "No creature available to release",
   "text.pet_home.releasing": "Release",
   "tooltips.pet_home.substitute_collar.desc": "[Right-click on pets to put a collar on them]",

@@ -2,6 +2,7 @@ package com.github.yzqdev.pet_home.server.item;
 
 import com.github.yzqdev.pet_home.PetHomeConfig;
 import com.github.yzqdev.pet_home.datagen.LangDefinition;
+import com.github.yzqdev.pet_home.datagen.LangUtil;
 import com.github.yzqdev.pet_home.server.PHDataComponents;
 import com.github.yzqdev.pet_home.server.entity.NetEntity;
 import com.github.yzqdev.pet_home.util.ItemMobTooltip;
@@ -139,11 +140,11 @@ public class NetItem extends Item {
                 String id = holder.getString("id");
                 EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(id));
                 tooltip.add(type.getDescription());
-                tooltip.add(Component.translatable(LangDefinition.ConstantMsg.health_text).append(": " + String.format("%.1f", (getEntityData(stack).getDouble("Health")))));
+                tooltip.add(Component.translatable(LangDefinition.health_text).append(": " + String.format("%.1f", (getEntityData(stack).getDouble("Health")))));
             }
         } else {
             super.appendHoverText(stack, context, tooltip, tooltipFlag);
-            tooltip.add(Component.translatable(LangDefinition.ConstantMsg.net_launcher_default_only_tamable).withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable(LangDefinition.net_launcher_default_only_tamable).withStyle(ChatFormatting.GRAY));
         }
 
     }

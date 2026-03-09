@@ -1,6 +1,7 @@
 package com.github.yzqdev.pet_home.server.item;
 
 import com.github.yzqdev.pet_home.datagen.LangDefinition;
+import com.github.yzqdev.pet_home.datagen.LangUtil;
 import com.github.yzqdev.pet_home.server.PHDataComponents;
 import com.github.yzqdev.pet_home.server.entity.NetEntity;
 import net.minecraft.ChatFormatting;
@@ -32,8 +33,8 @@ public class NetLauncherItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.translatable(LangDefinition.ConstantMsg.net_launcher_tip).withStyle(ChatFormatting.GREEN));
-        tooltipComponents.add(Component.translatable(LangDefinition.ConstantMsg.net_launcher_default_only_tamable).withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable(LangDefinition.net_launcher_tip).withStyle(ChatFormatting.GREEN));
+        tooltipComponents.add(Component.translatable(LangDefinition.net_launcher_default_only_tamable).withStyle(ChatFormatting.GRAY));
 
     }
 
@@ -71,7 +72,7 @@ public class NetLauncherItem extends Item {
                     } else {
                         ItemStack netWithEntityStack = this.findNet(player);
                         if (netWithEntityStack.isEmpty()) {
-                            player.sendSystemMessage(Component.translatable(LangDefinition.ConstantMsg.no_net_entity_text));
+                            player.sendSystemMessage(Component.translatable(LangDefinition.no_net_entity_text));
                             return;
                         }
 
@@ -154,8 +155,8 @@ public class NetLauncherItem extends Item {
 
     }
 
-    public static final Component CAPTURE = Component.translatable(LangDefinition.ConstantMsg.capturing_text).withStyle(ChatFormatting.GREEN);
-    public static final Component RELEASE = Component.translatable(LangDefinition.ConstantMsg.release_text).withStyle(ChatFormatting.RED);
+    public static final Component CAPTURE = Component.translatable(LangDefinition.capturing_text).withStyle(ChatFormatting.GREEN);
+    public static final Component RELEASE = Component.translatable(LangDefinition.release_text).withStyle(ChatFormatting.RED);
 
     @Override
     @Nonnull
