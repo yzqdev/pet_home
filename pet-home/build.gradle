@@ -124,10 +124,10 @@ dependencies {
     implementation("maven.modrinth:touhou-little-maid:1.4.0-neoforge+mc1.21.1")
 
     implementation("maven.modrinth:jade:15.9.1+neoforge")
-runtimeOnly("maven.modrinth:l_enders-cataclysm:3.16")
-runtimeOnly("maven.modrinth:lionfish-api:2.6")
-runtimeOnly("maven.modrinth:curios:9.5.1+1.21.1")
-
+    runtimeOnly("maven.modrinth:l_enders-cataclysm:3.16")
+    runtimeOnly("maven.modrinth:lionfish-api:2.6")
+    runtimeOnly("maven.modrinth:curios:9.5.1+1.21.1")
+    runtimeOnly("maven.modrinth:repurposed-structures-forge:7.5.18+1.21.1-neoforge")
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
