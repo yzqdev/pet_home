@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "com.github.yzqdev.pet_home.mixin",
+  "package": "com.github.yzqdev.pethome.mixin",
   "compatibilityLevel": "JAVA_21",
   "minVersion": "0.8",
   "client": [
@@ -12,7 +12,9 @@
     "FishingHookMixin",
     "FloatGoalMixin",
     "LivingEntityMixin",
-    "MobMixin"
+    "MobMixin",
+    "PlayerMixin",
+    "TameableAnimalMixin"
   ],
   "refmap": "pet_home.refmap.json",
   "injectors": {

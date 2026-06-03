@@ -14,10 +14,6 @@
         },
         {
           "condition": "neoforge:loot_table_id",
-          "loot_table_id": "minecraft:gameplay/fishing"
-        },
-        {
-          "condition": "neoforge:loot_table_id",
           "loot_table_id": "minecraft:chests/spawn_bonus_chest"
         }
       ]
