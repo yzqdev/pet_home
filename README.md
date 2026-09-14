@@ -23,7 +23,12 @@ With this mod installed, no more will your pets have to sit out battles, explora
 
 ### More tamable mobs
 - **Axolotl / Fox / Frog / Horse** can now be tamed (each one can be toggled in the config).
-- **Rabbit** can be tamed with a hay block; feed a tamed rabbit a **Sinister Carrot** to turn it into a Killer Bunny.
+  - **Axolotl** — feed a **Bucket of Tropical Fish** (or a **Tropical Fish**); 3 out of 4 attempts succeed.
+  - **Fox** — feed **Sweet Berries** to two foxes to breed them，then the baby fox is tamed.
+  - **Frog** — feed a **Spider Eye** (item tag `pet_home:tame_frogs_with`); 3 out of 4 attempts succeed.
+  - **Rabbit** — feed a **Hay Block**; 1 out of 2 attempts succeed.
+  - **Horse / Donkey / Mule / Llama** — tamed the vanilla way (keep mounting until it stops bucking you off); this mod turns them into full pets with collar enchants, pet beds and commands.
+- Feed a tamed rabbit a **Sinister Carrot** to turn it into a Killer Bunny.
 - Conversion chain: feed a **Rotten Apple** to a horse to turn it into a **Zombie Horse**, then a **Sinister Carrot** to turn it into a **Skeleton Horse**.
 - Pets support the **command system** (sit / follow / wander); the **Command Drum** block broadcasts the command to all of your pets nearby (also triggerable by redstone).
 
