@@ -32,6 +32,9 @@ public class ModRecipeProvider extends RecipeProvider implements IConditionBuild
 
         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "wayward_lantern"))).pattern("LLL").pattern("LIL").pattern(" L ").define('I', Items.LANTERN).define('L', Tags.Items.INGOTS_IRON)
                 .unlockedBy("has_craft", has(Items.CRAFTING_TABLE)).save(pWriter);
+        // 1.20 侧 drum.json 配方的移植（皮革 x3 + 木板 x3）
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, PHBlockRegistry.DRUM.get()).pattern("LLL").pattern("P P").pattern("PPP").define('L', Items.LEATHER).define('P', ItemTags.PLANKS)
+                .unlockedBy("has_craft", has(Items.CRAFTING_TABLE)).save(pWriter);
         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, PHItemRegistry.COLLAR_TAG.get()).pattern("I").pattern("C").define('I', Items.CHAIN).define('C', Tags.Items.INGOTS_COPPER)
                 .unlockedBy("has_craft", has(Items.CRAFTING_TABLE)).save(pWriter);
         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, PHItemRegistry.FEATHER_ON_A_STICK.get()).pattern("I ").pattern(" C").define('I', Items.FISHING_ROD).define('C', Tags.Items.FEATHERS)

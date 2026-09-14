@@ -53,6 +53,7 @@ public abstract class LivingEntityMixin extends Entity implements IPetbedDataEnt
             method = {"addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void citadel_writeAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
+
         CompoundTag citadelDat = this.getCitadelEntityData();
         if (citadelDat != null) {
             compoundNBT.put(PHConstants.entitySyncData, citadelDat);
@@ -63,7 +64,7 @@ public abstract class LivingEntityMixin extends Entity implements IPetbedDataEnt
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/LivingEntity;readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
+            method = {"readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void citadel_readAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
         if (compoundNBT.contains(PHConstants.entitySyncData)) {

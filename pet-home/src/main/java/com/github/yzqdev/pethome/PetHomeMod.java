@@ -5,6 +5,7 @@ import com.github.yzqdev.pethome.server.PHDataComponents;
 import com.github.yzqdev.pethome.server.block.PHBlockRegistry;
 import com.github.yzqdev.pethome.server.block.PHTileEntityRegistry;
 import com.github.yzqdev.pethome.server.entity.PHEntityRegistry;
+import com.github.yzqdev.pethome.server.entity.PHActivityRegistry;
 import com.github.yzqdev.pethome.server.entity.PHVillagerRegistry;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 import com.github.yzqdev.pethome.server.misc.*;
@@ -29,6 +30,7 @@ public class PetHomeMod {
 
         PHPOIRegistry.DEF_REG.register(modEventBus);
         PHVillagerRegistry.DEF_REG.register(modEventBus);
+        PHActivityRegistry.DEF_REG.register(modEventBus);
         PHSoundRegistry.DEF_REG.register(modEventBus);
         PHDataComponents.DATA_COMPONENT_TYPES.register(modEventBus);
         PHTileEntityRegistry.DEF_REG.register(modEventBus);

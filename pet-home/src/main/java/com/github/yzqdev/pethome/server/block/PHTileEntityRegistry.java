@@ -13,10 +13,9 @@ public class PHTileEntityRegistry {
     public static final DeferredRegister<BlockEntityType<?>> DEF_REG = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, PetHomeMod.MODID);
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PetBedBlockEntity>> PET_BED = DEF_REG.register("pet_bed", () -> build(BlockEntityType.Builder.of(PetBedBlockEntity::new, PHBlockRegistry.PET_BED_BLOCKS.values().stream().map(DeferredHolder::get).toArray(Block[]::new)
     )));
-    //    public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<DrumBlockEntity>> DRUM = DEF_REG.register("drum", () -> build(BlockEntityType.Builder.of(DrumBlockEntity::new,
-//            DIBlockRegistry.DRUM.get()
-//    )));
-//
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DrumBlockEntity>> DRUM = DEF_REG.register("drum", () -> build(BlockEntityType.Builder.of(DrumBlockEntity::new,
+            PHBlockRegistry.DRUM.get()
+    )));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WaywardLanternBlockEntity>> WAYWARD_LANTERN = DEF_REG.register("wayward_lantern", () -> build(BlockEntityType.Builder.of(WaywardLanternBlockEntity::new,
             PHBlockRegistry.WAYWARD_LANTERN.get()
     )));

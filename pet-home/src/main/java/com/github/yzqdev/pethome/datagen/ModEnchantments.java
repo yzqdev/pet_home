@@ -342,7 +342,7 @@ public class ModEnchantments {
         register(context, BLAZING_PROTECTION, Enchantment.enchantment(Enchantment.definition(
                 items.getOrThrow(ModTags.COLLAR_TAG_tagkey),
                 5,
-                1,
+                3,
                 Enchantment.dynamicCost(4, 7),
                 Enchantment.dynamicCost(25, 7),
                 2)).exclusiveWith(checkCompatible(enchantments, IMMUNITY_FRAME, DEFLECTION, AMPHIBIOUS, FROST_FANG, SHADOW_HANDS))

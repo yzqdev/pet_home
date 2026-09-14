@@ -28,6 +28,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
+import static com.github.yzqdev.pethome.server.event.ServerEvent.canTickCollar;
+
 import java.util.List;
 import java.util.Random;
 
@@ -37,7 +39,7 @@ public class EntityTickHandler {
     public static void onLivingUpdate( EntityTickEvent.Pre event) {
         var entity = event.getEntity();
 
-        if (entity instanceof Mob pet) {
+        if (entity instanceof Mob pet && canTickCollar(entity)) {
             mobTick(event, pet);
 
             // 1. 基础状态与生存类附魔

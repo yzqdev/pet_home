@@ -35,6 +35,8 @@ public class DataGenerators {
         var blockTagProvider = new ModBlockTagsProvider(packOutput, lookupProvider, PetHomeMod.MODID, existingFileHelper);
         generator.addProvider(event.includeServer(), blockTagProvider);
         generator.addProvider(event.includeServer(), new ModRecipeProvider(packOutput, lookupProvider));
+        // 方块状态/方块模型 provider 须先于 ModItemProvider 注册（鼓的物品模型引用其方块模型）
+        generator.addProvider(event.includeServer(), new ModBlockStateProvider(packOutput, existingFileHelper));
         generator.addProvider(event.includeServer(), new ModItemProvider(packOutput, existingFileHelper));
         generator.addProvider(event.includeServer(), new ModPoiTagProvider(packOutput, lookupProvider, existingFileHelper));
 

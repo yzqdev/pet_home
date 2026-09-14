@@ -1,7 +1,12 @@
 package com.github.yzqdev.pethome.util;
 
 import com.github.yzqdev.pethome.PHConstants;
+import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
+import net.minecraft.world.entity.animal.Fox;
+import net.minecraft.world.entity.animal.Rabbit;
+import net.minecraft.world.entity.animal.axolotl.Axolotl;
+import net.minecraft.world.entity.animal.frog.Frog;
 import com.github.yzqdev.pethome.datagen.ModEnchantments;
 import com.github.yzqdev.pethome.network.PropertiesMessage;
 import com.github.yzqdev.pethome.server.entity.HighlightedBlockEntity;
@@ -104,7 +109,7 @@ public class TameableUtils {
     }
 
     public static boolean shouldUnloadToLantern(LivingEntity tameable) {
-        if (tameable instanceof IComandableMob commandableMob) {
+        if (PetHomeConfig.trinaryCommandSystem && tameable instanceof IComandableMob commandableMob) {
             return commandableMob.getCommand() == 2;
         } else {
             CompoundTag tag = new CompoundTag();
@@ -137,7 +142,31 @@ public class TameableUtils {
     }
 
     public static boolean isTamed(Entity entity) {
-
+        //sometimes these are not bound on runtime
+        if (entity instanceof Axolotl) {
+            if (entity instanceof ModifedToBeTameable modifedToBeTameable) {
+                return modifedToBeTameable.isTame() && PetHomeConfig.tameableAxolotl;
+            }
+            return false;
+        }
+        if (entity instanceof Fox) {
+            if (entity instanceof ModifedToBeTameable modifedToBeTameable) {
+                return modifedToBeTameable.isTame() && PetHomeConfig.tameableFox;
+            }
+            return false;
+        }
+        if (entity instanceof Rabbit) {
+            if (entity instanceof ModifedToBeTameable modifedToBeTameable) {
+                return modifedToBeTameable.isTame() && PetHomeConfig.tameableRabbit;
+            }
+            return false;
+        }
+        if (entity instanceof Frog) {
+            if (entity instanceof ModifedToBeTameable modifedToBeTameable) {
+                return modifedToBeTameable.isTame() && PetHomeConfig.tameableFrog;
+            }
+            return false;
+        }
         return entity instanceof ModifedToBeTameable && ((ModifedToBeTameable) entity).isTame() || entity instanceof TamableAnimal && ((TamableAnimal) entity).isTame();
     }
 

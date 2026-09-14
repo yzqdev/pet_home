@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = EntityMaid.class)
 public abstract class EntityMaidMixin {
-    @Inject(at = {@At("HEAD")}, method = {"dropEquipment"}, cancellable = true)
+    @Inject(at = {@At("HEAD")}, method = {"dropEquipment"}, cancellable = true, require = 0)
     public void drop(CallbackInfo ci) {
         if (PetBedDrop.hasPetBedPos((EntityMaid) ((Object) (this)))) {
             ci.cancel();

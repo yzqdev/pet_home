@@ -1,6 +1,7 @@
 package com.github.yzqdev.pethome.server.block;
 
 
+import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.server.misc.PHWorldData;
 import com.github.yzqdev.pethome.server.misc.RespawnRequest;
 import com.github.yzqdev.pethome.util.IComandableMob;

@@ -65,6 +65,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameRules;
+import net.minecraft.world.entity.EntitySelector;
+import net.minecraft.world.entity.ai.goal.AvoidEntityGoal;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
@@ -168,8 +170,60 @@ public class ServerEvent {
         }
     }
 
-    @SubscribeEvent
+        private static final Map<Level, CollarTickTracker> COLLAR_TICK_TRACKER_MAP = new HashMap<>();
+
+
+
+        /** 项圈刚被取下/装备后短时间内不再 tick（自 1.20 移植） */
+
+
+        public static boolean canTickCollar(Entity entity) {
+
+
+            if (entity.level().isClientSide()) {
+
+
+                return true;
+
+
+            }
+
+
+            CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.get(entity.level());
+
+
+            return tracker == null || !tracker.isEntityBlocked(entity);
+
+
+        }
+
+
+
+        public static void blockCollarTick(Entity entity) {
+
+
+            if (!entity.level().isClientSide()) {
+
+
+                CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.computeIfAbsent(entity.level(), k -> new CollarTickTracker());
+
+
+                tracker.addBlockedEntityTick(entity.getUUID(), 5);
+
+
+            }
+
+
+        }
+
+
+
+        @SubscribeEvent
     public static void onServerTick(LevelTickEvent.Post tick) {
+        if (!tick.getLevel().isClientSide()) {
+            CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.computeIfAbsent(tick.getLevel(), k -> new CollarTickTracker());
+            tracker.tick();
+        }
         if (tick.getLevel().getGameTime() % 10 != 0) return;
         if (!tick.getLevel().isClientSide() && tick.getLevel() instanceof ServerLevel) {
             for (var player : tick.getLevel().players()) {

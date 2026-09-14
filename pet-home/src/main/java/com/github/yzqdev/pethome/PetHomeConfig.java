@@ -68,6 +68,14 @@ public class PetHomeConfig {
     ;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> PLAYER_CANT_HURT_ENTITY = BUILDER.comment("entities player cant hurt").defineListAllowEmpty("player_cant_hurt_entity", List.of(), () -> "", PetHomeConfig::validateEntityTypesName);
     ;
+    private static final ModConfigSpec.BooleanValue TAMEABLE_AXOLOTL = BUILDER.comment("true if axolotls are fully tameable (axolotl must be tamed with tropical fish)").define("tameable_axolotls", true);
+    private static final ModConfigSpec.BooleanValue TAMEABLE_FOX = BUILDER.comment("true if foxes are fully tameable (fox must be tamed with sweet berries)").define("tameable_fox", true);
+    private static final ModConfigSpec.BooleanValue TAMEABLE_FROG = BUILDER.comment("true if frogs are fully tameable (frog must be tamed with spider eyes)").define("tameable_frog", true);
+    private static final ModConfigSpec.BooleanValue TAMEABLE_HORSE = BUILDER.comment("true if horses are fully tameable").define("tameable_horse", true);
+    private static final ModConfigSpec.BooleanValue TAMEABLE_RABBIT = BUILDER.comment("true if rabbits are fully tameable (rabbit must be tamed with carrots)").define("tameable_rabbit", true);
+    private static final ModConfigSpec.BooleanValue TRINARY_COMMAND_SYSTEM = BUILDER.comment("true if the trinary command system (wander/follow/stay) is enabled").define("trinary_command_system", true);
+    private static final ModConfigSpec.BooleanValue PET_BED_RESPAWNS = BUILDER.comment("true if mobs can respawn in pet beds the next morning after they die").define("pet_bed_respawns", true);
+    private static final ModConfigSpec.BooleanValue RABBITS_SCARE_RAVAGERS = BUILDER.comment("true if rabbits scare ravagers like they used to do").define("rabbits_scare_ravagers", true);
     static final ModConfigSpec SPEC = BUILDER.build();
 
     private static boolean validateEntityTypesName(Object obj) {
@@ -107,6 +115,15 @@ public class PetHomeConfig {
     public static Set<Item> canHurtPetItem;
     public static Set<Item> canHurtAllItem;
     public static boolean mobcatcherOnlyTamableAnimal;
+    // 自 1.20 移植的功能开关
+    public static boolean tameableAxolotl = true;
+    public static boolean tameableFox = true;
+    public static boolean tameableFrog = true;
+    public static boolean tameableHorse = true;
+    public static boolean tameableRabbit = true;
+    public static boolean trinaryCommandSystem = true;
+    public static boolean petBedRespawns = true;
+    public static boolean rabbitsScareRavagers = true;
     public static Set<EntityType<?>> mobcatcherBlackList;
 
     @SubscribeEvent
@@ -131,6 +148,14 @@ public class PetHomeConfig {
         sonicBoomLootChance = SONIC_BOOM_LOOT_CHANCE.get();
         paralysisLootChance = PARALYSIS_LOOT_CHANCE.get();
         toughLootChance = TOUGH_LOOT_CHANCE.get();
+        tameableAxolotl = TAMEABLE_AXOLOTL.get();
+        tameableFox = TAMEABLE_FOX.get();
+        tameableFrog = TAMEABLE_FROG.get();
+        tameableHorse = TAMEABLE_HORSE.get();
+        tameableRabbit = TAMEABLE_RABBIT.get();
+        trinaryCommandSystem = TRINARY_COMMAND_SYSTEM.get();
+        petBedRespawns = PET_BED_RESPAWNS.get();
+        rabbitsScareRavagers = RABBITS_SCARE_RAVAGERS.get();
         blazingProtectionLootChance = BLAZING_PROTECTION_LOOT_CHANCE.get();
 
         noProtectionEntity = (NO_PROTECTION_ENTITY.get()).stream().map((entityTypeName) -> BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(entityTypeName))).collect(Collectors.toSet());

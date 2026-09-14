@@ -1,6 +1,8 @@
 package com.github.yzqdev.pethome.server.event;
 
+import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
+import com.github.yzqdev.pethome.util.IComandableMob;
 import com.github.yzqdev.pethome.datagen.ModEnchantments;
 import com.github.yzqdev.pethome.server.PHDataComponents;
 import com.github.yzqdev.pethome.server.item.NetItem;
@@ -24,6 +26,9 @@ import net.minecraft.world.entity.animal.horse.ZombieHorse;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.server.level.ServerLevel;
+import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -60,9 +65,18 @@ public class PlayerInteractEntityHandler {
             if (handleDeedOfOwnership(event, player, hand, target, itemstack)) return;
         }
 
+        // 兔子驯服/指令 (自 1.20 移植)——必须在 isPetOf 门之外：
+        // 干草块驯服针对野兔（没有主人，isPetOf 恒 false），嵌进门内会导致驯服永远无法触发
+        if (target instanceof Rabbit rabbit && PetHomeConfig.tameableRabbit) {
+            if (handleRabbitHayBlock(event, player, rabbit, itemstack)) return;
+            if (TameableUtils.isTamed(rabbit) && TameableUtils.isPetOf(player, rabbit)) {
+                ((IComandableMob) rabbit).playerSetCommand(player, rabbit);
+            }
+        }
+
         // 3. 实体转换逻辑 (马变僵尸、兔子变邪恶、僵尸马变骷髅马)
         if (target instanceof LivingEntity living) {
-            handleEntityConversions(player, hand, living, itemstack);
+            handleEntityConversions(event, player, hand, living, itemstack);
         }
     }
 
@@ -151,6 +165,7 @@ public class PlayerInteractEntityHandler {
                     living.spawnAtLocation(collarFrom);
                 }
 
+                ServerEvent.blockCollarTick(living);
                 living.playSound(PHSoundRegistry.COLLAR_TAG.get(), 1, 1);
                 TameableUtils.clearEnchants(living);
                 if (!itemEnchantments.isEmpty()) {
@@ -186,24 +201,49 @@ public class PlayerInteractEntityHandler {
     /**
      * 汇总处理实体的转换（进化/变异）逻辑
      */
-    private static void handleEntityConversions(Player player, InteractionHand hand, LivingEntity living, ItemStack itemstack) {
+    /**
+     * 汇总处理实体的转换（进化/变异）逻辑。
+     * 转换只在这里做：转换完成后必须取消事件，否则原版 interactOn 会继续走
+     * Item.interactLivingEntity（历史双马根因——物品类里曾有一份重复转换逻辑，已删除）。
+     * 客户端只做挥手反馈并取消事件，避免客户端预测开始进食。
+     */
+    private static void handleEntityConversions(PlayerInteractEvent.EntityInteract event, Player player, InteractionHand hand, LivingEntity living, ItemStack itemstack) {
+        boolean clientSide = living.level().isClientSide();
         // 马 -> 僵尸马 (烂苹果)
         if (living.getType() == EntityType.HORSE && itemstack.is(PHItemRegistry.ROTTEN_APPLE)) {
             if (EventHooks.canLivingConvert(living, EntityType.ZOMBIE_HORSE, (timer) -> {})) {
-                convertHorseToZombie(player, hand, (Horse) living, itemstack);
+                if (clientSide) {
+                    player.swing(hand);
+                } else {
+                    convertHorseToZombie(player, hand, (Horse) living, itemstack);
+                }
+                event.setCanceled(true);
+                event.setCancellationResult(clientSide ? InteractionResult.CONSUME : InteractionResult.SUCCESS);
             }
         }
         // 兔子 -> 邪恶兔子 (阴森胡萝卜)
         else if (living.getType() == EntityType.RABBIT && itemstack.is(PHItemRegistry.SINISTER_CARROT)) {
             if (TameableUtils.isTamed(living) && TameableUtils.isPetOf(player, living) &&
                     EventHooks.canLivingConvert(living, EntityType.RABBIT, (timer) -> {})) {
-                convertRabbitToEvil(player, hand, (Rabbit) living, itemstack);
+                if (clientSide) {
+                    player.swing(hand);
+                } else {
+                    convertRabbitToEvil(player, hand, (Rabbit) living, itemstack);
+                }
+                event.setCanceled(true);
+                event.setCancellationResult(clientSide ? InteractionResult.CONSUME : InteractionResult.SUCCESS);
             }
         }
         // 僵尸马 -> 骷髅马 (阴森胡萝卜)
         else if (living.getType() == EntityType.ZOMBIE_HORSE && itemstack.is(PHItemRegistry.SINISTER_CARROT)) {
             if (EventHooks.canLivingConvert(living, EntityType.SKELETON_HORSE, (timer) -> {})) {
-                convertZombieToSkeletonHorse(player, hand, (ZombieHorse) living, itemstack);
+                if (clientSide) {
+                    player.swing(hand);
+                } else {
+                    convertZombieToSkeletonHorse(player, hand, (ZombieHorse) living, itemstack);
+                }
+                event.setCanceled(true);
+                event.setCancellationResult(clientSide ? InteractionResult.CONSUME : InteractionResult.SUCCESS);
             }
         }
     }
@@ -291,5 +331,49 @@ public class PlayerInteractEntityHandler {
         if (!player.isCreative()) {
             stack.shrink(1);
         }
+    }
+    /**
+     * 兔子驯服/治疗：干草块驯服兔子（自 1.20 移植）
+     */
+    private static boolean handleRabbitHayBlock(PlayerInteractEvent.EntityInteract event, Player player, Rabbit rabbit, ItemStack stack) {
+        if (stack.getItem() == Items.HAY_BLOCK) {
+            if (TameableUtils.isTamed(rabbit) && rabbit.getHealth() < rabbit.getMaxHealth()) {
+                rabbit.heal(3);
+                if (!event.getEntity().isCreative()) {
+                    stack.shrink(1);
+                }
+                event.setCanceled(true);
+                event.setCancellationResult(InteractionResult.SUCCESS);
+                return true;
+            }
+            if (!TameableUtils.isTamed(rabbit) && !rabbit.level().isClientSide()) {
+                if (!event.getEntity().isCreative()) {
+                    stack.shrink(1);
+                }
+                rabbit.playSound(SoundEvents.FOX_EAT);
+                if (rabbit.getRandom().nextBoolean()) {
+                    for (int i = 0; i < 3; ++i) {
+                        double d0 = rabbit.getRandom().nextGaussian() * 0.02D;
+                        double d1 = rabbit.getRandom().nextGaussian() * 0.02D;
+                        double d2 = rabbit.getRandom().nextGaussian() * 0.02D;
+                        ((ServerLevel) rabbit.level()).sendParticles(ParticleTypes.HEART, rabbit.getRandomX(1.0D), rabbit.getRandomY() + 0.5D, rabbit.getRandomZ(1.0D), 3, d0, d1, d2, 0.02F);
+                    }
+                    ((ModifedToBeTameable) rabbit).setTame(true);
+                    ((ModifedToBeTameable) rabbit).setTameOwnerUUID(player.getUUID());
+                    ((IComandableMob) rabbit).setCommand(1);
+                } else {
+                    for (int i = 0; i < 3; ++i) {
+                        double d0 = rabbit.getRandom().nextGaussian() * 0.02D;
+                        double d1 = rabbit.getRandom().nextGaussian() * 0.02D;
+                        double d2 = rabbit.getRandom().nextGaussian() * 0.02D;
+                        ((ServerLevel) rabbit.level()).sendParticles(ParticleTypes.SMOKE, rabbit.getRandomX(1.0D), rabbit.getRandomY() + 0.5D, rabbit.getRandomZ(1.0D), 3, d0, d1, d2, 0.02F);
+                    }
+                }
+                event.setCanceled(true);
+                event.setCancellationResult(InteractionResult.SUCCESS);
+                return true;
+            }
+        }
+        return false;
     }
 }

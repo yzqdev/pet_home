@@ -22,6 +22,8 @@ public class PHBlockRegistry {
 
     public static final DeferredHolder<Block, Block> WAYWARD_LANTERN = registerBlockAndItem("wayward_lantern", () -> new WaywardLanternBlock());
 
+    public static final DeferredHolder<Block, Block> DRUM = registerBlockAndItem("drum", DrumBlock::new);
+
     public static DeferredHolder<Block, Block> registerBlockAndItem(String name, Supplier<Block> block) {
         DeferredHolder<Block, Block> blockObj = DEF_REG.register(name, block);
         PHItemRegistry.DEF_REG.register(name, () -> new DIBlockItem(blockObj, new Item.Properties()));

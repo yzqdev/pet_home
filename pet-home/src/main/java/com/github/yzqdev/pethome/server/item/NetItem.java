@@ -37,6 +37,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -110,7 +111,8 @@ public class NetItem extends Item {
         return super.interactLivingEntity(stack, player, target, hand);
     }
 
-    static Set<String> warned;
+    // 已警告过的解析失败实体名，避免每帧 getName 刷日志；三侧原版均未初始化（NPE），此处补上
+    static Set<String> warned = new HashSet<>();
 
     @Override
     public boolean onEntityItemUpdate(ItemStack stack, ItemEntity entity) {

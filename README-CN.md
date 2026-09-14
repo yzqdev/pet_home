@@ -1,0 +1,79 @@
+# Pet Home 
+
+[English](https://github.com/yzqdev/pet_home/blob/1.21.1/README.md) | [简体中文](https://github.com/yzqdev/pet_home/blob/1.21.1/README.md)
+
+本模组是 [Domestication Innovation（驯养革新）](https://modrinth.com/mod/domestication-innovation)的非官方高版本重制版（原模组似乎已停止维护），包含优化、新内容与重写。它与原模组并不完全相同，原模组的新功能不保证全部移植。
+
+
+相关链接：[原版 CurseForge](https://www.curseforge.com/minecraft/mc-mods/domestication-innovation) | [原版 Modrinth](https://modrinth.com/mod/domestication-innovation)
+
+## 简介
+
+Pet Home 的创建只有一个目标：让 Minecraft 中可驯服的生物不仅有用、有趣，更让"驯服生物"成为一种值得选择的玩法——大幅改进驯服生物的行为方式与世界的交互。我们不仅扩展了原版中可驯服的生物种类，还修复了这些生物的诸多问题，新增了大量提升驯服体验的物品与方块，并引入了全新的**宠物附魔系统**。这些改动对原版生物和其他模组新增的可驯服生物同样生效。
+
+安装本模组后，你的宠物再也不用宅在家里看戏——它们可以放心地陪你战斗、探索，不必担心永久失去它们，也不必担心它们被其他生物或模组宠物完全碾压。
+
+## 功能列表
+
+- 新增可附魔的项圈。
+- 不同的附魔项圈赋予宠物不同的能力。
+- 玩家不会伤害宠物和幼年生物。
+- 新增出售附魔与宠物物品的村民。
+
+## 功能总览
+
+### 更多可驯服生物
+- 现在可以驯服**美西螈 / 狐狸 / 青蛙 / 马**（每种都可在配置中开关）。
+- **兔子**可以用干草块驯服；给已驯服的兔子喂**阴恶胡萝卜**可将其变为杀手兔。
+- 转换链：给马喂**烂苹果**变成**僵尸马**，再喂**阴恶胡萝卜**变成**骷髅马**。
+- 宠物支持**三态指令**（坐下 / 跟随 / 自由活动）；**指挥鼓**方块可以把指令广播给周围你的所有宠物（支持红石触发）。
+
+### 宠物项圈与 40 种宠物附魔
+合成**项圈**给宠物戴上，再对宠物使用宠物附魔书即可附加附魔。40 种宠物附魔包括：
+
+- **战斗类**：连锁闪电、冲击波、暗影之手、心理墙、磁性、类吸血鬼、冰霜利齿、幻影移形、麻痹、混乱之脑、暴力、平摊、恐吓
+- **生存类**：额外生命、稳固、防火、免疫屏障、偏转、火焰保护、抗毒、冒泡、虚空之云、全面召回、生命虹吸、治疗之息、恢复生命、两栖化
+- **实用类**：瞬速行者、夜视、物品栏关联、经验转移、矿物之味、群集、贪吃、洞察、爆炸无效
+- **诅咒类**：枯萎诅咒、恶名诅咒、变小诅咒
+
+### 物品与方块
+- **宠物床**（16 种颜色）：宠物的家，记住它们归宿的位置。
+- **迷途灯笼**：走远或被卸载的宠物会被传送回灯笼旁边。
+- **羽毛钓竿**：用法类似钓竿，但可以把宠物"钓"回身边。
+- **捕网 / 捕网发射器**：捕捉生物并放到你想放的地方。
+- **契约**：转让（或解除）宠物的主人关系。
+- **指挥鼓**：向附近的宠物广播坐下 / 跟随 / 自由活动指令，支持红石控制。
+- **烂苹果 / 阴恶胡萝卜**：生物转换物品，见上文。
+
+### 驯兽师村民
+全新村民职业，共 5 个等级，出售宠物附魔书与宠物物品（本模组的附魔书由驯兽师出售，而不是图书匠）。
+
+### 友好保护系统
+主人不能伤害自己的宠物、宠物之间不能互相伤害、幼年生物受保护、尊重队伍规则——每条规则都是独立的配置项，还提供可配置的物品/生物黑白名单。
+
+### 兼容性
+- [Jade](https://modrinth.com/mod/jade)：在提示框中显示宠物的主人 / 指令信息。
+- [车万女仆 Touhou Little Maid](https://www.curseforge.com/minecraft/mc-mods/touhou-little-maid) 联动。
+
+### 配置
+- 游戏内完整设置界面（模组列表"配置"按钮或 `/pet_home_config` 命令，仅 1.20.1），或手动编辑 `config/pet_home.toml`。
+- 本模组同时维护 **Forge 1.20.1 / NeoForge 1.21.1 / NeoForge 26.1** 三个版本，功能保持一致。
+
+## 与原模组的区别
+- 移除 Citadel 依赖，不再需要安装 Citadel
+- 全新的友好保护（友军伤害）系统
+  ![friendly fire](https://cdn.modrinth.com/data/cached_images/029b2f2060ef7b4134e149e60920eaafde7a5c1b_0.webp)
+- [Jade](https://modrinth.com/mod/jade) 集成与[车万女仆](https://modrinth.com/mod/touhou-little-maid)集成
+- 全新的设置界面
+  ![config screen](https://cdn.modrinth.com/data/cached_images/1333f626af50bfd15233076c8b0e9c1a29e4ea1b_0.webp)
+- 7 本新的附魔书
+- 模组附魔书由驯兽师出售而不是图书匠
+
+## 计划添加的内容
+
+- 宠物指南针（pet compass）
+
+## 游戏截图
+![has petbed](https://cdn.modrinth.com/data/cached_images/ec137249f938c6170a7cc6fa85d66d76339d44d4.png)
+![hand](https://cdn.modrinth.com/data/cached_images/ad532a01c32a3ae172bcd7bf4776fc376e212502.png)
+![sonic boom](https://cdn.modrinth.com/data/cached_images/7d7f37f8120281c14b6aeec0da54334fc015bbb9.jpeg)

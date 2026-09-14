@@ -1,5 +1,6 @@
 package com.github.yzqdev.pethome.server.block;
 
+import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
 import com.github.yzqdev.pethome.server.misc.PHTagRegistry;
 import com.github.yzqdev.pethome.util.TameableUtils;
@@ -47,7 +48,7 @@ public class PetBedBlock extends BaseEntityBlock {
     }
 
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-        if (TameableUtils.isTamed(entity) && !entity.getType().is(PHTagRegistry.REFUSES_PET_BEDS) && !level.isClientSide()) {
+        if (TameableUtils.isTamed(entity) && !entity.getType().is(PHTagRegistry.REFUSES_PET_BEDS) && !level.isClientSide() && PetHomeConfig.petBedRespawns) {
             if ((entity.tickCount + entity.getId()) % 10 == 0 && random.nextInt(6) == 0) {
                 TameableUtils.setPetBedPos((LivingEntity) entity, pos);
                 TameableUtils.setPetBedDimension((LivingEntity) entity, level.dimension().toString());

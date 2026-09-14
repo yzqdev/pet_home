@@ -7,6 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.client.model.generators.ItemModelBuilder;
 import net.neoforged.neoforge.client.model.generators.ItemModelProvider;
+import net.neoforged.neoforge.client.model.generators.ModelFile;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import net.neoforged.neoforge.registries.DeferredItem;
 
@@ -30,6 +31,10 @@ public class ModItemProvider extends ItemModelProvider {
         handheldItem(PHItemRegistry.NET_ITEM.get());
 
         handheldItem(PHItemRegistry.NET_HAS_ITEM.get());
+
+        // 指挥鼓：物品模型复用 ModBlockStateProvider 生成的方块模型（UncheckedModelFile 跨 provider 引用）
+        getBuilder("drum").parent(new ModelFile.UncheckedModelFile(
+                ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "block/drum_wander")));
 
     }
 

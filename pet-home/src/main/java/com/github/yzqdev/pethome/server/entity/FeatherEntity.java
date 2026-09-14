@@ -1,5 +1,6 @@
 package com.github.yzqdev.pethome.server.entity;
 
+import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.util.IComandableMob;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -133,7 +134,7 @@ public class FeatherEntity extends FishingHook {
         if (entity instanceof TamableAnimal && (((TamableAnimal) entity).isOrderedToSit() || ((TamableAnimal) entity).isInSittingPose())) {
             return false;
         }
-        if (entity instanceof IComandableMob && ((IComandableMob) entity).getCommand() == 1) {
+        if (entity instanceof IComandableMob && ((IComandableMob) entity).getCommand() == 1 && PetHomeConfig.trinaryCommandSystem) {
             return false;
         }
         return true;
