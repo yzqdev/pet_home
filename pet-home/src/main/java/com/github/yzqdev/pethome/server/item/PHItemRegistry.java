@@ -17,6 +17,7 @@ public class PHItemRegistry {
     public static final RegistryObject<Item> DEFLECTION_SHIELD = DEF_REG.register("deflection_shield", () -> new InventoryOnlyItem(new Item.Properties()));
     public static final RegistryObject<Item> MAGNET = DEF_REG.register("magnet", () -> new InventoryOnlyItem(new Item.Properties()));
     public static final RegistryObject<Item> DEED_OF_OWNERSHIP = DEF_REG.register("deed_of_ownership", () -> new DeedOfOwnershipItem());
+    public static final RegistryObject<Item> PET_COMPASS = DEF_REG.register("pet_compass", () -> new PetCompassItem());
     public static RegistryObject<Item> NET_ITEM = DEF_REG.register("net", () -> new NetItem(Type.EMPTY));
     public static RegistryObject<Item> NET_HAS_ITEM = DEF_REG.register("net_has_item", () -> new NetItem(Type.HAS_MOB));
     public static RegistryObject<Item> NET_LAUNCHER_ITEM = DEF_REG.register("net_launcher", () -> new NetLauncherItem(new Item.Properties().durability(60)));

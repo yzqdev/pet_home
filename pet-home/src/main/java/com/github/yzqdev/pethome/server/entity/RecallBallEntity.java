@@ -1,5 +1,7 @@
 package com.github.yzqdev.pethome.server.entity;
 
+import com.github.yzqdev.pethome.server.NbtKeys;
+
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -103,7 +105,7 @@ public class RecallBallEntity extends Entity {
             this.setPos(this.getX(), level().getMinBuildHeight() + 1.2F, this.getZ());
         }
         if(this.entityData.get(OPENED) && openProgress >= 1F && !this.isFinished()){
-            if(!level().isClientSide){
+            if(!level().isClientSide()){
                 EntityType type = ForgeRegistries.ENTITY_TYPES.getValue( ResourceLocation.parse(this.getContainedEntityType()));
                 if(type != null){
                     Entity entity = type.create(level());
@@ -139,10 +141,10 @@ public class RecallBallEntity extends Entity {
     @Override
     protected void readAdditionalSaveData(CompoundTag compoundNBT) {
         UUID uuid;
-        if (compoundNBT.hasUUID("Owner")) {
-            uuid = compoundNBT.getUUID("Owner");
+        if (compoundNBT.hasUUID(NbtKeys.OWNER)) {
+            uuid = compoundNBT.getUUID(NbtKeys.OWNER);
         } else {
-            String s = compoundNBT.getString("Owner");
+            String s = compoundNBT.getString(NbtKeys.OWNER);
             uuid = OldUsersConverter.convertMobOwnerIfNecessary(this.getServer(), s);
         }
 
@@ -152,21 +154,21 @@ public class RecallBallEntity extends Entity {
             } catch (Throwable throwable) {
             }
         }
-        this.setContainedEntityType(compoundNBT.getString("ContainedEntityType"));
-        if (!compoundNBT.getCompound("ContainedData").isEmpty()) {
-            this.setContainedData(compoundNBT.getCompound("ContainedData"));
+        this.setContainedEntityType(compoundNBT.getString(NbtKeys.CONTAINED_ENTITY_TYPE));
+        if (!compoundNBT.getCompound(NbtKeys.CONTAINED_DATA).isEmpty()) {
+            this.setContainedData(compoundNBT.getCompound(NbtKeys.CONTAINED_DATA));
         }
-        this.entityData.set(FINISHED, compoundNBT.getBoolean("Finished"));
+        this.entityData.set(FINISHED, compoundNBT.getBoolean(NbtKeys.FINISHED));
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag compoundNBT) {
         if (this.getOwnerUUID() != null) {
-            compoundNBT.putUUID("Owner", this.getOwnerUUID());
+            compoundNBT.putUUID(NbtKeys.OWNER, this.getOwnerUUID());
         }
-        compoundNBT.putString("ContainedEntityType", this.getContainedEntityType());
-        compoundNBT.put("ContainedData", this.getContainedData());
-        compoundNBT.putBoolean( "Finished", this.isFinished());
+        compoundNBT.putString(NbtKeys.CONTAINED_ENTITY_TYPE, this.getContainedEntityType());
+        compoundNBT.put(NbtKeys.CONTAINED_DATA, this.getContainedData());
+        compoundNBT.putBoolean( NbtKeys.FINISHED, this.isFinished());
     }
 
     @Nullable

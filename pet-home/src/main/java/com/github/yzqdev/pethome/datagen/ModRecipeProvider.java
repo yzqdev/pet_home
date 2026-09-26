@@ -32,5 +32,8 @@ public class ModRecipeProvider extends RecipeProvider implements IConditionBuild
 
         ShapedRecipeBuilder.shaped(RecipeCategory.BUILDING_BLOCKS, PHItemRegistry.NET_LAUNCHER_ITEM.get()).pattern("iii").pattern(" eb").pattern("iii").define('b', Items.BOW).define('e', Items.ENDER_PEARL).define('i',Tags.Items.INGOTS_IRON).unlockedBy("has_craft",has(Items.CRAFTING_TABLE)).save(pWriter);
 
+        // 宠物罗盘：指南针 + 项圈牌 + 皮革（1.21/26.1 同款配方）
+        ShapedRecipeBuilder.shaped(RecipeCategory.TOOLS, PHItemRegistry.PET_COMPASS.get()).pattern(" l ").pattern("lcl").pattern(" l ").define('l', Items.LEATHER).define('c', Items.COMPASS).unlockedBy("has_compass", has(Items.COMPASS)).save(pWriter);
+
     }
 }

@@ -1,5 +1,7 @@
 package com.github.yzqdev.pethome.server.entity;
 
+import com.github.yzqdev.pethome.server.NbtKeys;
+
 import com.github.yzqdev.pethome.server.misc.DIParticleRegistry;
 import com.github.yzqdev.pethome.server.misc.DISoundRegistry;
 import net.minecraft.nbt.CompoundTag;
@@ -58,7 +60,7 @@ public class GiantBubbleEntity extends Entity {
 
     private void pop() {
         this.playSound(DISoundRegistry.GIANT_BUBBLE_POP.get(), 1.0F, 1.5F);
-        if(!level().isClientSide){
+        if(!level().isClientSide()){
             ((ServerLevel)this.level()).sendParticles(DIParticleRegistry.GIANT_POP.get(), this.getX(), this.getY() + this.getBbHeight() * 0.5F, this.getZ(), 1, 0, 0, 0, 0);
         }
         this.ejectPassengers();
@@ -76,12 +78,12 @@ public class GiantBubbleEntity extends Entity {
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
-        this.setpopsIn(tag.getInt("PopsIn"));
+        this.setpopsIn(tag.getInt(NbtKeys.POPS_IN));
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
-        tag.putInt("PopsIn", this.getPopsIn());
+        tag.putInt(NbtKeys.POPS_IN, this.getPopsIn());
     }
 
     public int getPopsIn() {

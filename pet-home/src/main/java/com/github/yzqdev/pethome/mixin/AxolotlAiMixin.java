@@ -25,7 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class AxolotlAiMixin {
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/AxolotlAi;makeBrain(Lnet/minecraft/world/entity/ai/Brain;)Lnet/minecraft/world/entity/ai/Brain;"},
+            method = {"makeBrain(Lnet/minecraft/world/entity/ai/Brain;)Lnet/minecraft/world/entity/ai/Brain;"},
             remap = true,
             at = @At(
                     value = "INVOKE",
@@ -38,7 +38,7 @@ public class AxolotlAiMixin {
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/AxolotlAi;updateActivity(Lnet/minecraft/world/entity/animal/axolotl/Axolotl;)V"},
+            method = {"updateActivity(Lnet/minecraft/world/entity/animal/axolotl/Axolotl;)V"},
             remap = true,
             at = @At(
                     value = "HEAD"
@@ -61,7 +61,7 @@ public class AxolotlAiMixin {
 
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/AxolotlAi;getTemptations()Lnet/minecraft/world/item/crafting/Ingredient;"},
+            method = {"getTemptations()Lnet/minecraft/world/item/crafting/Ingredient;"},
             remap = true,
             at = @At(
                     value = "TAIL"
@@ -73,7 +73,7 @@ public class AxolotlAiMixin {
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/AxolotlAi;getSpeedModifierChasing(Lnet/minecraft/world/entity/LivingEntity;)F"},
+            method = {"getSpeedModifierChasing(Lnet/minecraft/world/entity/LivingEntity;)F"},
             remap = true,
             at = @At(
                     value = "TAIL"
@@ -86,7 +86,7 @@ public class AxolotlAiMixin {
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/AxolotlAi;getSpeedModifierFollowingAdult(Lnet/minecraft/world/entity/LivingEntity;)F"},
+            method = {"getSpeedModifierFollowingAdult(Lnet/minecraft/world/entity/LivingEntity;)F"},
             remap = true,
             at = @At(
                     value = "TAIL"
@@ -99,7 +99,7 @@ public class AxolotlAiMixin {
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/AxolotlAi;getSpeedModifier(Lnet/minecraft/world/entity/LivingEntity;)F"},
+            method = {"getSpeedModifier(Lnet/minecraft/world/entity/LivingEntity;)F"},
             remap = true,
             at = @At(
                     value = "TAIL"

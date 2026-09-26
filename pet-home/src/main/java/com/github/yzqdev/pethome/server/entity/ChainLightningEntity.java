@@ -61,7 +61,7 @@ public class ChainLightningEntity extends Entity {
         if (creator instanceof LivingEntity) {
             if (current != null) {
                 this.setPos(new Vec3(current.getX(), current.getY() + current.getBbHeight() * 0.5F, current.getZ()));
-                if(!level().isClientSide){
+                if(!level().isClientSide()){
                     if(!hasShocked){
                         hasShocked = true;
                         current.hurt(current.damageSources().lightningBolt(), 3);
@@ -69,7 +69,7 @@ public class ChainLightningEntity extends Entity {
                 }
             }
         }
-        if(!level().isClientSide){
+        if(!level().isClientSide()){
             if(!hasChained){
                 if(this.getChainsLeft() > 0 && creator instanceof LivingEntity) {
                     Entity closestValid = null;

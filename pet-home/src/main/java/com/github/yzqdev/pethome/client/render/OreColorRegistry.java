@@ -37,7 +37,7 @@ public class OreColorRegistry {
                     Color texColour = getAverageColour(getTextureAtlas(stack));
                     color = texColour.getRGB();
                 } catch (NullPointerException e) {
-                    e.printStackTrace();
+                    PetHomeMod.LOGGER.error("Failed to sample ore texture colour", e);
                 }
             }else{
                 color = colorizer;

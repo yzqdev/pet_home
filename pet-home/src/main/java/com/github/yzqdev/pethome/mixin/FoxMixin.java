@@ -1,5 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
+import com.github.yzqdev.pethome.server.NbtKeys;
+
 
 
 import com.github.yzqdev.pethome.PetHomeMod;
@@ -73,7 +75,7 @@ public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IC
             method = {"Lnet/minecraft/world/entity/animal/Fox;addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void di_writeAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        compoundNBT.putInt("DICommand", this.getCommand());
+        compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
     }
 
     @Inject(
@@ -82,7 +84,7 @@ public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IC
             method = {"Lnet/minecraft/world/entity/animal/Fox;readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void di_readAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        this.setCommand(compoundNBT.getInt("DICommand"));
+        this.setCommand(compoundNBT.getInt(NbtKeys.DI_COMMAND));
     }
 
     public int getCommand(){

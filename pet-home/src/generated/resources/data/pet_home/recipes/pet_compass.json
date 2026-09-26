@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "c": {
+      "item": "minecraft:compass"
+    },
+    "l": {
+      "item": "minecraft:leather"
+    }
+  },
+  "pattern": [
+    " l ",
+    "lcl",
+    " l "
+  ],
+  "result": {
+    "item": "pet_home:pet_compass"
+  },
+  "show_notification": true
+}

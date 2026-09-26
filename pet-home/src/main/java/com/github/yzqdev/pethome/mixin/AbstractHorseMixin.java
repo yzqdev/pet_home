@@ -52,7 +52,7 @@ public abstract class AbstractHorseMixin extends Animal implements ModifedToBeTa
     @Shadow public abstract void setOwnerUUID(@org.jetbrains.annotations.Nullable UUID p_30587_);
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/horse/AbstractHorse;tickRidden(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/phys/Vec3;)V"},
+            method = {"tickRidden(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/phys/Vec3;)V"},
             remap = true,
             at = {@At("HEAD")},
             cancellable = true

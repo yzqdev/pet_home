@@ -15,7 +15,7 @@ public class VillagerMixin {
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/npc/Villager;getPlayerReputation(Lnet/minecraft/world/entity/player/Player;)I"},
+            method = {"getPlayerReputation(Lnet/minecraft/world/entity/player/Player;)I"},
             cancellable = true
     )
     private void di_getPlayerReputation(Player player, CallbackInfoReturnable<Integer> cir) {

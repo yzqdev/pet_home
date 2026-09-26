@@ -22,7 +22,7 @@ public class FollowParentGoalMixin {
     @Inject(
             at = {@At("HEAD")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/ai/goal/FollowParentGoal;canUse()Z"},
+            method = {"canUse()Z"},
             cancellable = true
     )
     private void di_canUse(CallbackInfoReturnable<Boolean> cir){
@@ -34,7 +34,7 @@ public class FollowParentGoalMixin {
     @Inject(
             at = {@At("HEAD")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/ai/goal/FollowParentGoal;canContinueToUse()Z"},
+            method = {"canContinueToUse()Z"},
             cancellable = true
     )
     private void di_canContinueToUse(CallbackInfoReturnable<Boolean> cir){

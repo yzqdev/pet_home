@@ -1,5 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
+import com.github.yzqdev.pethome.server.NbtKeys;
+
 
 
 import com.github.yzqdev.pethome.PetHomeMod;
@@ -55,7 +57,7 @@ public abstract class AxolotlMixin extends Animal implements ModifedToBeTameable
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/Axolotl;defineSynchedData()V"}
+            method = {"defineSynchedData()V"}
     )
     private void di_registerData(CallbackInfo ci) {
         this.entityData.define(OWNER_UUID, Optional.empty());
@@ -66,29 +68,29 @@ public abstract class AxolotlMixin extends Animal implements ModifedToBeTameable
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/Axolotl;addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
+            method = {"addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void di_writeAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        compoundNBT.putInt("DICommand", this.getCommand());
-        compoundNBT.putBoolean("Tamed", this.isTame());
+        compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
+        compoundNBT.putBoolean(NbtKeys.TAMED, this.isTame());
         if (this.getTameOwnerUUID() != null) {
-            compoundNBT.putUUID("Owner", this.getTameOwnerUUID());
+            compoundNBT.putUUID(NbtKeys.OWNER, this.getTameOwnerUUID());
         }
     }
 
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/Axolotl;readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
+            method = {"readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void di_readAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        this.setCommand(compoundNBT.getInt("DICommand"));
-        this.setTame(compoundNBT.getBoolean("Tamed"));
+        this.setCommand(compoundNBT.getInt(NbtKeys.DI_COMMAND));
+        this.setTame(compoundNBT.getBoolean(NbtKeys.TAMED));
         UUID uuid;
-        if (compoundNBT.hasUUID("Owner")) {
-            uuid = compoundNBT.getUUID("Owner");
+        if (compoundNBT.hasUUID(NbtKeys.OWNER)) {
+            uuid = compoundNBT.getUUID(NbtKeys.OWNER);
         } else {
-            String s = compoundNBT.getString("Owner");
+            String s = compoundNBT.getString(NbtKeys.OWNER);
             uuid = OldUsersConverter.convertMobOwnerIfNecessary(this.getServer(), s);
         }
 
@@ -105,32 +107,32 @@ public abstract class AxolotlMixin extends Animal implements ModifedToBeTameable
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/Axolotl;saveToBucketTag(Lnet/minecraft/world/item/ItemStack;)V"}
+            method = {"saveToBucketTag(Lnet/minecraft/world/item/ItemStack;)V"}
     )
     private void di_writeAdditionalBucket(ItemStack stack, CallbackInfo ci) {
         CompoundTag compoundNBT = stack.getOrCreateTag();
         this.addAdditionalSaveData(compoundNBT);
-        compoundNBT.putInt("DICommand", this.getCommand());
-        compoundNBT.putBoolean("Tamed", this.isTame());
+        compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
+        compoundNBT.putBoolean(NbtKeys.TAMED, this.isTame());
         if (this.getTameOwnerUUID() != null) {
-            compoundNBT.putUUID("Owner", this.getTameOwnerUUID());
+            compoundNBT.putUUID(NbtKeys.OWNER, this.getTameOwnerUUID());
         }
     }
 
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/Axolotl;loadFromBucketTag(Lnet/minecraft/nbt/CompoundTag;)V"}
+            method = {"loadFromBucketTag(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void di_readAdditionalBucket(CompoundTag compoundNBT, CallbackInfo ci) {
         this.readAdditionalSaveData(compoundNBT);
-        this.setCommand(compoundNBT.getInt("DICommand"));
-        this.setTame(compoundNBT.getBoolean("Tamed"));
+        this.setCommand(compoundNBT.getInt(NbtKeys.DI_COMMAND));
+        this.setTame(compoundNBT.getBoolean(NbtKeys.TAMED));
         UUID uuid;
-        if (compoundNBT.hasUUID("Owner")) {
-            uuid = compoundNBT.getUUID("Owner");
+        if (compoundNBT.hasUUID(NbtKeys.OWNER)) {
+            uuid = compoundNBT.getUUID(NbtKeys.OWNER);
         } else {
-            String s = compoundNBT.getString("Owner");
+            String s = compoundNBT.getString(NbtKeys.OWNER);
             uuid = OldUsersConverter.convertMobOwnerIfNecessary(this.getServer(), s);
         }
         if (uuid != null) {
@@ -144,7 +146,7 @@ public abstract class AxolotlMixin extends Animal implements ModifedToBeTameable
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/Axolotl;mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"},
+            method = {"mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"},
             remap = true,
             at = @At(
                     value = "HEAD"
@@ -158,7 +160,7 @@ public abstract class AxolotlMixin extends Animal implements ModifedToBeTameable
                 this.usePlayerItem(player, hand, itemStack);
                 this.heal(2);
                 this.playSound(SoundEvents.CAT_EAT, this.getSoundVolume(), this.getVoicePitch());
-                if(!this.level().isClientSide){
+                if(!this.level().isClientSide()){
                     if(this.getRandom().nextInt(4) == 0){
                         this.spawnTamingParticles(true);
                     }else{
@@ -187,7 +189,7 @@ public abstract class AxolotlMixin extends Animal implements ModifedToBeTameable
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/axolotl/Axolotl;customServerAiStep()V"}
+            method = {"customServerAiStep()V"}
     )
     private void di_customServerAiStep(CallbackInfo ci) {
         if(this.isTame() && this.getTameOwner() != null){
@@ -212,7 +214,7 @@ public abstract class AxolotlMixin extends Animal implements ModifedToBeTameable
     }
 
     private void spawnTamingParticles(boolean smoke){
-        if(!level().isClientSide){
+        if(!level().isClientSide()){
             ParticleOptions particleoptions = smoke ? ParticleTypes.SMOKE : ParticleTypes.HEART;
             for(int i = 0; i < 7; ++i) {
                 double d0 = this.getRandom().nextGaussian() * 0.02D;

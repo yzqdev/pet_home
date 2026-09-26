@@ -97,7 +97,7 @@ public class WaywardLanternBlock extends BaseEntityBlock {
 
     @javax.annotation.Nullable
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level p_152180_, BlockState p_152181_, BlockEntityType<T> p_152182_) {
-        return p_152180_.isClientSide ? null : createTickerHelper(p_152182_, DITileEntityRegistry.WAYWARD_LANTERN.get(), WaywardLanternBlockEntity::tick);
+        return p_152180_.isClientSide() ? null : createTickerHelper(p_152182_, DITileEntityRegistry.WAYWARD_LANTERN.get(), WaywardLanternBlockEntity::tick);
     }
 
 

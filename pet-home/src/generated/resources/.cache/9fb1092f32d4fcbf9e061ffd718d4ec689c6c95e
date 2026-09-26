@@ -1,5 +1,7 @@
-// 1.20.1	2025-09-13T11:14:24.415016	Recipes
+// 1.20.1	2026-09-19T07:51:03.8353827	Recipes
 47fe1d16142a139cf33815226f9ddfeab07a2347 data/pet_home/advancements/recipes/building_blocks/net.json
 91e29045abc9924e3ea41e230cef7fde490b207d data/pet_home/advancements/recipes/building_blocks/net_launcher.json
+251a8139e5ed0875c14f66de71c103f7641a8207 data/pet_home/advancements/recipes/tools/pet_compass.json
 55569a8954753f0568c8462a23052de8e9ad3e91 data/pet_home/recipes/net.json
 c7639a8151f75262fd9ee83a3c40214ae4b407f3 data/pet_home/recipes/net_launcher.json
+7dd975019a412fba8de152e10e64511e7770d314 data/pet_home/recipes/pet_compass.json

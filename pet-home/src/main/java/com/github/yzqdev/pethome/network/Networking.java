@@ -20,14 +20,14 @@ public class Networking {
             .simpleChannel();
     public static ServerProxy PROXY = DistExecutor.runForDist(() -> ClientProxy::new, () -> ServerProxy::new);
 
-    public static <MSG> void sendMSGToServer(MSG message) {
+    public static <T> void sendMSGToServer(T message) {
         NETWORK_WRAPPER.sendToServer(message);
     }
-    public static <MSG> void sendNonLocal(MSG msg, ServerPlayer player) {
-        NETWORK_WRAPPER.sendTo(msg, player.connection.connection, NetworkDirection.PLAY_TO_CLIENT);
+    public static <T> void sendNonLocal(T t, ServerPlayer player) {
+        NETWORK_WRAPPER.sendTo(t, player.connection.connection, NetworkDirection.PLAY_TO_CLIENT);
     }
 
-    public static <MSG> void sendMSGToAll(MSG message) {
+    public static <T> void sendMSGToAll(T message) {
         for (ServerPlayer player : ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers()) {
             sendNonLocal(message, player);
         }

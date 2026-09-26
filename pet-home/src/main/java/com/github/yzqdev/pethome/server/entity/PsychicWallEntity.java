@@ -1,5 +1,7 @@
 package com.github.yzqdev.pethome.server.entity;
 
+import com.github.yzqdev.pethome.server.NbtKeys;
+
 import com.github.yzqdev.pethome.server.misc.DIParticleRegistry;
 import com.github.yzqdev.pethome.server.misc.DISoundRegistry;
 import net.minecraft.core.Direction;
@@ -53,7 +55,7 @@ public class PsychicWallEntity extends Entity {
             }
             soundLoop++;
         }
-        if (!this.level().isClientSide && this.getCreatorId() != null) {
+        if (!this.level().isClientSide() && this.getCreatorId() != null) {
             Entity creator = this.getCreator();
             if (creator != null) {
                 this.entityData.set(CREATOR_ID, creator.getId());
@@ -85,7 +87,7 @@ public class PsychicWallEntity extends Entity {
                     }
                     if (flag) {
                         deflectedEntities.put(collider.getUUID(), 15);
-                        if (level().isClientSide && collider.getBoundingBox().intersects(collisionAABB)) {
+                        if (level().isClientSide() && collider.getBoundingBox().intersects(collisionAABB)) {
                             Vec3 vec3 = new Vec3(collider.getX(), collider.getY(0.5F), collider.getZ());
                             Vec3 vec31 = collisionAABB.getCenter();
                             Vec3 vec32;
@@ -149,25 +151,25 @@ public class PsychicWallEntity extends Entity {
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
-        if (tag.contains("Lifespan")) {
-            this.setLifespan(tag.getInt("Lifespan"));
+        if (tag.contains(NbtKeys.LIFESPAN)) {
+            this.setLifespan(tag.getInt(NbtKeys.LIFESPAN));
         }
-        if (tag.hasUUID("CreatorUUID")) {
-            this.setCreatorId(tag.getUUID("CreatorUUID"));
+        if (tag.hasUUID(NbtKeys.CREATOR_UUID)) {
+            this.setCreatorId(tag.getUUID(NbtKeys.CREATOR_UUID));
         }
-        this.setBlockWidth(tag.getInt("BlockWidth"));
-        this.setWallDirection(Direction.from3DDataValue(tag.getInt("WallDirection")));
+        this.setBlockWidth(tag.getInt(NbtKeys.BLOCK_WIDTH));
+        this.setWallDirection(Direction.from3DDataValue(tag.getInt(NbtKeys.WALL_DIRECTION)));
 
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         if (this.getCreatorId() != null) {
-            tag.putUUID("CreatorUUID", this.getCreatorId());
+            tag.putUUID(NbtKeys.CREATOR_UUID, this.getCreatorId());
         }
-        tag.putInt("Lifespan", this.getLifespan());
-        tag.putInt("BlockWidth", this.getBlockWidth());
-        tag.putInt("WallDirection", this.getWallDirection().get3DDataValue());
+        tag.putInt(NbtKeys.LIFESPAN, this.getLifespan());
+        tag.putInt(NbtKeys.BLOCK_WIDTH, this.getBlockWidth());
+        tag.putInt(NbtKeys.WALL_DIRECTION, this.getWallDirection().get3DDataValue());
     }
 
     public int getLifespan() {
@@ -205,7 +207,7 @@ public class PsychicWallEntity extends Entity {
 
 
     public Entity getCreator() {
-        if (!level().isClientSide) {
+        if (!level().isClientSide()) {
             UUID id = getCreatorId();
             if (id != null) {
                 return ((ServerLevel) level()).getEntity(id);

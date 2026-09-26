@@ -1,5 +1,7 @@
 package com.github.yzqdev.pethome.server.block;
 
+import com.github.yzqdev.pethome.server.NbtKeys;
+
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 import com.github.yzqdev.pethome.server.misc.DIWorldData;
@@ -98,15 +100,15 @@ public class WaywardLanternBlockEntity extends BlockEntity {
 
     public void load(CompoundTag tag) {
         super.load(tag);
-        if (tag.contains("CheckAgainIn")) {
-            this.checkAgainIn = tag.getInt("CheckAgainIn");
+        if (tag.contains(NbtKeys.CHECK_AGAIN_IN)) {
+            this.checkAgainIn = tag.getInt(NbtKeys.CHECK_AGAIN_IN);
         }
 
     }
 
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
-        tag.putInt("CheckAgainIn", this.checkAgainIn);
+        tag.putInt(NbtKeys.CHECK_AGAIN_IN, this.checkAgainIn);
     }
 
     private static BlockPos getPlaceFor(Entity entity, BlockPos lanternPos, RandomSource random){

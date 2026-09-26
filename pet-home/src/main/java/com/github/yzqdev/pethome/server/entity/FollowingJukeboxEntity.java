@@ -1,6 +1,8 @@
 package com.github.yzqdev.pethome.server.entity;
 
-import com.github.yzqdev.pethome.PetHomeMod;
+import com.github.yzqdev.pethome.server.NbtKeys;
+
+import com.github.yzqdev.pethome.client.ClientEvents;
 import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -35,6 +37,9 @@ public class FollowingJukeboxEntity extends Entity {
     private static final EntityDataAccessor<Optional<UUID>> FOLLOWING_UUID = SynchedEntityData.defineId(FollowingJukeboxEntity.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<ItemStack> JUKEBOX_ITEM = SynchedEntityData.defineId(FollowingJukeboxEntity.class, EntityDataSerializers.ITEM_STACK);
 
+    /** 上次广播的实体事件号，用于避免每 tick 重复广播 66/67 */
+    private byte lastBroadcastEvent = -1;
+
     public FollowingJukeboxEntity(EntityType<?> type, Level level) {
         super(type, level);
     }
@@ -48,10 +53,14 @@ public class FollowingJukeboxEntity extends Entity {
         Entity following = getFollowing();
         this.setPos(this.position().add(this.getDeltaMovement()));
         this.setYRot(this.getYRot() + 2F);
-        if (!level().isClientSide) {
+        if (!level().isClientSide()) {
             if (following != null) {
                 float width = following.getBbWidth() + 0.6F;
-                this.setRecordItem(this.getDiscFromOwner());
+                // 唱片内容没变就不重设（原先是每 tick 反序列化并 set 一次）
+                ItemStack disc = this.getDiscFromOwner();
+                if (!ItemStack.matches(disc, this.getRecordItem())) {
+                    this.setRecordItem(disc);
+                }
                 float speed = 0.05F;
                 if(this.distanceTo(following) > 2 + width){
                     this.copyPosition(following);
@@ -62,10 +71,11 @@ public class FollowingJukeboxEntity extends Entity {
                     Vec3 vec3 = new Vec3(targetX - this.getX(), targetY - this.getY() + Math.sin(tickCount * 0.3F + 2F) * 0.01F, targetZ - this.getZ());
                     this.setDeltaMovement(vec3);
                 }
-                if (!this.isSilent() && !this.getRecordItem().isEmpty()) {
-                    this.level().broadcastEntityEvent(this, (byte) 66);
-                } else {
-                    this.level().broadcastEntityEvent(this, (byte) 67);
+                byte event = (!this.isSilent() && !this.getRecordItem().isEmpty()) ? (byte) 66 : (byte) 67;
+                // 状态没变不重复广播；播放中每 100 tick 补发一次心跳，防止客户端漏包后音效状态卡死
+                if (event != lastBroadcastEvent || (event == 66 && tickCount % 100 == 0)) {
+                    this.level().broadcastEntityEvent(this, event);
+                    lastBroadcastEvent = event;
                 }
                 if(following instanceof LivingEntity && !TameableUtils.hasEnchant((LivingEntity) following, DIEnchantmentRegistry.DISK_JOCKEY)){
                     this.setFollowingUUID(null);
@@ -89,15 +99,15 @@ public class FollowingJukeboxEntity extends Entity {
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
-        if (tag.hasUUID("FollowerUUID")) {
-            this.setFollowingUUID(tag.getUUID("FollowerUUID"));
+        if (tag.hasUUID(NbtKeys.FOLLOWER_UUID)) {
+            this.setFollowingUUID(tag.getUUID(NbtKeys.FOLLOWER_UUID));
         }
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         if (this.getFollowerUUID() != null) {
-            tag.putUUID("FollowerUUID", this.getFollowerUUID());
+            tag.putUUID(NbtKeys.FOLLOWER_UUID, this.getFollowerUUID());
         }
     }
 
@@ -112,7 +122,7 @@ public class FollowingJukeboxEntity extends Entity {
 
     public Entity getFollowing() {
         UUID id = getFollowerUUID();
-        if (id != null && !level().isClientSide) {
+        if (id != null && !level().isClientSide()) {
             return ((ServerLevel) level()).getEntity(id);
         }
         return null;
@@ -188,7 +198,7 @@ public class FollowingJukeboxEntity extends Entity {
                 float f2 = random.nextFloat();
                 this.level().addParticle(ParticleTypes.NOTE, this.getX(), this.getY(1), this.getZ(), f, f1, f2);
             }
-            PetHomeMod.PROXY.updateEntityStatus(this, id);
+            ClientEvents.updateEntityStatus(this, id);
         } else {
             super.handleEntityEvent(id);
         }

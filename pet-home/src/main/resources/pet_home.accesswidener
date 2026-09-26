@@ -1,0 +1,13 @@
+accessWidener v2 named
+accessible method net/minecraft/world/entity/Entity setLevel (Lnet/minecraft/world/level/Level;)V
+accessible class net/minecraft/world/entity/npc/VillagerTrades$EnchantBookForEmeralds
+accessible class net/minecraft/world/entity/npc/VillagerTrades$EmeraldForItems
+accessible class net/minecraft/world/entity/npc/VillagerTrades$ItemsForEmeralds
+accessible field net/minecraft/world/entity/Mob goalSelector Lnet/minecraft/world/entity/ai/goal/GoalSelector;
+accessible field net/minecraft/world/entity/item/ItemEntity age I
+accessible field net/minecraft/world/level/Explosion x D
+accessible field net/minecraft/world/level/Explosion y D
+accessible field net/minecraft/world/level/Explosion z D
+accessible field net/minecraft/client/renderer/texture/SpriteContents byMipLevel [Lcom/mojang/blaze3d/platform/NativeImage;
+accessible field net/minecraft/world/entity/ExperienceOrb value I
+accessible field net/minecraft/world/level/levelgen/structure/pools/StructurePoolElement EMPTY Lnet/minecraft/core/Holder;

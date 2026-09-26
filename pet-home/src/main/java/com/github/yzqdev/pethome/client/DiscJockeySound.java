@@ -23,7 +23,7 @@ public class DiscJockeySound  extends AbstractTickableSoundInstance {
     }
 
     public boolean canPlaySound() {
-        return !this.box.isSilent() && ClientProxy.DISC_JOCKEY_SOUND_MAP.get(this.box.getId()) == this;
+        return !this.box.isSilent() && ClientEvents.DISC_JOCKEY_SOUND_MAP.get(this.box.getId()) == this;
     }
 
     public boolean isNearest() {
@@ -39,7 +39,7 @@ public class DiscJockeySound  extends AbstractTickableSoundInstance {
             this.z = this.box.getZ();
         } else {
             this.stop();
-            ClientProxy.DISC_JOCKEY_SOUND_MAP.remove(box.getId());
+            ClientEvents.DISC_JOCKEY_SOUND_MAP.remove(box.getId());
         }
         ticksExisted++;
     }

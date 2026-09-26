@@ -74,6 +74,27 @@ public class DILootModifier extends LootModifier {
                     generatedLoot.add(enchantedBook(DIEnchantmentRegistry.BLAZING_PROTECTION, context.getRandom()));
                 }
                 break;
+            // 以下 4 个自 1.21 移植（对应 1.21 PHLootModifier 的 share/sonic_boom/paralysis/tough）
+            case 7:
+                if (context.getRandom().nextFloat() < PetHomeMod.CONFIG.shareLootChance.get()) {
+                    generatedLoot.add(enchantedBook(DIEnchantmentRegistry.SHARE, context.getRandom()));
+                }
+                break;
+            case 8:
+                if (context.getRandom().nextFloat() < PetHomeMod.CONFIG.sonicBoomLootChance.get()) {
+                    generatedLoot.add(enchantedBook(DIEnchantmentRegistry.SONIC_BOOM, context.getRandom()));
+                }
+                break;
+            case 9:
+                if (context.getRandom().nextFloat() < PetHomeMod.CONFIG.paralysisLootChance.get()) {
+                    generatedLoot.add(enchantedBook(DIEnchantmentRegistry.PARALYSIS, context.getRandom()));
+                }
+                break;
+            case 10:
+                if (context.getRandom().nextFloat() < PetHomeMod.CONFIG.toughLootChance.get()) {
+                    generatedLoot.add(enchantedBook(DIEnchantmentRegistry.TOUGH, context.getRandom()));
+                }
+                break;
         }
         return generatedLoot;
     }

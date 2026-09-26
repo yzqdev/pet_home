@@ -1,5 +1,7 @@
 package com.github.yzqdev.pethome.server.block;
 
+import com.github.yzqdev.pethome.server.NbtKeys;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -26,8 +28,8 @@ public class DrumBlockEntity extends BlockEntity {
     @Override
     public void load(CompoundTag compound) {
         super.load(compound);
-        if (compound.contains("PlacerUUID")) {
-            this.placerUUID = compound.getUUID("PlacerUUID");
+        if (compound.contains(NbtKeys.PLACER_UUID)) {
+            this.placerUUID = compound.getUUID(NbtKeys.PLACER_UUID);
         }
     }
 
@@ -35,7 +37,7 @@ public class DrumBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag compound) {
         super.saveAdditional(compound);
         if (this.placerUUID != null) {
-            compound.putUUID("PlacerUUID", placerUUID);
+            compound.putUUID(NbtKeys.PLACER_UUID, placerUUID);
         }
     }
 }

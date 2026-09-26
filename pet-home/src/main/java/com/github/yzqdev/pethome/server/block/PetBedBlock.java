@@ -47,7 +47,7 @@ public class PetBedBlock extends BaseEntityBlock {
     }
 
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-        if(TameableUtils.isTamed(entity) && !entity.getType().is(DITagRegistry.REFUSES_PET_BEDS) && !level.isClientSide && PetHomeMod.CONFIG.petBedRespawns.get()){
+        if(TameableUtils.isTamed(entity) && !entity.getType().is(DITagRegistry.REFUSES_PET_BEDS) && !level.isClientSide() && PetHomeMod.CONFIG.petBedRespawns.get()){
            if((entity.tickCount + entity.getId()) % 10 == 0 && random.nextInt(6) == 0){
                TameableUtils.setPetBedPos((LivingEntity) entity, pos);
                TameableUtils.setPetBedDimension((LivingEntity) entity, level.dimension().toString());
@@ -116,7 +116,7 @@ public class PetBedBlock extends BaseEntityBlock {
 
     @javax.annotation.Nullable
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level p_152180_, BlockState p_152181_, BlockEntityType<T> p_152182_) {
-        return p_152180_.isClientSide ? null : createTickerHelper(p_152182_, DITileEntityRegistry.PET_BED.get(), PetBedBlockEntity::tick);
+        return p_152180_.isClientSide() ? null : createTickerHelper(p_152182_, DITileEntityRegistry.PET_BED.get(), PetBedBlockEntity::tick);
     }
 }
 

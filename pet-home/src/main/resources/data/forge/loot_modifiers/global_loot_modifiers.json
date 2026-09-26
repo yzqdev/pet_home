@@ -7,6 +7,10 @@
     "pet_home:void_cloud_enchanted_book",
     "pet_home:ore_scenting_enchanted_book",
     "pet_home:muffled_enchanted_book",
-    "pet_home:blazing_enchanted_book"
+    "pet_home:blazing_enchanted_book",
+    "pet_home:share_enchanted_book",
+    "pet_home:sonic_boom_enchanted_book",
+    "pet_home:paralysis_enchanted_book",
+    "pet_home:tough_enchant_book"
   ]
 }

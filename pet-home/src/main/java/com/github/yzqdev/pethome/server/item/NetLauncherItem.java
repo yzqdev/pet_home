@@ -33,8 +33,8 @@ public class NetLauncherItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltipComponents, TooltipFlag isAdvanced) {
-        tooltipComponents.add(Component.translatable(LangDefinition.ConstantMsg.net_launcher_tip).withStyle(ChatFormatting.GREEN));
-        tooltipComponents.add(Component.translatable(LangDefinition.ConstantMsg.net_launcher_default_only_tamable).withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable(LangDefinition.net_launcher_tip).withStyle(ChatFormatting.GREEN));
+        tooltipComponents.add(Component.translatable(LangDefinition.net_launcher_default_only_tamable).withStyle(ChatFormatting.GRAY));
     }
 
 
@@ -58,7 +58,7 @@ public class NetLauncherItem extends Item {
             if (f >= 0.1) {
 //获取包含实体的球
 
-                if (!worldIn.isClientSide) {
+                if (!worldIn.isClientSide()) {
 
                     if (isCaptureMode(stack)) {
                         ItemStack netStack = new ItemStack(PHItemRegistry.NET_ITEM.get());
@@ -73,7 +73,7 @@ public class NetLauncherItem extends Item {
                     } else {
                         ItemStack netWithEntityStack = this.findNet(player);
                         if (netWithEntityStack.isEmpty()) {
-                            player.sendSystemMessage(Component.translatable(LangDefinition.ConstantMsg.no_net_entity_text));
+                            player.sendSystemMessage(Component.translatable(LangDefinition.no_net_entity_text));
                             return;
                         }
 
@@ -161,8 +161,8 @@ public class NetLauncherItem extends Item {
 
     }
 
-    public static final Component CAPTURE = Component.translatable(LangDefinition.ConstantMsg.capturing_text).withStyle(ChatFormatting.GREEN);
-    public static final Component RELEASE = Component.translatable(LangDefinition.ConstantMsg.release_text).withStyle(ChatFormatting.RED);
+    public static final Component CAPTURE = Component.translatable(LangDefinition.capturing_text).withStyle(ChatFormatting.GREEN);
+    public static final Component RELEASE = Component.translatable(LangDefinition.release_text).withStyle(ChatFormatting.RED);
 
     @Override
     @Nonnull

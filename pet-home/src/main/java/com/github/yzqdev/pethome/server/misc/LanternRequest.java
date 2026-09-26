@@ -8,7 +8,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.UUID;
-import java.util.logging.Level;
+
 
 public class LanternRequest {
     private String entityType;

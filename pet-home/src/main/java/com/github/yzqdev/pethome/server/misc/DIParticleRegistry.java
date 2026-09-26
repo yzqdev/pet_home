@@ -21,5 +21,6 @@ public class DIParticleRegistry {
     public static final RegistryObject<SimpleParticleType> INTIMIDATION = DEF_REG.register("intimidation", () -> new SimpleParticleType(false));
     public static final RegistryObject<SimpleParticleType> BLIGHT = DEF_REG.register("blight", () -> new SimpleParticleType(false));
     public static final RegistryObject<SimpleParticleType> LANTERN_BUGS = DEF_REG.register("lantern_bugs", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> QUESTION_MARK = DEF_REG.register("question_mark_particle", () -> new SimpleParticleType(false));
 
 }

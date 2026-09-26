@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class EntityMixin {
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/Entity;fireImmune()Z"},
+            method = {"fireImmune()Z"},
             remap = true,
             at = @At(
                     value = "HEAD"
@@ -31,7 +31,7 @@ public class EntityMixin {
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/Entity;isPushedByFluid()Z"},
+            method = {"isPushedByFluid()Z"},
             remap = true,
             at = @At(value = "HEAD"),
             cancellable = true

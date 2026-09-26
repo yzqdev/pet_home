@@ -1,5 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
+import com.github.yzqdev.pethome.server.NbtKeys;
+
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
@@ -73,7 +75,7 @@ public abstract class RabbitMixin extends Animal implements ModifedToBeTameable,
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/Rabbit;defineSynchedData()V"}
+            method = {"defineSynchedData()V"}
     )
     private void di_registerData(CallbackInfo ci) {
         this.entityData.define(OWNER_UUID, Optional.empty());
@@ -84,29 +86,29 @@ public abstract class RabbitMixin extends Animal implements ModifedToBeTameable,
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/Rabbit;addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
+            method = {"addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void di_writeAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        compoundNBT.putInt("DICommand", this.getCommand());
-        compoundNBT.putBoolean("Tamed", this.isTame());
+        compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
+        compoundNBT.putBoolean(NbtKeys.TAMED, this.isTame());
         if (this.getTameOwnerUUID() != null) {
-            compoundNBT.putUUID("Owner", this.getTameOwnerUUID());
+            compoundNBT.putUUID(NbtKeys.OWNER, this.getTameOwnerUUID());
         }
     }
 
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/Rabbit;readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
+            method = {"readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void di_readAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        this.setCommand(compoundNBT.getInt("DICommand"));
-        this.setTame(compoundNBT.getBoolean("Tamed"));
+        this.setCommand(compoundNBT.getInt(NbtKeys.DI_COMMAND));
+        this.setTame(compoundNBT.getBoolean(NbtKeys.TAMED));
         UUID uuid;
-        if (compoundNBT.hasUUID("Owner")) {
-            uuid = compoundNBT.getUUID("Owner");
+        if (compoundNBT.hasUUID(NbtKeys.OWNER)) {
+            uuid = compoundNBT.getUUID(NbtKeys.OWNER);
         } else {
-            String s = compoundNBT.getString("Owner");
+            String s = compoundNBT.getString(NbtKeys.OWNER);
             uuid = OldUsersConverter.convertMobOwnerIfNecessary(this.getServer(), s);
         }
 
@@ -189,7 +191,7 @@ public abstract class RabbitMixin extends Animal implements ModifedToBeTameable,
     @Inject(
             at = {@At("HEAD")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/Rabbit;setVariant(Lnet/minecraft/world/entity/animal/Rabbit$Variant;)V"},
+            method = {"setVariant(Lnet/minecraft/world/entity/animal/Rabbit$Variant;)V"},
             cancellable = true
     )
     private void di_setRabbitType(Rabbit.Variant type, CallbackInfo ci) {

@@ -28,7 +28,7 @@ public abstract class AnimalMixin extends AgeableMob {
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/Animal;mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"},
+            method = {"mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"},
             remap = true,
             at = @At(
                     value = "INVOKE",

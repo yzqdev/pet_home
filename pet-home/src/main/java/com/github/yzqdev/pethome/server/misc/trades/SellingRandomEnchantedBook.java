@@ -1,9 +1,9 @@
 package com.github.yzqdev.pethome.server.misc.trades;
 
 import com.github.yzqdev.pethome.PetHomeMod;
+import com.github.yzqdev.pethome.datagen.LangDefinition;
 import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.enchantment.PetEnchantment;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -38,8 +38,9 @@ public class SellingRandomEnchantedBook implements VillagerTrades.ItemListing {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            Minecraft.getInstance().player.sendSystemMessage(Component.literal("附魔出错了"));
+            PetHomeMod.LOGGER.error("Exception", e);
+            // getOffer 在服务端运行：不能用 Minecraft.getInstance()（专用服务器会崩），走实体级消息（非玩家实体为空实现）
+            trader.sendSystemMessage(Component.translatable(LangDefinition.MESSAGE_ENCHANT_ERROR));
         }
 
         Enchantment enchantment = list.get(pRandom.nextInt(list.size()));

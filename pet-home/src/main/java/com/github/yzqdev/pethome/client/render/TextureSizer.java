@@ -1,5 +1,6 @@
 package com.github.yzqdev.pethome.client.render;
 
+import com.github.yzqdev.pethome.PetHomeMod;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.Minecraft;
@@ -28,7 +29,7 @@ public class TextureSizer {
                 width = nativeimage.getWidth();
                 height = nativeimage.getHeight();
             } catch (Exception e) {
-                e.printStackTrace();
+                PetHomeMod.LOGGER.error("Failed to read texture size", e);
             }
             Pair pair = new Pair<>(width, height);
             TEXTURE_TO_DIMENSIONS.put(texture, pair);

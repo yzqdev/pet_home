@@ -44,9 +44,13 @@ public class DIRenderTypes extends RenderType {
         super(p_173178_, p_173179_, p_173180_, p_173181_, p_173182_, p_173183_, p_173184_, p_173185_);
     }
 
+    /** 按 (x, y) 纹理尺寸缓存：RenderType.create 构建整棵 CompositeState，不应在渲染热路径每帧重复执行 */
+    private static final java.util.Map<Long, RenderType> ZOMBIE_OVERLAY_CACHE = new java.util.HashMap<>();
+
     public static RenderType getZombieOverlay(ResourceLocation texture, int x, int y) {
-        return create("zombie_overlay", DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS, 256, true, true, RenderType.CompositeState.builder().setShaderState(RENDERTYPE_ENTITY_GLINT_SHADER)
-                .setTextureState(new RenderStateShard.TextureStateShard(ResourceLocation.parse(PetHomeMod.MODID + ":textures/zombie_overlay.png"), false, false)).setWriteMaskState(COLOR_DEPTH_WRITE).setCullState(NO_CULL).setDepthTestState(EQUAL_DEPTH_TEST).setTransparencyState(TRANSLUCENT_TRANSPARENCY).setTexturingState(new ZombieTexturing("zombie", x, y)).setOverlayState(OVERLAY).createCompositeState(true));
+        long key = ((long) x << 32) | (y & 0xFFFFFFFFL);
+        return ZOMBIE_OVERLAY_CACHE.computeIfAbsent(key, k -> create("zombie_overlay", DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS, 256, true, true, RenderType.CompositeState.builder().setShaderState(RENDERTYPE_ENTITY_GLINT_SHADER)
+                .setTextureState(new RenderStateShard.TextureStateShard(ResourceLocation.parse(PetHomeMod.MODID + ":textures/zombie_overlay.png"), false, false)).setWriteMaskState(COLOR_DEPTH_WRITE).setCullState(NO_CULL).setDepthTestState(EQUAL_DEPTH_TEST).setTransparencyState(TRANSLUCENT_TRANSPARENCY).setTexturingState(new ZombieTexturing("zombie", x, y)).setOverlayState(OVERLAY).createCompositeState(true)));
     }
 
     private static RenderType translucentNoCull(){

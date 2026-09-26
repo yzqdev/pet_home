@@ -26,7 +26,7 @@ public class FrogAiMixin {
 
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/frog/FrogAi;makeBrain(Lnet/minecraft/world/entity/ai/Brain;)Lnet/minecraft/world/entity/ai/Brain;"},
+            method = {"makeBrain(Lnet/minecraft/world/entity/ai/Brain;)Lnet/minecraft/world/entity/ai/Brain;"},
             remap = true,
             at = @At(
                     value = "INVOKE",
@@ -43,7 +43,7 @@ public class FrogAiMixin {
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/frog/FrogAi;updateActivity(Lnet/minecraft/world/entity/animal/frog/Frog;)V"},
+            method = {"updateActivity(Lnet/minecraft/world/entity/animal/frog/Frog;)V"},
             remap = true,
             at = @At(
                     value = "HEAD"
@@ -71,7 +71,7 @@ public class FrogAiMixin {
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/frog/FrogAi;getTemptations()Lnet/minecraft/world/item/crafting/Ingredient;"},
+            method = {"getTemptations()Lnet/minecraft/world/item/crafting/Ingredient;"},
             remap = true,
             at = @At(
                     value = "TAIL"

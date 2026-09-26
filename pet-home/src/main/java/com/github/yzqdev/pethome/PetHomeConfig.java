@@ -7,7 +7,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -20,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Mod.EventBusSubscriber(modid = PetHomeMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = PetHomeMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class PetHomeConfig {
     public static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
     public final ForgeConfigSpec.BooleanValue trinaryCommandSystem;
@@ -34,7 +33,14 @@ public class PetHomeConfig {
     public final ForgeConfigSpec.BooleanValue petBedRespawns;
     public final ForgeConfigSpec.BooleanValue collarTag;
     public final ForgeConfigSpec.BooleanValue rabbitsScareRavagers;
-    public final ForgeConfigSpec.BooleanValue animalTamerVillager;
+    // 宠物罗盘（compass.md：enable / 两个传送完全独立）
+    public final ForgeConfigSpec.BooleanValue petCompassEnable;
+    public final ForgeConfigSpec.BooleanValue petCompassTeleportPlayerToPet;
+    public final ForgeConfigSpec.BooleanValue petCompassTeleportPetToPlayer;
+    // 宠物信息悬浮面板
+    public final ForgeConfigSpec.BooleanValue petInfoOverlay;
+    public final ForgeConfigSpec.BooleanValue petInfoOverlayRequireShift;
+    public final ForgeConfigSpec.BooleanValue petInfoOverlayIgnoreJade;
     public final ForgeConfigSpec.IntValue petstoreVillageWeight;
 
     public final ForgeConfigSpec.BooleanValue petCurseEnchantmentsLootOnly;
@@ -45,42 +51,46 @@ public class PetHomeConfig {
     public final ForgeConfigSpec.DoubleValue oreScentingLootChance;
     public final ForgeConfigSpec.DoubleValue muffledLootChance;
     public final ForgeConfigSpec.DoubleValue blazingProtectionLootChance;
-    private static final ForgeConfigSpec.BooleanValue MOBCATCHER_ONLY_TAMABLE_ANIMAL = BUILDER.comment("Mob catcher only catches tamable animal").define("mobcatcherOnlyTamableAnimal", true);
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> MOBCATCHER_BLACKLIST = BUILDER.comment("entities that can't be caught").defineListAllowEmpty("mobcatcherBlacklist", List.of("minecraft:painting"),   PetHomeConfig::validateEntityTypesName);
+    public final ForgeConfigSpec.DoubleValue shareLootChance;
+    public final ForgeConfigSpec.DoubleValue sonicBoomLootChance;
+    public final ForgeConfigSpec.DoubleValue paralysisLootChance;
+    public final ForgeConfigSpec.DoubleValue toughLootChance;
+    public static final ForgeConfigSpec.BooleanValue MOBCATCHER_ONLY_TAMABLE_ANIMAL = BUILDER.comment("Mob catcher only catches tamable animal").define("mobcatcherOnlyTamableAnimal", true);
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> MOBCATCHER_BLACKLIST = BUILDER.comment("entities that can't be caught").defineListAllowEmpty("mobcatcherBlacklist", List.of("minecraft:painting"),   PetHomeConfig::validateEntityTypesName);
 
     // friendly fire
 
     static {
         BUILDER.push("friendly_fire");
     }
-    private static final ForgeConfigSpec.BooleanValue PROTECT_PETS_FROM_OWNER = BUILDER
+    public static final ForgeConfigSpec.BooleanValue PROTECT_PETS_FROM_OWNER = BUILDER
             .comment("owner cannot hurt pet")
             .define("protectPetsFromOwner", true);
-    private static final ForgeConfigSpec.BooleanValue PROTECT_PETS_FROM_PETS = BUILDER
+    public static final ForgeConfigSpec.BooleanValue PROTECT_PETS_FROM_PETS = BUILDER
             .comment("pet cannot hurt pet")
             .define("protectPetsFromPets", true);
-    private static final ForgeConfigSpec.BooleanValue PROTECT_CHILDREN = BUILDER
+    public static final ForgeConfigSpec.BooleanValue PROTECT_CHILDREN = BUILDER
             .comment("protect children animal")
             .define("protectChildren", true);
-    private static final ForgeConfigSpec.BooleanValue REFLECT_DAMAGE = BUILDER
+    public static final ForgeConfigSpec.BooleanValue REFLECT_DAMAGE = BUILDER
             .comment("protect pet from owner")
             .define("reflectDamage", false);
-    private static final ForgeConfigSpec.BooleanValue DISPLAY_HIT_WARNING = BUILDER
+    public static final ForgeConfigSpec.BooleanValue DISPLAY_HIT_WARNING = BUILDER
             .comment("owner cannot hurt pet")
             .define("displayHitWarning", true);
-    private static final ForgeConfigSpec.BooleanValue PROTECT_TEAM_MEMBERS = BUILDER
+    public static final ForgeConfigSpec.BooleanValue PROTECT_TEAM_MEMBERS = BUILDER
             .comment("PROTECT_TEAM_MEMBERS")
             .define("protectTeamMembers", true);
-    private static final ForgeConfigSpec.BooleanValue RESPECT_TEAM_RULES = BUILDER
+    public static final ForgeConfigSpec.BooleanValue RESPECT_TEAM_RULES = BUILDER
             .comment("RESPECT_TEAM_RULES")
             .define("respectTeamRules", true);
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CAN_HURT_PET_ITEM = BUILDER.comment("can hurt pet item").defineListAllowEmpty("can_hurt_pet_item", List.of(), PetHomeConfig::validateItemName);
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CAN_HURT_ALL_ITEM = BUILDER.comment("can always hurt item").defineListAllowEmpty("can_hurt_all", List.of(), PetHomeConfig::validateItemName);
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> NO_PROTECTION_ENTITY = BUILDER.comment("can always hurt").defineListAllowEmpty("no_protection_entity", List.of(), PetHomeConfig::validateEntityTypesName);
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> CAN_HURT_PET_ITEM = BUILDER.comment("can hurt pet item").defineListAllowEmpty("can_hurt_pet_item", List.of(), PetHomeConfig::validateItemName);
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> CAN_HURT_ALL_ITEM = BUILDER.comment("can always hurt item").defineListAllowEmpty("can_hurt_all", List.of(), PetHomeConfig::validateItemName);
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> NO_PROTECTION_ENTITY = BUILDER.comment("can always hurt").defineListAllowEmpty("no_protection_entity", List.of(), PetHomeConfig::validateEntityTypesName);
     ;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> OTHER_SHOULD_PROTECT_ENTITY = BUILDER.comment("other entities that can be protected").defineListAllowEmpty("other_should_protect_entity", List.of(), PetHomeConfig::validateEntityTypesName);
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> OTHER_SHOULD_PROTECT_ENTITY = BUILDER.comment("other entities that can be protected").defineListAllowEmpty("other_should_protect_entity", List.of(), PetHomeConfig::validateEntityTypesName);
     ;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> PLAYER_CANT_HURT_ENTITY = BUILDER.comment("entities player cant hurt").defineListAllowEmpty("player_cant_hurt_entity", List.of(), PetHomeConfig::validateEntityTypesName);
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> PLAYER_CANT_HURT_ENTITY = BUILDER.comment("entities player cant hurt").defineListAllowEmpty("player_cant_hurt_entity", List.of(), PetHomeConfig::validateEntityTypesName);
 
 
 
@@ -89,7 +99,7 @@ public class PetHomeConfig {
         BUILDER.pop();
     }
 
-    private final Map<String, ForgeConfigSpec.BooleanValue> enabledEnchantments = new HashMap<>();
+    public final Map<String, ForgeConfigSpec.BooleanValue> enabledEnchantments = new HashMap<>();
 
     private static boolean validateEntityTypesName(Object obj) {
 
@@ -114,7 +124,12 @@ public class PetHomeConfig {
         petBedRespawns = builder.comment("true if mobs can respawn in pet beds the next morning after they die").translation("pet_bed_respawns").define("pet_bed_respawns", true);
         collarTag = builder.comment("true if collar tag functionality are enabled. If this is disabled, there is no way to enchant mobs!").translation("collar_tags").define("collar_tags", true);
         rabbitsScareRavagers = builder.comment("true if rabbits scare ravagers like they used to do").translation("rabbits_scare_ravagers").define("rabbits_scare_ravagers", true);
-        animalTamerVillager = builder.comment("true if animal tamer villagers are enabled. Their work station is a pet bed").translation("animal_tamer_villager").define("animal_tamer_villager", true);
+        petCompassEnable = builder.comment("master switch for the pet compass system").translation("pet_compass_enable").define("pet_compass_enable", true);
+        petCompassTeleportPlayerToPet = builder.comment("allow teleporting the player to the pet").translation("teleport_player_to_pet").define("teleport_player_to_pet", true);
+        petCompassTeleportPetToPlayer = builder.comment("allow teleporting (recalling) the pet to the player").translation("teleport_pet_to_player").define("teleport_pet_to_player", true);
+        petInfoOverlay = builder.comment("show the pet info panel at the top of the screen while looking at your own pet").translation("pet_info_overlay").define("pet_info_overlay", true);
+        petInfoOverlayRequireShift = builder.comment("require holding the sneak key while looking at the pet to show the panel (off = just look at the pet)").translation("pet_info_overlay_require_shift").define("pet_info_overlay_require_shift", false);
+        petInfoOverlayIgnoreJade = builder.comment("show the pet info panel even when Jade is installed (with Jade present the panel is hidden by default since its tooltip already shows pet info)").translation("pet_info_overlay_ignore_jade").define("pet_info_overlay_ignore_jade", false);
         petstoreVillageWeight = builder.comment("the spawn weight of the pet store in villages, set to 0 to disable it entirely").translation("petstore_village_weight").defineInRange("petstore_village_weight", 17, 0, 1000);
         builder.pop();
         builder.push("loot");
@@ -126,6 +141,10 @@ public class PetHomeConfig {
         oreScentingLootChance = builder.comment("percent chance of mineshaft loot table containing Ore Scenting book:").translation("ore_scenting_loot_chance").defineInRange("ore_scenting_loot_chance", 0.15D, 0.0, 1.0D);
         muffledLootChance = builder.comment("percent chance of ancient city loot table containing Muffled book:").translation("muffled_loot_chance").defineInRange("muffled_loot_chance", 0.19D, 0.0, 1.0D);
         blazingProtectionLootChance = builder.comment("percent chance of nether fortress loot table containing Blazing Protection book:").translation("ore_scenting_loot_chance").defineInRange("blazing_protection_loot_chance", 0.2D, 0.0, 1.0D);
+        shareLootChance = builder.comment("percent chance of ender city loot table containing share book:").translation("share_loot_chance").defineInRange("share_loot_chance", 0.5D, 0.0, 1.0D);
+        sonicBoomLootChance = builder.comment("percent chance of woodland mansion loot table containing Sonic boom book:").translation("sonic_boom_loot_chance").defineInRange("sonic_boom_loot_chance", 0.6D, 0.0, 1.0D);
+        paralysisLootChance = builder.comment("percent chance of chest loot table containing paralysis book:").translation("paralysis_loot_chance").defineInRange("paralysis_loot_chance", 0.1D, 0.0, 1.0D);
+        toughLootChance = builder.comment("percent chance of chest loot table containing tough book:").translation("tough_loot_chance").defineInRange("tough_loot_chance", 0.1D, 0.0, 1.0D);
         builder.pop();
         builder.push("enchantments");
         try {
@@ -152,7 +171,8 @@ public class PetHomeConfig {
         return entry == null || entry.get();
     }
     public static boolean mobcatcherOnlyTamableAnimal;
-    public static Set<EntityType<?>> mobcatcherBlackList;
+    // 集合缓存给空集合默认值：配置加载事件触发前被访问也不会 NPE（专用服务器曾因此崩溃）
+    public static Set<EntityType<?>> mobcatcherBlackList = Set.of();
     public static boolean protectPetsFromPets = true;
 
     public static boolean protectChildren = true;
@@ -163,14 +183,19 @@ public class PetHomeConfig {
     public static boolean protectPetsFromOwner = true;
     public static boolean protectTeamMembers = true;
     public static boolean respectTeamRules = true;
-    public static Set<EntityType<?>> noProtectionEntity;
-    public static Set<EntityType<?>> otherShouldProtectionEntity;
-    public static Set<EntityType<?>> playerCantHurtEntity;
-    public static Set<Item> canHurtPetItem;
-    public static Set<Item> canHurtAllItem;
+    public static Set<EntityType<?>> noProtectionEntity = Set.of();
+    public static Set<EntityType<?>> otherShouldProtectionEntity = Set.of();
+    public static Set<EntityType<?>> playerCantHurtEntity = Set.of();
+    public static Set<Item> canHurtPetItem = Set.of();
+    public static Set<Item> canHurtAllItem = Set.of();
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
+        refreshCachedValues();
+    }
+
+    /** 把 spec 当前值刷新进缓存静态字段；设置界面保存后也会调用 */
+    public static void refreshCachedValues() {
         mobcatcherBlackList=(MOBCATCHER_BLACKLIST.get()).stream().map((entityTypeName) -> BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(entityTypeName))).collect(Collectors.toSet());;
         mobcatcherOnlyTamableAnimal=MOBCATCHER_ONLY_TAMABLE_ANIMAL.get();
         respectTeamRules = RESPECT_TEAM_RULES.get();

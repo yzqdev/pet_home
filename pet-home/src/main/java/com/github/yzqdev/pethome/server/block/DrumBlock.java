@@ -41,7 +41,7 @@ public class DrumBlock extends BaseEntityBlock {
 
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     public static final IntegerProperty COMMAND = IntegerProperty.create("command", 0, 2);
-    private static Random random = new Random();
+    private static final Random random = new Random();
 
     public DrumBlock() {
         super(Properties.of().mapColor(MapColor.WOOD).sound(SoundType.WOOD).strength(1F).noOcclusion());

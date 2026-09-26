@@ -22,7 +22,7 @@ import javax.annotation.Nonnull;
 
 public class NetEntity extends ThrowableItemProjectile {
 
-    private String entityNbt = "itemNbt";
+    private final String entityNbt = "itemNbt";
     private ItemStack itemStack = ItemStack.EMPTY;
 
     /**
@@ -63,7 +63,7 @@ public class NetEntity extends ThrowableItemProjectile {
      */
     @Override
     protected void onHit(@Nonnull HitResult result) {
-        if (level().isClientSide || !this.isAlive()) {
+        if (level().isClientSide() || !this.isAlive()) {
             return;
         }
         HitResult.Type type = result.getType();

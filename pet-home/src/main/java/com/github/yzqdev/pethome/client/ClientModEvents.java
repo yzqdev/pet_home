@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -22,5 +23,9 @@ public class ClientModEvents
     public static void onRegisterClientTooltip(RegisterClientTooltipComponentFactoriesEvent event) {
         event.register(ItemMobTooltip.class, ClientMobTooltip::new);
 
+    }
+    @SubscribeEvent
+    public static void onRegisterGuiOverlays(RegisterGuiOverlaysEvent event) {
+        PetInfoHudOverlay.registerGuiOverlays(event);
     }
 }

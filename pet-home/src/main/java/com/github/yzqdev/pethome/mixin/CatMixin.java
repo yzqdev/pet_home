@@ -1,5 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
+import com.github.yzqdev.pethome.server.NbtKeys;
+
 
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
@@ -42,23 +44,23 @@ public abstract class CatMixin extends TamableAnimal implements IComandableMob {
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/Cat;addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
+            method = {"addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void di_writeAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        compoundNBT.putInt("DICommand", this.getCommand());
+        compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
     }
 
     @Inject(
             at = {@At("TAIL")},
             remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/Cat;readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
+            method = {"readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void di_readAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        this.setCommand(compoundNBT.getInt("DICommand"));
+        this.setCommand(compoundNBT.getInt(NbtKeys.DI_COMMAND));
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/animal/Cat;mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"},
+            method = {"mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"},
             remap = true,
             at = @At(
                     value = "INVOKE",

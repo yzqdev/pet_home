@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public class PlayerMixin {
 
     @Redirect(
-            method = {"Lnet/minecraft/world/entity/player/Player;attack(Lnet/minecraft/world/entity/Entity;)V"},
+            method = {"attack(Lnet/minecraft/world/entity/Entity;)V"},
             remap = true,
             at = @At(
                     value = "INVOKE",

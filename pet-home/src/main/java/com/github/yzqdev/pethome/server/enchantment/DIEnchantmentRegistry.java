@@ -46,6 +46,15 @@ public static final  PetEnchantment XP_Transfer=new PetEnchantment("xp_transfer"
     public static final PetEnchantment HEALING_AURA = new PetEnchantment("healing_aura", Enchantment.Rarity.RARE, 2, 12);
 
     public static final PetEnchantment REJUVENATION = new PetEnchantment("rejuvenation", Enchantment.Rarity.UNCOMMON, 1, 6);
+    // 以下 8 个自 1.21/26.1 反向移植（参数对齐 1.21 数据驱动定义：权重 5、消耗 dynamicCost(4,7)）
+    public static final PetEnchantment INSIGHT = new PetEnchantment("insight", Enchantment.Rarity.UNCOMMON, 3, 4);
+    public static final PetEnchantment CHAOS = new PetEnchantment("chaos", Enchantment.Rarity.UNCOMMON, 1, 4);
+    public static final PetEnchantment SHARE = new PetEnchantment("share", Enchantment.Rarity.RARE, 3, 4);
+    public static final PetEnchantment NIGHT_VISION = new PetEnchantment("night_vision", Enchantment.Rarity.COMMON, 1, 4);
+    public static final PetEnchantment PARALYSIS = new PetEnchantment("paralysis", Enchantment.Rarity.UNCOMMON, 3, 4);
+    public static final PetEnchantment TOUGH = new PetEnchantment("tough", Enchantment.Rarity.COMMON, 4, 4);
+    public static final PetEnchantment VIOLENT = new PetEnchantment("violent", Enchantment.Rarity.RARE, 1, 4);
+    public static final PetEnchantment SONIC_BOOM = new PetEnchantment("sonic_boom", Enchantment.Rarity.RARE, 1, 4);
     public static final PetEnchantment UNDEAD_CURSE = new PetEnchantmentCurse("undead_curse", Enchantment.Rarity.VERY_RARE);
     public static final PetEnchantment INFAMY_CURSE = new PetEnchantmentCurse("infamy_curse", Enchantment.Rarity.VERY_RARE);
     public static final PetEnchantment BLIGHT_CURSE = new PetEnchantmentCurse("blight_curse", Enchantment.Rarity.VERY_RARE);
@@ -149,6 +158,22 @@ public static final  PetEnchantment XP_Transfer=new PetEnchantment("xp_transfer"
         }
         if(e1 == REJUVENATION){
             return e2 != HEALING_AURA && e2 != HEALTH_SIPHON;
+        }
+        // 以下互斥规则对齐 1.21 的 exclusiveWith 定义
+        if(e1 == CHAOS){
+            return e2 != PARALYSIS;
+        }
+        if(e1 == PARALYSIS){
+            return e2 != CHAOS;
+        }
+        if(e1 == SONIC_BOOM){
+            return e2 != MAGNETIC && e2 != WARPING_BITE;
+        }
+        if(e1 == MAGNETIC){
+            return e2 != SONIC_BOOM;
+        }
+        if(e1 == WARPING_BITE){
+            return e2 != SONIC_BOOM;
         }
         return true;
     }

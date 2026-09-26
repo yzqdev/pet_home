@@ -30,7 +30,11 @@ public class DataGenerators {
         var blockTagProvider = new ModBlockTagsProvider(packOutput, lookupProvider, PetHomeMod.MODID, existingFileHelper);
 
         generator.addProvider(event.includeServer(), blockTagProvider);
-        generator.addProvider(event.includeServer(), new ModItemModelProvider(packOutput, existingFileHelper));
+        // 实体标签（petstore_cage_0..3 / petstore_fishtank 等）此前从未注册生成，
+        // 导致宠物店笼子/鱼缸拿到的标签为空、不刷动物
+        generator.addProvider(event.includeServer(), new ModEntityTagsProvider(packOutput, lookupProvider, existingFileHelper));
+        // 物品模型属于 assets，门控应走 includeClient
+        generator.addProvider(event.includeClient(), new ModItemModelProvider(packOutput, existingFileHelper));
         generator.addProvider(event.includeServer(), new ModPoiTagProvider(packOutput,lookupProvider, existingFileHelper));
         generator.addProvider(event.includeServer(), new ModRecipeProvider(packOutput ));
         generator.addProvider(event.includeServer(),new ModEnLangProvider(packOutput,PetHomeMod.MODID,"en_us"));

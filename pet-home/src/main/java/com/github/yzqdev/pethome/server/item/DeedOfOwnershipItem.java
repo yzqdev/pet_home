@@ -1,5 +1,7 @@
 package com.github.yzqdev.pethome.server.item;
 
+import com.github.yzqdev.pethome.server.NbtKeys;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
@@ -17,7 +19,7 @@ public class DeedOfOwnershipItem extends Item {
     }
 
     public static boolean isBound(ItemStack stack) {
-        return stack.getTag() != null && stack.getTag().getBoolean("HasBoundEntity");
+        return stack.getTag() != null && stack.getTag().getBoolean(NbtKeys.HAS_BOUND_ENTITY);
     }
 
     public boolean isFoil(ItemStack stack) {
@@ -25,8 +27,8 @@ public class DeedOfOwnershipItem extends Item {
     }
 
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> list, TooltipFlag flags) {
-        if(isBound(stack) && level != null && stack.getTag().getString("BoundEntityName") != null){
-            list.add(Component.translatable("item.pet_home.deed_of_ownership.desc", stack.getTag().getString("BoundEntityName")).withStyle(ChatFormatting.GRAY));
+        if(isBound(stack) && level != null && stack.getTag().getString(NbtKeys.BOUND_ENTITY_NAME) != null){
+            list.add(Component.translatable("item.pet_home.deed_of_ownership.desc", stack.getTag().getString(NbtKeys.BOUND_ENTITY_NAME)).withStyle(ChatFormatting.GRAY));
         }
     }
 

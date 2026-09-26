@@ -38,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -65,7 +66,7 @@ public class NetItem extends Item {
             return InteractionResult.FAIL;
         }
         ItemStack stack = context.getItemInHand();
-        if (world.isClientSide || !containsEntity(stack)) {
+        if (world.isClientSide() || !containsEntity(stack)) {
             return InteractionResult.FAIL;
         }
 
@@ -86,7 +87,7 @@ public class NetItem extends Item {
 
     @Override
     public @NotNull InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
-        if (target.getCommandSenderWorld().isClientSide || target instanceof Player || !target.isAlive() || containsEntity(stack)) {
+        if (target.getCommandSenderWorld().isClientSide() || target instanceof Player || !target.isAlive() || containsEntity(stack)) {
             return InteractionResult.FAIL;
         }
         if (this.type == Type.EMPTY) {
@@ -113,7 +114,7 @@ public class NetItem extends Item {
         return super.interactLivingEntity(stack, player, target, hand);
     }
 
-    static Set<String> warned;
+    static Set<String> warned = new HashSet<>();
 
     @Override
     public boolean onEntityItemUpdate(ItemStack stack, ItemEntity entity) {
@@ -141,11 +142,11 @@ public class NetItem extends Item {
                 String id = holder.getString("id");
                 EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(id));
                 tooltip.add(type.getDescription());
-                tooltip.add(Component.translatable(LangDefinition.ConstantMsg.health_text).append(": " + String.format("%.1f", (getEntityData(stack).getDouble("Health")))));
+                tooltip.add(Component.translatable(LangDefinition.health_text).append(": " + String.format("%.1f", (getEntityData(stack).getDouble("Health")))));
             }
         } else {
             super.appendHoverText(stack,level,  tooltip, isAdvanced);
-            tooltip.add(Component.translatable(LangDefinition.ConstantMsg.net_launcher_default_only_tamable).withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable(LangDefinition.net_launcher_default_only_tamable).withStyle(ChatFormatting.GRAY));
         }
     }
 

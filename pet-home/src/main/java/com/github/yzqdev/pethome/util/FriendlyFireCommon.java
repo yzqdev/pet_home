@@ -96,7 +96,7 @@ public class FriendlyFireCommon {
         // Gets the pet owner ID, will be null if not a pet mob.
         final UUID ownerId = getOwner(victim);
 
-        if (ownerId != null && !PetHomeConfig.canHurtPetItem.contains(heldItem.getItem() )) {
+        if (ownerId != null && !PetHomeConfig.canHurtPetItem.contains(heldItem.getItem())) {
 
             // Protects owners from hurting their pets.
             if (PetHomeConfig.protectPetsFromOwner && ownerId.equals(attacker.getUUID())) {

@@ -41,7 +41,7 @@ public abstract class MobMixin extends LivingEntity {
             at = @At(value = "TAIL")
     )
     private void di_tick(CallbackInfo ci) {
-        if(TameableUtils.isTamed(this) && !level().isClientSide){
+        if(TameableUtils.isTamed(this) && !level().isClientSide()){
             if(TameableUtils.hasEnchant(this, DIEnchantmentRegistry.AMPHIBIOUS) && !((LivingEntity)this instanceof Axolotl)){
                 if(!hasWaterEnchantNavigator && this.isInWaterOrBubble()){
                     this.setPathfindingMalus(BlockPathTypes.WATER, 0.0F);

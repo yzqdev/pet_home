@@ -1,5 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
+import com.github.yzqdev.pethome.server.NbtKeys;
+
 
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
 import com.github.yzqdev.pethome.PetHomeMod;
@@ -46,7 +48,7 @@ public abstract class WolfMixin extends TamableAnimal implements IComandableMob 
             method = {"Lnet/minecraft/world/entity/animal/Wolf;addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void di_writeAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        compoundNBT.putInt("DICommand", this.getCommand());
+        compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
     }
 
     @Inject(
@@ -55,7 +57,7 @@ public abstract class WolfMixin extends TamableAnimal implements IComandableMob 
             method = {"Lnet/minecraft/world/entity/animal/Wolf;readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
     )
     private void di_readAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        this.setCommand(compoundNBT.getInt("DICommand"));
+        this.setCommand(compoundNBT.getInt(NbtKeys.DI_COMMAND));
     }
 
     @Inject(

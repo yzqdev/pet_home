@@ -61,7 +61,7 @@ public class VillageHouseManager {
             }
         } catch (Exception e) {
             PetHomeMod.LOGGER.error("Could not add village houses!");
-            e.printStackTrace();
+            PetHomeMod.LOGGER.error("Exception", e);
         }
     }
 }

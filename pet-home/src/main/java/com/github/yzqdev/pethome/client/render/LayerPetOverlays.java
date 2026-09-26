@@ -3,7 +3,7 @@ package com.github.yzqdev.pethome.client.render;
 
 
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.client.ClientProxy;
+import com.github.yzqdev.pethome.client.ClientEvents;
 import com.github.yzqdev.pethome.client.model.BlazingBarModel;
 import com.github.yzqdev.pethome.client.model.ShadowHandModel;
 import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
@@ -303,8 +303,8 @@ public class LayerPetOverlays extends RenderLayer {
     private float getPunchFor(LivingEntity living, int i, float partialTicks) {
         int[] arr = TameableUtils.getShadowPunchTimes(living);
         if (arr.length > i) {
-            if (ClientProxy.shadowPunchRenderData.containsKey(living) && ClientProxy.shadowPunchRenderData.get(living).length > i) {
-                int[] prevArr = ClientProxy.shadowPunchRenderData.get(living);
+            int[] prevArr = ClientEvents.shadowPunchRenderData.get(living);
+            if (prevArr != null && prevArr.length > i) {
                 return prevArr[i] + (arr[i] - prevArr[i]) * partialTicks;
             }
             return arr[i];

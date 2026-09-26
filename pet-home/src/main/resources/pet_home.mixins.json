@@ -27,7 +27,7 @@
     "MobMixin",
     "PanicGoalMixin",
     "ParrotMixin",
-
+    "PlayerMixin",
     "RabbitMixin",
     "SculkSensorBlockMixin",
     "ShootTongueMixin",

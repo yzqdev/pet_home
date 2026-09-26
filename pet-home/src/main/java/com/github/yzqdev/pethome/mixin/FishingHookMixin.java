@@ -25,7 +25,7 @@ public abstract class FishingHookMixin extends Projectile {
     }
 
     @Redirect(
-            method = {"Lnet/minecraft/world/entity/projectile/FishingHook;tick()V"},
+            method = {"tick()V"},
             remap = true,
             at = @At(
                     value = "INVOKE",
@@ -37,7 +37,7 @@ public abstract class FishingHookMixin extends Projectile {
     }
 
     @Inject(
-            method = {"Lnet/minecraft/world/entity/projectile/FishingHook;shouldStopFishing(Lnet/minecraft/world/entity/player/Player;)Z"},
+            method = {"shouldStopFishing(Lnet/minecraft/world/entity/player/Player;)Z"},
             remap = true,
             at = @At(
                     value = "HEAD"
