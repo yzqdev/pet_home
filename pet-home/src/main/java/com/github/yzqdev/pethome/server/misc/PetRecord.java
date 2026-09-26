@@ -1,0 +1,86 @@
+package com.github.yzqdev.pethome.server.misc;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+
+import java.util.UUID;
+
+/**
+ * 宠物罗盘的宠物档案：以 PetId（宠物永久逻辑身份）为主键，随宠物整个生命周期（含死亡/宠物床复活）不变。
+ * Entity UUID 只是「当前实体实例」的定位手段——宠物床复活会生成新实体（新 Entity UUID），PetId 不变，
+ * 罗盘始终以 PetId 识别宠物（compass.md 核心要求：Entity UUID 表示实体实例，PetId 表示宠物本身）。
+ */
+public class PetRecord {
+
+    /** 宠物永久身份（驯服时生成，存入宠物 citadel 数据，跨死亡/复活/存档不变） */
+    public final UUID petId;
+    /** 主人 UUID：隔离玩家数据，防止看到/操控他人宠物 */
+    public UUID ownerId;
+    /** 实体类型 id，如 minecraft:wolf */
+    public String entityType;
+    /** 当前显示名（自定义名优先，无则实体类型名）；宠物改名时同步 */
+    public String displayName;
+    /** 最后已知维度，如 minecraft:overworld */
+    public String dimension;
+    /** 最后已知坐标 */
+    public int x;
+    public int y;
+    public int z;
+    /** 当前实体实例 UUID（仅用于定位实体，非永久身份） */
+    public String entityUuid;
+    /** 最后一次成功更新位置的时间（level game time） */
+    public long lastKnownTime;
+    /** 是否存活（死亡等待宠物床复活时为 false，复活 join 时置回 true） */
+    public boolean alive;
+
+    public PetRecord(UUID petId, UUID ownerId, String entityType, String displayName, String dimension,
+                     int x, int y, int z, String entityUuid, long lastKnownTime, boolean alive) {
+        this.petId = petId;
+        this.ownerId = ownerId;
+        this.entityType = entityType;
+        this.displayName = displayName;
+        this.dimension = dimension;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.entityUuid = entityUuid;
+        this.lastKnownTime = lastKnownTime;
+        this.alive = alive;
+    }
+
+    /** 位置/维度等可变信息用本方法覆盖（petId 不可变） */
+    public void updateFrom(PetRecord other) {
+        this.ownerId = other.ownerId;
+        this.entityType = other.entityType;
+        this.displayName = other.displayName;
+        this.dimension = other.dimension;
+        this.x = other.x;
+        this.y = other.y;
+        this.z = other.z;
+        this.entityUuid = other.entityUuid;
+        this.lastKnownTime = other.lastKnownTime;
+        this.alive = other.alive;
+    }
+
+    public static final Codec<PetRecord> CODEC = RecordCodecBuilder.create(instance ->
+            instance.group(
+                    Codec.STRING.fieldOf("petId").forGetter(r -> r.petId.toString()),
+                    Codec.STRING.fieldOf("ownerId").forGetter(r -> r.ownerId.toString()),
+                    Codec.STRING.fieldOf("entityType").forGetter(r -> r.entityType),
+                    Codec.STRING.fieldOf("displayName").forGetter(r -> r.displayName),
+                    Codec.STRING.fieldOf("dimension").forGetter(r -> r.dimension),
+                    Codec.INT.fieldOf("x").forGetter(r -> r.x),
+                    Codec.INT.fieldOf("y").forGetter(r -> r.y),
+                    Codec.INT.fieldOf("z").forGetter(r -> r.z),
+                    Codec.STRING.fieldOf("entityUuid").forGetter(r -> r.entityUuid),
+                    Codec.LONG.fieldOf("lastKnownTime").forGetter(r -> r.lastKnownTime),
+                    Codec.BOOL.fieldOf("alive").forGetter(r -> r.alive)
+            ).apply(instance, PetRecord::fromCodec)
+    );
+
+    private static PetRecord fromCodec(String petId, String ownerId, String entityType, String displayName,
+                                       String dimension, int x, int y, int z, String entityUuid, long lastKnownTime, boolean alive) {
+        return new PetRecord(UUID.fromString(petId), UUID.fromString(ownerId), entityType, displayName,
+                dimension, x, y, z, entityUuid, lastKnownTime, alive);
+    }
+}

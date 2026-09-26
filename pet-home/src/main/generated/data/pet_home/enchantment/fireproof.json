@@ -1,0 +1,23 @@
+{
+  "anvil_cost": 2,
+  "description": {
+    "translate": "enchantment.pet_home.fireproof"
+  },
+  "exclusive_set": [
+    "pet_home:poison_resistance",
+    "pet_home:frost_fang",
+    "pet_home:amphibious"
+  ],
+  "max_cost": {
+    "base": 25,
+    "per_level_above_first": 7
+  },
+  "max_level": 1,
+  "min_cost": {
+    "base": 5,
+    "per_level_above_first": 7
+  },
+  "slots": [],
+  "supported_items": "#pet_home:collar_tag_key",
+  "weight": 5
+}

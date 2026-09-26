@@ -1,0 +1,32 @@
+{
+  "values": [
+    {
+      "id": "pet_home:bubbling",
+      "required": false
+    },
+    {
+      "id": "pet_home:vampire",
+      "required": false
+    },
+    {
+      "id": "pet_home:blazing_protection",
+      "required": false
+    },
+    {
+      "id": "pet_home:ore_scenting",
+      "required": false
+    },
+    {
+      "id": "pet_home:sonic_boom",
+      "required": false
+    },
+    {
+      "id": "pet_home:share",
+      "required": false
+    },
+    {
+      "id": "pet_home:paralysis",
+      "required": false
+    }
+  ]
+}

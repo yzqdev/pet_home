@@ -1,0 +1,48 @@
+{
+	"schemaVersion": 1,
+	"id": "pet_home",
+	"version": "${version}",
+	"name": "pet home",
+	"description": "An unofficial fork of Domestication Innovation, Vastly improves upon and compliments tameable mobs, both from vanilla and other mods.",
+	"authors": [
+		"Alexthe666 (Origin Author), yzqdev"
+	],
+	"contact": {
+		"homepage": "https://modrinth.com/mod/pet_home",
+		"sources": "https://github.com/yzqdev/pet_home"
+	},
+	"license": "GPL-3.0",
+	"icon": "logo.png",
+	"environment": "*",
+	"accessWidener": "pet_home.classtweaker",
+	"entrypoints": {
+		"main": [
+			"com.github.yzqdev.pethome.PetHomeMod"
+		],
+		"client": [
+			"com.github.yzqdev.pethome.PetHomeModClient"
+		],
+		"fabric-datagen": [
+			"com.github.yzqdev.pethome.datagen.PHDataEntry"
+		],
+		"modmenu": [
+			"com.github.yzqdev.pethome.interaction.menu.ModMenuIntegration"
+		],
+		"jade": [
+			"com.github.yzqdev.pethome.compat.jade.PetHomePlugin"
+		]
+	},
+	"mixins": [
+		"pet_home.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.1",
+		"java": ">=25",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"jade": "*",
+		"modmenu": "*"
+	}
+}

@@ -1,0 +1,16 @@
+{
+  "values": [
+    {
+      "id": "pet_home:blight_curse",
+      "required": false
+    },
+    {
+      "id": "pet_home:infamy_curse",
+      "required": false
+    },
+    {
+      "id": "pet_home:immaturity_curse",
+      "required": false
+    }
+  ]
+}

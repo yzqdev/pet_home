@@ -1,0 +1,26 @@
+{
+  "anvil_cost": 2,
+  "description": {
+    "translate": "enchantment.pet_home.magnetic"
+  },
+  "exclusive_set": [
+    "pet_home:chain_lightning",
+    "pet_home:herding",
+    "pet_home:vampire",
+    "pet_home:shadow_hands",
+    "pet_home:psychic_wall",
+    "pet_home:intimidation"
+  ],
+  "max_cost": {
+    "base": 25,
+    "per_level_above_first": 7
+  },
+  "max_level": 1,
+  "min_cost": {
+    "base": 11,
+    "per_level_above_first": 7
+  },
+  "slots": [],
+  "supported_items": "#pet_home:collar_tag_key",
+  "weight": 5
+}
