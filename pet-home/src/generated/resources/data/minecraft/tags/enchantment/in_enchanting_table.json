@@ -1,0 +1,112 @@
+{
+  "values": [
+    {
+      "id": "pet_home:amphibious",
+      "required": false
+    },
+    {
+      "id": "pet_home:chain_lightning",
+      "required": false
+    },
+    {
+      "id": "pet_home:deflection",
+      "required": false
+    },
+    {
+      "id": "pet_home:fireproof",
+      "required": false
+    },
+    {
+      "id": "pet_home:frost_fang",
+      "required": false
+    },
+    {
+      "id": "pet_home:gluttonous",
+      "required": false
+    },
+    {
+      "id": "pet_home:health_siphon",
+      "required": false
+    },
+    {
+      "id": "pet_home:health_boost",
+      "required": false
+    },
+    {
+      "id": "pet_home:healing_aura",
+      "required": false
+    },
+    {
+      "id": "pet_home:infamy_curse",
+      "required": false
+    },
+    {
+      "id": "pet_home:intimidation",
+      "required": false
+    },
+    {
+      "id": "pet_home:immunity_frame",
+      "required": false
+    },
+    {
+      "id": "pet_home:linked_inventory",
+      "required": false
+    },
+    {
+      "id": "pet_home:magnetic",
+      "required": false
+    },
+    {
+      "id": "pet_home:psychic_wall",
+      "required": false
+    },
+    {
+      "id": "pet_home:herding",
+      "required": false
+    },
+    {
+      "id": "pet_home:speedster",
+      "required": false
+    },
+    {
+      "id": "pet_home:poison_resistance",
+      "required": false
+    },
+    {
+      "id": "pet_home:warping_bite",
+      "required": false
+    },
+    {
+      "id": "pet_home:tethered_teleport",
+      "required": false
+    },
+    {
+      "id": "pet_home:xp_transfer",
+      "required": false
+    },
+    {
+      "id": "pet_home:blight_curse",
+      "required": false
+    },
+    {
+      "id": "pet_home:defusal",
+      "required": false
+    },
+    {
+      "id": "pet_home:total_recall",
+      "required": false
+    },
+    {
+      "id": "pet_home:rejuvenation",
+      "required": false
+    },
+    {
+      "id": "pet_home:void_cloud",
+      "required": false
+    },
+    {
+      "id": "pet_home:insight",
+      "required": false
+    }
+  ]
+}

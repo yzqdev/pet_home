@@ -1,0 +1,16 @@
+accessWidener v2 named
+accessible method net/minecraft/world/entity/projectile/AbstractArrow setPierceLevel (B)V
+accessible method net/minecraft/world/entity/Entity setLevel (Lnet/minecraft/world/level/Level;)V
+mutable field net/minecraft/world/level/levelgen/structure/pools/StructureTemplatePool rawTemplates Ljava/util/List;
+mutable field net/minecraft/world/level/levelgen/structure/pools/StructureTemplatePool templates Lit/unimi/dsi/fastutil/objects/ObjectArrayList;
+mutable field net/minecraft/world/level/levelgen/structure/pools/StructurePoolElement EMPTY Lnet/minecraft/core/Holder;
+accessible field net/minecraft/world/level/levelgen/structure/templatesystem/StructureProcessorList list Ljava/util/List;
+accessible field net/minecraft/world/entity/item/ItemEntity age I
+accessible method net/minecraft/world/entity/ai/village/poi/PoiTypes registerBlockStates (Lnet/minecraft/core/Holder;Ljava/util/Set;)V
+accessible field net/minecraft/world/level/Explosion level Lnet/minecraft/world/level/Level;
+accessible field net/minecraft/client/renderer/texture/SpriteContents originalImage Lcom/mojang/blaze3d/platform/NativeImage;
+mutable field net/minecraft/world/entity/ExperienceOrb value I
+accessible field net/minecraft/world/entity/ExperienceOrb value I
+accessible field net/minecraft/world/level/levelgen/structure/pools/StructureTemplatePool rawTemplates Ljava/util/List;
+accessible field net/minecraft/world/level/levelgen/structure/pools/StructureTemplatePool templates Lit/unimi/dsi/fastutil/objects/ObjectArrayList;
+accessible field net/minecraft/world/level/levelgen/structure/pools/StructurePoolElement EMPTY Lnet/minecraft/core/Holder;

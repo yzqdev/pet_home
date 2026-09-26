@@ -1,0 +1,151 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap' version '1.17-SNAPSHOT'
+    id 'maven-publish'
+    id 'idea'
+}
+
+version = "${mod_version}-fabric-${minecraft_version}"
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+repositories {
+    maven {
+        name = "TerraformersMC"
+        url = "https://maven.terraformersmc.com/releases/"
+    }
+    maven {
+        name = "Ladysnake"
+        url = "https://maven.ladysnake.org/releases/"
+    }
+  maven {
+         name = 'ParchmentMC'
+         url = 'https://maven.parchmentmc.org'
+     }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+loom {
+    accessWidenerPath = file("src/main/resources/pet_home.accesswidener")
+    runs {
+        client {
+            vmArgs "-XX:+AllowEnhancedClassRedefinition"
+            programArgs(["--username", "steve"])
+            client()
+        }
+    }
+}
+
+
+fabricApi {
+    configureDataGeneration {
+        outputDirectory = file("src/generated/resources")
+        client = true
+    }
+}
+
+// datagen 只跑本 mod 的 fabric-datagen 入口，跳过依赖里带 datagen 入口的 mod（如 touhou_little_maid）
+tasks.matching { it.name == 'runDatagen' }.configureEach {
+    systemProperty 'fabric-api.datagen.modid', 'pet_home'
+}
+
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+tasks.withType(AbstractArchiveTask).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType(Copy).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.layered() {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-1.21.1:2024.11.17@zip")
+    }
+
+    modImplementation( "net.fabricmc:fabric-loader:0.18.4")
+    modImplementation("net.fabricmc.fabric-api:fabric-api:0.116.9+1.21.1")
+
+    modImplementation( "maven.modrinth:jade:15.10.6+fabric")
+    modImplementation("maven.modrinth:forge-config-api-port:v21.1.6-1.21.1-Fabric")
+    modImplementation("com.terraformersmc:modmenu:11.0.3")
+
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+}
+
+
+def tlmDep = "maven.modrinth:touhoulittlemaid-orihime:0.8.2-neo1.5.3+mc1.21.1"
+
+
+def tlmNestedDir = layout.buildDirectory.dir("tlm-nested-jars").get().asFile
+def tlmMarker = new File(tlmNestedDir, ".extracted")
+if (!tlmMarker.exists() || tlmMarker.text != tlmDep) {
+    def tlmFiles = configurations.detachedConfiguration(dependencies.create(tlmDep)).resolve()
+    tlmNestedDir.deleteDir()
+    tlmNestedDir.mkdirs()
+    def queue = new ArrayDeque<File>(tlmFiles)
+    while (!queue.isEmpty()) {
+        new java.util.jar.JarFile(queue.pop()).withCloseable { jf ->
+            jf.entries().each { e ->
+                if (!e.isDirectory() && e.name.startsWith("META-INF/jars/") && e.name.endsWith(".jar")) {
+                    def out = new File(tlmNestedDir, e.name.substring("META-INF/jars/".length()))
+                    jf.getInputStream(e).withCloseable { out.bytes = it.bytes }
+                    queue.push(out)
+                }
+            }
+        }
+    }
+    tlmMarker.text = tlmDep
+}
+
+dependencies {
+    modImplementation(tlmDep)
+    runtimeOnly("com.electronwill.night-config:core:3.8.0")
+    runtimeOnly("com.electronwill.night-config:toml:3.8.0")
+
+    modRuntimeOnly(files(fileTree(dir: tlmNestedDir, include: "*.jar").collect { it }))
+}
+
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": inputs.properties.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
