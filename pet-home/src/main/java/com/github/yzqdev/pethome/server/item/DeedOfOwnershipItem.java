@@ -1,0 +1,35 @@
+package com.github.yzqdev.pethome.server.item;
+
+import com.github.yzqdev.pethome.server.NbtKeys;
+
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
+
+import org.jetbrains.annotations.Nullable;
+import java.util.List;
+
+public class DeedOfOwnershipItem extends Item {
+
+    public DeedOfOwnershipItem() {
+        super(new Item.Properties().stacksTo(1));
+    }
+
+    public static boolean isBound(ItemStack stack) {
+        return stack.getTag() != null && stack.getTag().getBoolean(NbtKeys.HAS_BOUND_ENTITY);
+    }
+
+    public boolean isFoil(ItemStack stack) {
+        return super.isFoil(stack) || isBound(stack);
+    }
+
+    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> list, TooltipFlag flags) {
+        if(isBound(stack) && level != null && stack.getTag().getString(NbtKeys.BOUND_ENTITY_NAME) != null){
+            list.add(Component.translatable("item.pet_home.deed_of_ownership.desc", stack.getTag().getString(NbtKeys.BOUND_ENTITY_NAME)).withStyle(ChatFormatting.GRAY));
+        }
+    }
+
+}

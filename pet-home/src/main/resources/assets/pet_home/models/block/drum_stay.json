@@ -1,0 +1,8 @@
+{
+    "parent": "block/cube_bottom_top",
+    "textures": {
+        "side": "pet_home:block/drum_side",
+        "bottom": "pet_home:block/drum_bottom",
+        "top": "pet_home:block/drum_stay"
+    }
+}

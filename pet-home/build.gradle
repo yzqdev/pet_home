@@ -1,0 +1,133 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap' version '1.17-SNAPSHOT'
+    id 'maven-publish'
+    id 'idea'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+repositories {
+
+}
+loom {
+    accessWidenerPath = file("src/main/resources/pet_home.accesswidener")
+    runs {
+        client {
+            vmArgs "-XX:+AllowEnhancedClassRedefinition"
+            programArgs(["--username", "steve"])
+            client()
+        }
+    }
+}
+
+fabricApi {
+    configureDataGeneration {
+        outputDirectory = file("src/generated/resources")
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.layered() {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-1.20.1:2023.09.03@zip")
+    }
+
+    modImplementation("net.fabricmc:fabric-loader:0.16.14")
+    modImplementation("net.fabricmc.fabric-api:fabric-api:0.92.5+1.20.1")
+    modImplementation( "maven.modrinth:jade:11.12.0+fabric")
+    modImplementation( "maven.modrinth:forge-config-api-port:v8.0.3-1.20.1-Fabric")
+    modImplementation("com.terraformersmc:modmenu:7.2.2")
+}
+
+
+def tlmDep = "maven.modrinth:touhoulittlemaid-orihime:0.8.2-forge1.5.3+mc1.20.1"
+
+
+def tlmNestedDir = layout.buildDirectory.dir("tlm-nested-jars").get().asFile
+def tlmMarker = new File(tlmNestedDir, ".extracted")
+if (!tlmMarker.exists() || tlmMarker.text != tlmDep) {
+    def tlmFiles = configurations.detachedConfiguration(dependencies.create(tlmDep)).resolve()
+    tlmNestedDir.deleteDir()
+    tlmNestedDir.mkdirs()
+    def queue = new ArrayDeque<File>(tlmFiles)
+    while (!queue.isEmpty()) {
+        new java.util.jar.JarFile(queue.pop()).withCloseable { jf ->
+            jf.entries().each { e ->
+                if (!e.isDirectory() && e.name.startsWith("META-INF/jars/") && e.name.endsWith(".jar")) {
+                    def out = new File(tlmNestedDir, e.name.substring("META-INF/jars/".length()))
+                    jf.getInputStream(e).withCloseable { out.bytes = it.bytes }
+                    queue.push(out)
+                }
+            }
+        }
+    }
+    tlmMarker.text = tlmDep
+}
+
+dependencies {
+    modImplementation(tlmDep)
+
+    modRuntimeOnly(files(fileTree(dir: tlmNestedDir, include: "*.jar").collect { it }))
+
+
+}
+tasks.register('copyParentLicense', Copy) {
+    from rootProject.file('LICENSE')
+    into "$buildDir/resources/main"
+}
+
+
+afterEvaluate {
+    tasks.named('processResources') {
+        dependsOn copyParentLicense
+    }
+}
+processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 17
+    it.options.encoding = 'UTF-8'
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}
+
+publishing {
+    publications {
+        create("mavenJava", MavenPublication) {
+            artifactId = project.archives_base_name
+            from components.java
+        }
+    }
+    repositories {
+    }
+}
+
+
+tasks.withType(AbstractCopyTask).configureEach {
+    it.exclude("**/.cache/**")
+    it.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

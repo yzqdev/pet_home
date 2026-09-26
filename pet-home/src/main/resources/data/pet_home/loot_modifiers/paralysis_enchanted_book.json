@@ -1,0 +1,23 @@
+{
+  "type": "pet_home:di_loot_modifier",
+  "loot_type": 9,
+  "conditions": [
+    {
+      "condition": "minecraft:any_of",
+      "terms": [
+        {
+          "condition": "forge:loot_table_id",
+          "loot_table_id": "minecraft:chests/abandoned_mineshaft"
+        },
+        {
+          "condition": "forge:loot_table_id",
+          "loot_table_id": "minecraft:chests/desert_pyramid"
+        },
+        {
+          "condition": "forge:loot_table_id",
+          "loot_table_id": "minecraft:chests/spawn_bonus_chest"
+        }
+      ]
+    }
+  ]
+}

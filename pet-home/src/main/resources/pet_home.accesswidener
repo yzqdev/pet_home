@@ -1,0 +1,17 @@
+accessWidener v2 named
+accessible method net/minecraft/world/entity/Entity setLevel (Lnet/minecraft/world/level/Level;)V
+accessible class net/minecraft/world/entity/npc/VillagerTrades$EnchantBookForEmeralds
+accessible class net/minecraft/world/entity/npc/VillagerTrades$EmeraldForItems
+accessible class net/minecraft/world/entity/npc/VillagerTrades$ItemsForEmeralds
+accessible field net/minecraft/world/entity/Mob goalSelector Lnet/minecraft/world/entity/ai/goal/GoalSelector;
+accessible field net/minecraft/world/entity/item/ItemEntity age I
+accessible field net/minecraft/world/level/Explosion x D
+accessible field net/minecraft/world/level/Explosion y D
+accessible field net/minecraft/world/level/Explosion z D
+accessible field net/minecraft/client/renderer/texture/SpriteContents byMipLevel [Lcom/mojang/blaze3d/platform/NativeImage;
+accessible field net/minecraft/world/entity/ExperienceOrb value I
+accessible field net/minecraft/world/level/levelgen/structure/pools/StructurePoolElement EMPTY Lnet/minecraft/core/Holder;
+# 自定义 POI 必须手动登记「方块状态 -> POI」映射：原版 PoiTypes 的 TYPE_BY_STATE 只由它自己的
+# bootstrap 填充（Forge 有加载器补丁，Fabric 没有）。不放开/不调用的话宠物床不会被 PoiManager
+# 认成 POI，驯兽师村民拿不到工作站。
+accessible method net/minecraft/world/entity/ai/village/poi/PoiTypes registerBlockStates (Lnet/minecraft/core/Holder;Ljava/util/Set;)V
