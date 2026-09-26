@@ -1,0 +1,24 @@
+{
+  "anvil_cost": 2,
+  "description": {
+    "translate": "enchantment.pet_home.herding"
+  },
+  "exclusive_set": [
+    "pet_home:magnetic",
+    "pet_home:ore_scenting",
+    "pet_home:psychic_wall",
+    "pet_home:blight_curse"
+  ],
+  "max_cost": {
+    "base": 25,
+    "per_level_above_first": 7
+  },
+  "max_level": 2,
+  "min_cost": {
+    "base": 5,
+    "per_level_above_first": 7
+  },
+  "slots": [],
+  "supported_items": "#pet_home:collar_tag_key",
+  "weight": 5
+}

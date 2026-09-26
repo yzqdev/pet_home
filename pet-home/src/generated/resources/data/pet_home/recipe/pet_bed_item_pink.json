@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "#minecraft:planks",
+    "minecraft:bone",
+    "minecraft:pink_wool"
+  ],
+  "result": {
+    "id": "pet_home:pet_bed_pink"
+  }
+}

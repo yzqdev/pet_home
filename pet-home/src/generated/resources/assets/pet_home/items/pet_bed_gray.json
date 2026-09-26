@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "pet_home:block/pet_bed_gray"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    "#pet_home:pet_beds",
+    "minecraft:orange_dye"
+  ],
+  "result": {
+    "id": "pet_home:pet_bed_orange"
+  }
+}

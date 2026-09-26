@@ -1,0 +1,36 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "chance": 0.05,
+          "condition": "minecraft:random_chance"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "functions": [
+            {
+              "add": true,
+              "enchantments": {
+                "pet_home:tough": {
+                  "type": "minecraft:uniform",
+                  "max": 4.0,
+                  "min": 1.0
+                }
+              },
+              "function": "minecraft:set_enchantments"
+            }
+          ],
+          "name": "minecraft:book"
+        }
+      ],
+      "name": "enchant",
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "pet_home:chests/pet_protection_loot"
+}

@@ -1,0 +1,12 @@
+{
+  "gives": {
+    "count": 6,
+    "id": "minecraft:bone"
+  },
+  "max_uses": 6.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 3.0,
+    "id": "minecraft:emerald"
+  }
+}

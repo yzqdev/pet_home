@@ -1,0 +1,6 @@
+{
+    "parent": "pet_home:block/pet_bed",
+    "textures": {
+        "bed": "pet_home:block/pet_bed_seat_light_gray"
+    }
+}

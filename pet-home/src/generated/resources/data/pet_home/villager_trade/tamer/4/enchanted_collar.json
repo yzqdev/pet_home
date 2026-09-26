@@ -1,0 +1,29 @@
+{
+  "given_item_modifiers": [
+    {
+      "function": "minecraft:enchant_randomly",
+      "only_compatible": false,
+      "options": "#pet_home:trade_enchantment_book"
+    },
+    {
+      "function": "minecraft:enchant_randomly",
+      "only_compatible": false,
+      "options": "#pet_home:trade_enchantment_book"
+    },
+    {
+      "function": "minecraft:enchant_randomly",
+      "only_compatible": false,
+      "options": "#pet_home:trade_enchantment_book"
+    }
+  ],
+  "gives": {
+    "id": "pet_home:collar_tag"
+  },
+  "max_uses": 3.0,
+  "reputation_discount": 0.05,
+  "wants": {
+    "count": 18.0,
+    "id": "minecraft:emerald"
+  },
+  "xp": 15.0
+}

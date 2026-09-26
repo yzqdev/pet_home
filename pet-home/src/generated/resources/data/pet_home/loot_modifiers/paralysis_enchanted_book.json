@@ -1,0 +1,24 @@
+{
+  "type": "pet_home:ph_loot_modifier",
+  "conditions": [
+    {
+      "condition": "minecraft:any_of",
+      "terms": [
+        {
+          "condition": "neoforge:loot_table_id",
+          "loot_table_id": "minecraft:chests/abandoned_mineshaft"
+        },
+        {
+          "condition": "neoforge:loot_table_id",
+          "loot_table_id": "minecraft:chests/desert_pyramid"
+        },
+        {
+          "condition": "neoforge:loot_table_id",
+          "loot_table_id": "minecraft:chests/spawn_bonus_chest"
+        }
+      ]
+    }
+  ],
+  "loot_type": 7,
+  "priority": 0
+}

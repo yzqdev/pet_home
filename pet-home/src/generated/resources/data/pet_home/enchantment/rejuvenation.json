@@ -1,0 +1,23 @@
+{
+  "anvil_cost": 2,
+  "description": {
+    "translate": "enchantment.pet_home.rejuvenation"
+  },
+  "exclusive_set": [
+    "pet_home:healing_aura",
+    "pet_home:health_siphon",
+    "pet_home:xp_transfer"
+  ],
+  "max_cost": {
+    "base": 25,
+    "per_level_above_first": 7
+  },
+  "max_level": 1,
+  "min_cost": {
+    "base": 8,
+    "per_level_above_first": 7
+  },
+  "slots": [],
+  "supported_items": "#pet_home:collar_tag_key",
+  "weight": 5
+}
