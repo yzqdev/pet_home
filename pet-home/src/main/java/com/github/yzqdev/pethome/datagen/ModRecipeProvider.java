@@ -39,6 +39,10 @@ public class ModRecipeProvider extends RecipeProvider implements IConditionBuild
                 .unlockedBy("has_craft", has(Items.CRAFTING_TABLE)).save(pWriter);
         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, PHItemRegistry.FEATHER_ON_A_STICK.get()).pattern("I ").pattern(" C").define('I', Items.FISHING_ROD).define('C', Tags.Items.FEATHERS)
                 .unlockedBy("has_craft", has(Items.CRAFTING_TABLE)).save(pWriter);
+        // 宠物罗盘：指南针 + 项圈牌 + 皮革
+        ShapedRecipeBuilder.shaped(RecipeCategory.TOOLS, PHItemRegistry.PET_COMPASS.get()).pattern(" l ").pattern("lcl").pattern(" l ")
+                .define('l', Items.LEATHER).define('c', Items.COMPASS)
+                .unlockedBy("has_compass", has(Items.COMPASS)).save(pWriter);
 
         PHBlockRegistry.PetBedItems.forEach((color, item) -> {
             ShapelessRecipeBuilder.shapeless(RecipeCategory.TOOLS, item.get(), 1)

@@ -55,7 +55,7 @@ public class FriendlyFireCommon {
 
     public static boolean isProtected(Entity victim, Entity attacker, float amount) {
 
-        if (PetHomeConfig.noProtectionEntity.contains(victim.getType())) {
+        if (PetHomeConfig.noProtectionEntity != null && PetHomeConfig.noProtectionEntity.contains(victim.getType())) {
 
             return false;
         }
@@ -83,7 +83,7 @@ public class FriendlyFireCommon {
         }
 
         // Mobs with player protection are protected from players.
-        if (attacker instanceof Player player && PetHomeConfig.playerCantHurtEntity.contains(victim.getType())) {
+        if (attacker instanceof Player player && PetHomeConfig.playerCantHurtEntity != null && PetHomeConfig.playerCantHurtEntity.contains(victim.getType())) {
 
             return true;
         }

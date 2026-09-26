@@ -7,12 +7,11 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 
-import java.util.logging.Level;
+import java.util.Optional;
+
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-
-
-import java.util.Optional;
+import net.minecraft.world.level.Level;
 
 public record RespawnRequest(
         String entityType,

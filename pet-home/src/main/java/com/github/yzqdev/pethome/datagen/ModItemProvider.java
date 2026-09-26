@@ -36,6 +36,7 @@ public class ModItemProvider extends ItemModelProvider {
         getBuilder("drum").parent(new ModelFile.UncheckedModelFile(
                 ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "block/drum_wander")));
 
+        handheldItem(PHItemRegistry.PET_COMPASS);
     }
 
     private ItemModelBuilder simpleItem(DeferredItem<Item> item) {

@@ -98,6 +98,20 @@ public interface LangDefinition {
     String protectPetsFromPets_conf_tooltip = configTooltip("protectPetsFromPets");
     String reflectDamage_conf = config("reflectDamage");
     String reflectDamage_conf_tooltip = configTooltip("reflectDamage");
+    // —— 宠物罗盘 ——
+    String petCompassEnable_conf = config("petCompassEnable");
+    String petCompassEnable_conf_tooltip = configTooltip("petCompassEnable");
+    String teleportPlayerToPet_conf = config("teleportPlayerToPet");
+    String teleportPlayerToPet_conf_tooltip = configTooltip("teleportPlayerToPet");
+    String teleportPetToPlayer_conf = config("teleportPetToPlayer");
+    String teleportPetToPlayer_conf_tooltip = configTooltip("teleportPetToPlayer");
+    // —— 宠物信息悬浮面板 ——
+    String petInfoOverlay_conf = config("petInfoOverlay");
+    String petInfoOverlay_conf_tooltip = configTooltip("petInfoOverlay");
+    String petInfoOverlayRequireShift_conf = config("petInfoOverlayRequireShift");
+    String petInfoOverlayRequireShift_conf_tooltip = configTooltip("petInfoOverlayRequireShift");
+    String petInfoOverlayIgnoreJade_conf = config("petInfoOverlayIgnoreJade");
+    String petInfoOverlayIgnoreJade_conf_tooltip = configTooltip("petInfoOverlayIgnoreJade");
     String ore_scenting_loot_chance_conf = config("ore_scenting_loot_chance");
     String ore_scenting_loot_chance_conf_tooltip = configTooltip("ore_scenting_loot_chance");
     String bubbling_loot_chance_conf = config("bubbling_loot_chance");
@@ -177,6 +191,8 @@ public interface LangDefinition {
     String ITEM_NET = item("net");
     String ITEM_NET_HAS_ITEM = item("net_has_item");
     String ITEM_NET_LAUNCHER = item("net_launcher");
+    String ITEM_PET_COMPASS = item("pet_compass");
+    String TOOLTIP_PET_COMPASS_DESC = tooltips("pet_compass.desc");
     String ENTITY_CHAIN_LIGHTNING = entity("chain_lightning");
     String ENTITY_FEATHER = entity("feather");
     String ENTITY_FOLLOWING_JUKEBOX = entity("following_jukebox");

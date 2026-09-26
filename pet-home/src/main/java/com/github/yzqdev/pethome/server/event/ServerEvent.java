@@ -34,6 +34,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -170,7 +171,7 @@ public class ServerEvent {
         }
     }
 
-        private static final Map<Level, CollarTickTracker> COLLAR_TICK_TRACKER_MAP = new HashMap<>();
+        private static final Map<ResourceKey<Level>, CollarTickTracker> COLLAR_TICK_TRACKER_MAP = new HashMap<>();
 
 
 
@@ -189,7 +190,7 @@ public class ServerEvent {
             }
 
 
-            CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.get(entity.level());
+            CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.get(entity.level().dimension());
 
 
             return tracker == null || !tracker.isEntityBlocked(entity);
@@ -205,7 +206,7 @@ public class ServerEvent {
             if (!entity.level().isClientSide()) {
 
 
-                CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.computeIfAbsent(entity.level(), k -> new CollarTickTracker());
+                CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.computeIfAbsent(entity.level().dimension(), k -> new CollarTickTracker());
 
 
                 tracker.addBlockedEntityTick(entity.getUUID(), 5);
@@ -221,8 +222,12 @@ public class ServerEvent {
         @SubscribeEvent
     public static void onServerTick(LevelTickEvent.Post tick) {
         if (!tick.getLevel().isClientSide()) {
-            CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.computeIfAbsent(tick.getLevel(), k -> new CollarTickTracker());
+            CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.computeIfAbsent(tick.getLevel().dimension(), k -> new CollarTickTracker());
             tracker.tick();
+        }
+        // 宠物罗盘召回队列：全局队列只在主世界 tick 上处理（每 20 tick 一轮）
+        if (!tick.getLevel().isClientSide() && tick.getLevel().dimension() == Level.OVERWORLD && tick.getLevel().getGameTime() % 20 == 0) {
+            PetCompassTeleport.processRecallQueue(tick.getLevel().getServer(), tick.getLevel().getGameTime());
         }
         if (tick.getLevel().getGameTime() % 10 != 0) return;
         if (!tick.getLevel().isClientSide() && tick.getLevel() instanceof ServerLevel) {
@@ -351,6 +356,11 @@ public class ServerEvent {
     public static void onEntityJoinWorldEvent(EntityJoinLevelEvent event) {
 
 
+        // 宠物罗盘：档案更新（区块加载/维度切换/宠物床复活回到世界——复活实体带着原 PetId，重新绑定 Entity UUID）
+        if (event.getEntity() instanceof LivingEntity living && !event.getLevel().isClientSide() && TameableUtils.isTamed(living)) {
+            PetCompassTracker.updateRecord(living);
+        }
+
         if (event.getEntity() instanceof LivingEntity living && TameableUtils.couldBeTamed(living)) {
             if (TameableUtils.hasEnchant(living, ModEnchantments.HEALTH_BOOST)) {
                 living.setHealth((float) Math.max(living.getHealth(), TameableUtils.getSafePetHealth(living)));
@@ -372,7 +382,7 @@ public class ServerEvent {
                 String saveName = event.getEntity().hasCustomName() ? event.getEntity().getCustomName().getString() : "";
                 PHWorldData data = PHWorldData.get(living.level());
                 if (data != null) {
-                    LanternRequest request = new LanternRequest(living.getUUID(), BuiltInRegistries.ENTITY_TYPE.getKey(event.getEntity().getType()).toString(), ownerUUID, living.blockPosition(), event.getEntity().level().dayTime(), saveName);
+                    LanternRequest request = new LanternRequest(living.getUUID(), BuiltInRegistries.ENTITY_TYPE.getKey(event.getEntity().getType()).toString(), ownerUUID, living.blockPosition(), event.getEntity().level().dayTime(), saveName, living.level().dimension().location().toString());
                     data.addLanternRequest(request);
                 }
             }
@@ -405,6 +415,9 @@ public class ServerEvent {
                 }
             }
 
+            // 宠物罗盘：死亡档案保留，仅标记待宠物床复活（compass.md：不因 Entity UUID 消失而删档）
+            PetCompassTracker.onPetDeath(event.getEntity());
+
         }
     }
 
@@ -425,7 +438,7 @@ public class ServerEvent {
         }
         if (flag) {
             event.setCanceled(true);
-            float pitch = 1.5F + new Random().nextFloat();
+            float pitch = 1.5F + event.getLevel().getRandom().nextFloat();
             event.getLevel().playSound(null, center.x, center.y, center.z, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 1, pitch);
             if (event.getLevel() instanceof ServerLevel serverLevel) {
                 for (int i = 0; i < 5; i++) {
@@ -448,7 +461,7 @@ public class ServerEvent {
     @SubscribeEvent
     public static void onItemDespawnEvent(ItemExpireEvent event) {
         if (event.getEntity().getItem().getItem() == Items.APPLE && PetHomeConfig.rottenApple) {
-            if (new Random().nextFloat() < 0.1F * event.getEntity().getItem().getCount()) {
+            if (event.getEntity().getRandom().nextFloat() < 0.1F * event.getEntity().getItem().getCount()) {
                 event.getEntity().getItem().shrink(1);
                 event.setExtraLife(10);
                 ItemEntity rotten = new ItemEntity(event.getEntity().level(), event.getEntity().getX(), event.getEntity().getY(), event.getEntity().getZ(), new ItemStack(PHItemRegistry.ROTTEN_APPLE.get()));

@@ -62,7 +62,7 @@ public class TameableUtils {
     private static final String ENCHANTMENT_TAG = "StoredPetEnchantments";
     private static final String COLLAR_TAG = "HasPetCollar";
     private static final String IMMUNITY_TIME_TAG = "PetImmunityTimer";
-    private static final String FROZEN_TIME_TAG = "PetFrozenTime";
+    public static final String FROZEN_TIME_TAG = "PetFrozenTime";
     private static final String ATTACK_TARGET_ENTITY = "PetAttackTarget";
     private static final String SHADOW_PUNCH_TIMES = "PetShadowPunchTimes";
     private static final String SHADOW_PUNCH_COOLDOWN = "PetShadowPunchCooldown";
@@ -73,7 +73,7 @@ public class TameableUtils {
     private static final String JUKEBOX_FOLLOWER_DISC = "PetJukeboxFollowerDisc";
     private static final String BLAZING_PROTECTION_BARS = "PetBlazingProtectionBars";
     private static final String BLAZING_PROTECTION_COOLDOWN = "PetBlazingProtectionCooldown";
-    private static final String HEALING_AURA_TIME = "PetHealingAuraTime";
+    public static final String HEALING_AURA_TIME = "PetHealingAuraTime";
     private static final String Sonic_boom_TIME = "PetSonicBoomTime";
     private static final String HEALING_AURA_IMPULSE = "PetHealingAuraImpulse";
     private static final String HAS_PET_BED = "HasPetBed";
@@ -271,10 +271,10 @@ public class TameableUtils {
     }
 
     private static void sync(LivingEntity entity, CompoundTag tag) {
+        // 服务端不再手动全服广播：setCitadelEntityData 内部 force 写 entityData，
+        // vanilla 只把变化发给追踪该实体的玩家（原先 sendToAllPlayers 发给全服所有玩家，双通道冗余）
         CitadelEntityData.setCitadelTag(entity, tag);
-        if (!entity.level().isClientSide()) {
-            PacketDistributor.sendToAllPlayers(new PropertiesMessage(PHConstants.entityDataTagUpdate, tag.copy(), entity.getId()));
-        } else {
+        if (entity.level().isClientSide()) {
             PacketDistributor.sendToServer(new PropertiesMessage(PHConstants.entityDataTagUpdate, tag.copy(), entity.getId()));
         }
     }
@@ -382,6 +382,11 @@ public class TameableUtils {
         return getEnchantLevel(entity, enchantment) > 0;
     }
     public static int getEnchantLevel(LivingEntity entity, ResourceKey<Enchantment> enchantment) {
+        if (entity instanceof PetSyncDataEntity holder) {
+            // 实体级缓存：附魔集合只在 tag 变化时解析一次，热路径（mixin/渲染/tick）不再反复扫描 NBT 列表
+            Integer level = holder.ph_getEnchantCache(CitadelEntityData.getCitadelTag(entity)).get(enchantment.location());
+            return level == null ? 0 : level;
+        }
         ListTag listtag = getEnchantmentList(entity);
 
         if (listtag != null) {
@@ -398,6 +403,22 @@ public class TameableUtils {
 
         }
         return 0;
+    }
+
+    /** 把 citadel tag 里的附魔列表解析为附魔 ID → level 映射（供实体缓存重建用） */
+    public static Map<ResourceLocation, Integer> buildEnchantCache(CompoundTag tag) {
+        Map<ResourceLocation, Integer> cache = new HashMap<>();
+        if (tag.contains(ENCHANTMENT_TAG)) {
+            ListTag listtag = tag.getList(ENCHANTMENT_TAG, 10);
+            for (int i = 0; i < listtag.size(); ++i) {
+                CompoundTag compoundtag = listtag.getCompound(i);
+                String id = compoundtag.getString("id");
+                if (!id.isEmpty()) {
+                    cache.put(ResourceLocation.parse(id), compoundtag.getInt("lvl"));
+                }
+            }
+        }
+        return cache;
     }
 
     @Nullable
@@ -517,14 +538,16 @@ public class TameableUtils {
     }
 
     public static int getHealingAuraTime(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getInt(HEALING_AURA_TIME);
+        if (enchanted instanceof PetSyncDataEntity holder) {
+            return holder.ph_getHealingAuraTime();
+        }
+        return 0;
     }
 
     public static void setHealingAuraTime(LivingEntity enchanted, int time) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putInt(HEALING_AURA_TIME, time);
-        sync(enchanted, tag);
+        if (enchanted instanceof PetSyncDataEntity holder) {
+            holder.ph_setHealingAuraTime(time);
+        }
     }
 
     public static long getSonicboomAuraTime(LivingEntity enchanted) {
@@ -753,14 +776,16 @@ public class TameableUtils {
     }
 
     public static int getFrozenTime(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getInt(FROZEN_TIME_TAG);
+        if (enchanted instanceof PetSyncDataEntity holder) {
+            return holder.ph_getFrozenTime();
+        }
+        return 0;
     }
 
     public static void setFrozenTimeTag(LivingEntity enchanted, int time) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putInt(FROZEN_TIME_TAG, time);
-        sync(enchanted, tag);
+        if (enchanted instanceof PetSyncDataEntity holder) {
+            holder.ph_setFrozenTime(time);
+        }
     }
 
     public static List<LivingEntity> getNearbyHealers(LivingEntity hurtOwner) {

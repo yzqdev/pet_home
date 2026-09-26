@@ -108,8 +108,12 @@ public class DIRenderTypes extends RenderType {
         super(p_173178_, p_173179_, p_173180_, p_173181_, p_173182_, p_173183_, p_173184_, p_173185_);
     }
 
+    private static final java.util.Map<Long, RenderType> ZOMBIE_OVERLAY_CACHE = new java.util.HashMap<>();
+
     public static RenderType getZombieOverlay(ResourceLocation texture, int x, int y) {
-        return create("zombie_overlay", DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS, 256, true, true,
+        // 按 (x,y) 缓存 RenderType：原先每帧每僵尸宠物 RenderType.create 重建 CompositeState
+        long key = ((long) x << 32) | (y & 0xFFFFFFFFL);
+        return ZOMBIE_OVERLAY_CACHE.computeIfAbsent(key, k -> create("zombie_overlay", DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS, 256, true, true,
                 CompositeState.builder()
                         .setShaderState(RENDERTYPE_ENTITY_GLINT_SHADER)
                         .setTextureState(new TextureStateShard(
@@ -121,7 +125,7 @@ public class DIRenderTypes extends RenderType {
                         .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
                         .setTexturingState(new ZombieTexturing("zombie", x, y))
                         .setOverlayState(OVERLAY)
-                        .createCompositeState(true));
+                        .createCompositeState(true)));
     }
 
     private static RenderType translucentNoCull() {

@@ -76,6 +76,14 @@ public class PetHomeConfig {
     private static final ModConfigSpec.BooleanValue TRINARY_COMMAND_SYSTEM = BUILDER.comment("true if the trinary command system (wander/follow/stay) is enabled").define("trinary_command_system", true);
     private static final ModConfigSpec.BooleanValue PET_BED_RESPAWNS = BUILDER.comment("true if mobs can respawn in pet beds the next morning after they die").define("pet_bed_respawns", true);
     private static final ModConfigSpec.BooleanValue RABBITS_SCARE_RAVAGERS = BUILDER.comment("true if rabbits scare ravagers like they used to do").define("rabbits_scare_ravagers", true);
+    // —— 宠物罗盘（compass.md：enable / 两个传送完全独立）——
+    private static final ModConfigSpec.BooleanValue PET_COMPASS_ENABLE = BUILDER.comment("master switch for the pet compass system").define("petCompassEnable", true);
+    private static final ModConfigSpec.BooleanValue PET_COMPASS_TELEPORT_PLAYER_TO_PET = BUILDER.comment("allow teleporting the player to the pet").define("teleportPlayerToPet", true);
+    private static final ModConfigSpec.BooleanValue PET_COMPASS_TELEPORT_PET_TO_PLAYER = BUILDER.comment("allow teleporting (recalling) the pet to the player").define("teleportPetToPlayer", true);
+    // —— 宠物信息悬浮面板 ——
+    private static final ModConfigSpec.BooleanValue PET_INFO_OVERLAY = BUILDER.comment("show the pet info panel at the top of the screen while looking at your own pet").define("petInfoOverlay", true);
+    private static final ModConfigSpec.BooleanValue PET_INFO_OVERLAY_REQUIRE_SHIFT = BUILDER.comment("require holding the sneak key while looking at the pet to show the panel (off = just look at the pet)").define("petInfoOverlayRequireShift", false);
+    private static final ModConfigSpec.BooleanValue PET_INFO_OVERLAY_IGNORE_JADE = BUILDER.comment("show the pet info panel even when Jade is installed (with Jade present the panel is hidden by default since its tooltip already shows pet info)").define("petInfoOverlayIgnoreJade", false);
     static final ModConfigSpec SPEC = BUILDER.build();
 
     private static boolean validateEntityTypesName(Object obj) {
@@ -109,11 +117,12 @@ public class PetHomeConfig {
 
     public static boolean protectTeamMembers = true;
     public static boolean respectTeamRules = true;
-    public static Set<EntityType<?>> noProtectionEntity;
-    public static Set<EntityType<?>> otherShouldProtectionEntity;
-    public static Set<EntityType<?>> playerCantHurtEntity;
-    public static Set<Item> canHurtPetItem;
-    public static Set<Item> canHurtAllItem;
+    // 集合缓存默认给空集：配置文件加载前被访问不再 NPE（捕捉网/宠物受击等路径在加载早期就可能触达）
+    public static Set<EntityType<?>> noProtectionEntity = Set.of();
+    public static Set<EntityType<?>> otherShouldProtectionEntity = Set.of();
+    public static Set<EntityType<?>> playerCantHurtEntity = Set.of();
+    public static Set<Item> canHurtPetItem = Set.of();
+    public static Set<Item> canHurtAllItem = Set.of();
     public static boolean mobcatcherOnlyTamableAnimal;
     // 自 1.20 移植的功能开关
     public static boolean tameableAxolotl = true;
@@ -124,7 +133,15 @@ public class PetHomeConfig {
     public static boolean trinaryCommandSystem = true;
     public static boolean petBedRespawns = true;
     public static boolean rabbitsScareRavagers = true;
-    public static Set<EntityType<?>> mobcatcherBlackList;
+    // 宠物罗盘
+    public static boolean petCompassEnable = true;
+    public static boolean petCompassTeleportPlayerToPet = true;
+    public static boolean petCompassTeleportPetToPlayer = true;
+    // 宠物信息悬浮面板
+    public static boolean petInfoOverlay = true;
+    public static boolean petInfoOverlayRequireShift = false;
+    public static boolean petInfoOverlayIgnoreJade = false;
+    public static Set<EntityType<?>> mobcatcherBlackList = Set.of();
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
@@ -156,6 +173,12 @@ public class PetHomeConfig {
         trinaryCommandSystem = TRINARY_COMMAND_SYSTEM.get();
         petBedRespawns = PET_BED_RESPAWNS.get();
         rabbitsScareRavagers = RABBITS_SCARE_RAVAGERS.get();
+        petCompassEnable = PET_COMPASS_ENABLE.get();
+        petCompassTeleportPlayerToPet = PET_COMPASS_TELEPORT_PLAYER_TO_PET.get();
+        petCompassTeleportPetToPlayer = PET_COMPASS_TELEPORT_PET_TO_PLAYER.get();
+        petInfoOverlay = PET_INFO_OVERLAY.get();
+        petInfoOverlayRequireShift = PET_INFO_OVERLAY_REQUIRE_SHIFT.get();
+        petInfoOverlayIgnoreJade = PET_INFO_OVERLAY_IGNORE_JADE.get();
         blazingProtectionLootChance = BLAZING_PROTECTION_LOOT_CHANCE.get();
 
         noProtectionEntity = (NO_PROTECTION_ENTITY.get()).stream().map((entityTypeName) -> BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(entityTypeName))).collect(Collectors.toSet());

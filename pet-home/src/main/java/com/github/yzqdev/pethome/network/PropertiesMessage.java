@@ -4,6 +4,7 @@ import com.github.yzqdev.pethome.PHConstants;
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.datagen.LangDefinition;
 import com.github.yzqdev.pethome.util.CitadelEntityData;
+import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -41,11 +42,24 @@ public record PropertiesMessage(String propertyID, CompoundTag compound, int ent
     public static void handleServer(final PropertiesMessage data, final IPayloadContext context) {
 
         context.enqueueWork(() -> {
-                   PetHomeMod. LOGGER.info(String.valueOf(data.entityID()));
+                    // 宠物罗盘：打开请求 / 传送动作（各自在处理方法里验证所有权与配置）
+                    if (PHConstants.petCompassOpen.equals(data.propertyID())) {
+                        com.github.yzqdev.pethome.server.misc.PetCompassTracker.handleOpenRequest((net.minecraft.server.level.ServerPlayer) context.player());
+                        return;
+                    }
+                    if (PHConstants.petCompassAction.equals(data.propertyID())) {
+                        com.github.yzqdev.pethome.server.misc.PetCompassTeleport.handleAction((net.minecraft.server.level.ServerPlayer) context.player(),
+                                data.compound() == null ? new CompoundTag() : data.compound());
+                        return;
+                    }
                     var level = context.player().level();
                     Entity e = level.getEntity(data.entityID());
                     if (e instanceof LivingEntity && (data.propertyID().equals(PHConstants.entityDataTagUpdate))) {
-                        CitadelEntityData.setCitadelTag((LivingEntity) e, data.compound());
+                        // 鉴权：客户端只能写入自己的宠物，否则伪造包可给任意实体刷附魔/篡改归属
+                        java.util.UUID ownerUUID = TameableUtils.getOwnerUUIDOf(e);
+                        if (ownerUUID != null && ownerUUID.equals(context.player().getUUID())) {
+                            CitadelEntityData.setCitadelTag((LivingEntity) e, data.compound());
+                        }
                     }
                 })
                 .exceptionally(e -> {
@@ -57,7 +71,11 @@ public record PropertiesMessage(String propertyID, CompoundTag compound, int ent
     public static void handleClient(final PropertiesMessage data, final IPayloadContext context) {
 
         context.enqueueWork(() -> {
-
+                    // 宠物罗盘：服务端打包的宠物列表 → 打开/刷新 GUI
+                    if (PHConstants.petCompassData.equals(data.propertyID())) {
+                        com.github.yzqdev.pethome.client.PetCompassScreen.handleData(data.compound());
+                        return;
+                    }
                     var compound = data.compound();
                     var entityID = data.entityID();
                     var propertyID = data.propertyID();
@@ -71,7 +89,7 @@ public record PropertiesMessage(String propertyID, CompoundTag compound, int ent
                 })
                 .exceptionally(e -> {
                     // Handle exception
-                    context.disconnect(Component.translatable("my_mod.networking.failed", e.getMessage()));
+                    context.disconnect(Component.translatable(LangDefinition.network_failed, e.getMessage()));
                     return null;
                 });
     }

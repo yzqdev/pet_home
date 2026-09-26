@@ -14,7 +14,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 
-import java.util.HashMap;
+import java.util.WeakHashMap;
 import java.util.Map;
 
 /**
@@ -25,7 +25,7 @@ import java.util.Map;
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(value = Dist.CLIENT)
 public class ClientGameEvents {
-    public static Map<Entity, int[]> shadowPunchRenderData = new HashMap<>();
+    public static Map<Entity, int[]> shadowPunchRenderData = new WeakHashMap<>();
 
     public static void registerClientListeners(IEventBus iEventBus) {
         iEventBus.addListener(ClientGameEvents::setupParticles);

@@ -8,6 +8,7 @@ import com.github.yzqdev.pethome.server.entity.PHEntityRegistry;
 import com.github.yzqdev.pethome.server.entity.PsychicWallEntity;
 import com.github.yzqdev.pethome.server.misc.ModEffects;
 import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
+import com.github.yzqdev.pethome.server.misc.PetCompassTracker;
 import com.github.yzqdev.pethome.server.misc.PHSoundRegistry;
 import com.github.yzqdev.pethome.util.LivingUtils;
 import com.github.yzqdev.pethome.util.TameableUtils;
@@ -40,6 +41,10 @@ public class EntityTickHandler {
         var entity = event.getEntity();
 
         if (entity instanceof Mob pet && canTickCollar(entity)) {
+            // 宠物罗盘：20 tick 低频档案更新（首次驯服懒初始化 PetId + 位置/名字/维度刷新，无变化不写盘）
+            if (pet.tickCount % 20 == 0) {
+                PetCompassTracker.updateRecord(pet);
+            }
             mobTick(event, pet);
 
             // 1. 基础状态与生存类附魔
@@ -60,10 +65,12 @@ public class EntityTickHandler {
         if (attacker.level().isClientSide()) {
             return;
         }
-        List<Monster> genericMobs = attacker.level().getEntitiesOfClass(Monster.class, LivingUtils.getBoundingBoxAroundEntity(attacker, (double) 10.0F));
-        Random random = new Random();
-        if (attacker.hasEffect(ModEffects.DRUNK) && attacker instanceof Monster) {
-
+        // 10 格 AABB 查询只在醉酒效果存在时才做（原先每 Mob 每 tick 无条件查询）
+        if (attacker.hasEffect(ModEffects.DRUNK) && attacker instanceof Monster monster) {
+            List<Monster> genericMobs = attacker.level().getEntitiesOfClass(Monster.class, LivingUtils.getBoundingBoxAroundEntity(attacker, (double) 10.0F));
+            if (genericMobs == null) {
+                return;
+            }
             double x = attacker.getX();
             double y = attacker.getY() + attacker.getBbHeight() + 0.4;
             double z = attacker.getZ();
@@ -71,27 +78,22 @@ public class EntityTickHandler {
                 ((ServerLevel) (attacker.level())).sendParticles(PHParticleRegistry.QUESTION_MARK_PARTICLE_TYPE.get(), x, y, z, 1, 0, 0, 0, 0.0D);
             }
 
-
-            if (genericMobs == null) {
-                return;
-            }
-
-            Monster Monster = (Monster) attacker;
             if (genericMobs.size() <= 0) {
                 return;
             }
 
+            var random = monster.getRandom();
             Monster others = (Monster) genericMobs.get(random.nextInt(genericMobs.size()));
             if (genericMobs.size() > 2) {
-                while (others == Monster) {
+                while (others == monster) {
                     others = (Monster) genericMobs.get(random.nextInt(genericMobs.size()));
                 }
             }
 
             if (others == null) {
-                Monster.setTarget((LivingEntity) null);
+                monster.setTarget((LivingEntity) null);
             } else {
-                LivingUtils.setAttackTarget(Monster, others);
+                LivingUtils.setAttackTarget(monster, others);
             }
         }
     }
@@ -206,7 +208,8 @@ public class EntityTickHandler {
 
         // Insight (洞察/发光)
         var insightLevel = TameableUtils.getEnchantLevel(pet, ModEnchantments.INSIGHT);
-        if (insightLevel > 0 && pet.level() instanceof ServerLevel serverLevel) {
+        // 效果时长 20 tick，每 20 tick 刷新一次即可（原先每 tick 做亮度查询+发光刷新）
+        if (insightLevel > 0 && pet.tickCount % 20 == 0 && pet.level() instanceof ServerLevel serverLevel) {
             if (serverLevel.getMaxLocalRawBrightness(pet.getOnPos().above()) < 9) {
                 TameableUtils.applyGlowingEffect(pet, insightLevel);
             }
@@ -215,13 +218,12 @@ public class EntityTickHandler {
 
     private static void handleCombatEnchants(Mob pet) {
         // Sonic Boom (音波轰击)
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.SonicBoom)) {
+        if (TameableUtils.hasEnchant(pet, ModEnchantments.SonicBoom) && !pet.level().isClientSide()) {
             var beingAttacked = pet.getTarget();
-            if (beingAttacked != null) {
+            // 200 tick 冷却判断前置，范围查询只在真正触发的 tick 做（原先每 tick 白做查询）
+            if (beingAttacked != null && pet.tickCount % 200 == 0) {
                 if (pet.closerThan(beingAttacked, 10.0, 20.0) || TameableUtils.getNearbyMobs(pet, 10).size() > 3) {
-                    if (pet.tickCount % 200 == 0) {
-                        TameableUtils.performSonicBook(pet, beingAttacked, (ServerLevel) pet.level());
-                    }
+                    TameableUtils.performSonicBook(pet, beingAttacked, (ServerLevel) pet.level());
                 }
             }
         }
@@ -239,8 +241,12 @@ public class EntityTickHandler {
     }
 
     private static void handleShadowHandsLogic(Mob mob, int level) {
-        ClientGameEvents.updateVisualDataForMob(mob, TameableUtils.getShadowPunchTimes(mob));
-        if (mob.level().isClientSide()) return;
+        if (mob.level().isClientSide()) {
+            // 渲染插值用的上一 tick 数据只在客户端本地维护；原先服务端也写这个客户端 Map，
+            // 专用服务器上无人消费且实体卸载后不清理（内存泄漏）
+            ClientGameEvents.updateVisualDataForMob(mob, TameableUtils.getShadowPunchTimes(mob));
+            return;
+        }
 
         var targetEntity = TameableUtils.getPetAttackTarget(mob);
         Entity punching = ((targetEntity instanceof Player) || (targetEntity instanceof TamableAnimal)) ? null : targetEntity;

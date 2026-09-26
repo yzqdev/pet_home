@@ -30,6 +30,29 @@ public class ModZhLangProvider extends LanguageProvider {
         add(LangDefinition.ITEM_FEATHER_ON_A_STICK, "羽毛钓竿");
         add(LangDefinition.ITEM_DEED_OF_OWNERSHIP, "放生球");
         add(LangDefinition.ITEM_DEED_OF_OWNERSHIP_DESC, "右键宠物,可以放生它");
+        add(LangDefinition.ITEM_PET_COMPASS, "宠物罗盘");
+        add(LangDefinition.TOOLTIP_PET_COMPASS_DESC, "右键打开宠物列表");
+        add(LangDefinition.message("pet_compass.title"), "宠物罗盘");
+        add(LangDefinition.message("pet_compass.empty"), "还没有可追踪的宠物");
+        add(LangDefinition.message("pet_compass.position"), "位置：");
+        add(LangDefinition.message("pet_compass.last_known_pos"), "最后已知：");
+        add(LangDefinition.message("pet_compass.distance"), "距离：%s 米");
+        add(LangDefinition.message("pet_compass.status_loaded"), "状态：已加载");
+        add(LangDefinition.message("pet_compass.status_not_loaded"), "状态：未加载");
+        add(LangDefinition.message("pet_compass.status_wrong_dim"), "状态：在其他维度");
+        add(LangDefinition.message("pet_compass.status_dead"), "状态：已死亡，等待宠物床复活");
+        add(LangDefinition.message("pet_compass.button_tp"), "传送至宠物");
+        add(LangDefinition.message("pet_compass.button_recall"), "召回");
+        add(LangDefinition.message("pet_compass.disabled"), "宠物罗盘功能已在配置中关闭");
+        add(LangDefinition.message("pet_compass.not_loaded_confirm"), "宠物当前未加载，将传送到最后已知位置");
+        add(LangDefinition.message("pet_compass.dead_wait_respawn"), "该宠物已死亡，正在等待宠物床复活");
+        add(LangDefinition.message("pet_compass.recall_started"), "正在寻找宠物，请稍候……");
+        add(LangDefinition.message("pet_compass.recall_failed"), "未能找到宠物，请稍后重试");
+        add(LangDefinition.message("pet_compass.teleported"), "已传送到宠物身边");
+        add(LangDefinition.message("pet_compass.recalled"), "%s 已召回至你身边");
+        add(LangDefinition.message("pet_compass.dim_overworld"), "主世界");
+        add(LangDefinition.message("pet_compass.dim_the_nether"), "下界");
+        add(LangDefinition.message("pet_compass.dim_the_end"), "末地");
         add(LangDefinition.BLOCK_PET_BED_WHITE, "白色宠物床");
         add(LangDefinition.BLOCK_PET_BED_ORANGE, "橙色宠物床");
         add(LangDefinition.BLOCK_PET_BED_MAGENTA, "品红色宠物床");
@@ -141,6 +164,18 @@ public class ModZhLangProvider extends LanguageProvider {
         add(LangDefinition.protectPetsFromPets_conf, "宠物之间无伤害");
         add(LangDefinition.reflectDamage_conf, "反弹伤害");
         add(LangDefinition.reflectDamage_conf_tooltip, "反弹伤害(主人攻击生物会受伤)");
+        add(LangDefinition.petCompassEnable_conf, "宠物罗盘");
+        add(LangDefinition.petCompassEnable_conf_tooltip, "是否启用宠物罗盘系统");
+        add(LangDefinition.teleportPlayerToPet_conf, "传送玩家到宠物");
+        add(LangDefinition.teleportPlayerToPet_conf_tooltip, "是否允许把玩家传送到宠物身边");
+        add(LangDefinition.teleportPetToPlayer_conf, "召回宠物");
+        add(LangDefinition.teleportPetToPlayer_conf_tooltip, "是否允许把宠物召回（传送）到玩家身边");
+        add(LangDefinition.petInfoOverlay_conf, "宠物信息面板");
+        add(LangDefinition.petInfoOverlay_conf_tooltip, "看向自己的宠物时，是否在屏幕顶部显示信息面板");
+        add(LangDefinition.petInfoOverlayRequireShift_conf, "按住潜行键才显示");
+        add(LangDefinition.petInfoOverlayRequireShift_conf_tooltip, "开启后需按住 Shift（潜行）并看向宠物才显示面板，关闭后准星对上即显示");
+        add(LangDefinition.petInfoOverlayIgnoreJade_conf, "安装 Jade 时仍显示");
+        add(LangDefinition.petInfoOverlayIgnoreJade_conf_tooltip, "安装 Jade 时是否仍显示本面板（Jade 的提示框已包含宠物信息）");
         add(LangDefinition.ore_scenting_loot_chance_conf, "矿物之味附魔书概率");
         add(LangDefinition.ore_scenting_loot_chance_conf_tooltip, "矿物之味附魔书在(废弃矿井)宝箱中的概率");
         add(LangDefinition.bubbling_loot_chance_conf, "冒泡附魔书概率");
@@ -162,6 +197,7 @@ public class ModZhLangProvider extends LanguageProvider {
                 "可以用来绕过模组的所有保护对生物造成的物品,不需要按shift进行攻击");
         add(LangDefinition.can_hurt_all_conf, "可以用来绕过所有保护攻击的物品");
 
+        add(LangDefinition.effect("drunk"), "混乱");
 
         add(LangDefinition.share_loot_chance_conf_tooltip, "平摊附魔书在(末地城)宝箱中的概率");
         add(LangDefinition.share_loot_chance_conf, "平摊附魔书概率");
