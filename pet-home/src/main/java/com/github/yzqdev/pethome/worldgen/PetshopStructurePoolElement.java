@@ -48,6 +48,26 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
     private static EntityType[] cage2Mobs = null;
     private static EntityType[] cage3Mobs = null;
 
+    /**
+     * 在服务器启动（主线程）预热刷怪列表：handleDataMarker 运行在世界生成 worker 线程，
+     * 惰性初始化在多线程下无同步不安全；此方法保证进入生成阶段前缓存已就绪，
+     * handleDataMarker 内的判空只是兜底。
+     */
+    public static void preloadMobLists() {
+        if (!initializedMobLists) {
+            synchronized (PetshopStructurePoolElement.class) {
+                if (!initializedMobLists) {
+                    fishtankMobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_FISHTANK).toArray(new EntityType[0]);
+                    cage0Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_0).toArray(EntityType[]::new);
+                    cage1Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_1).toArray(EntityType[]::new);
+                    cage2Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_2).toArray(EntityType[]::new);
+                    cage3Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_3).toArray(EntityType[]::new);
+                    initializedMobLists = true;
+                }
+            }
+        }
+    }
+
     public static final MapCodec<PetshopStructurePoolElement> CODEC = RecordCodecBuilder.mapCodec((petshopStructurePoolElementInstance) -> {
         return petshopStructurePoolElementInstance.group(templateCodec(), processorsCodec(), projectionCodec(), overrideLiquidSettingsCodec()).apply(petshopStructurePoolElementInstance, PetshopStructurePoolElement::new);
     });
@@ -64,14 +84,7 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
     public void handleDataMarker(LevelAccessor levelAccessor, StructureTemplate.StructureBlockInfo structureBlockInfo, BlockPos pos, Rotation rotation, RandomSource random, BoundingBox box) {
         String contents = structureBlockInfo.nbt().getString("metadata");
 
-        if (!initializedMobLists) {
-            fishtankMobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_FISHTANK).toArray(new EntityType[0]);
-            cage0Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_0).toArray(EntityType[]::new);
-            cage1Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_1).toArray(EntityType[]::new);
-            cage2Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_2).toArray(EntityType[]::new);
-            cage3Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_3).toArray(EntityType[]::new);
-            initializedMobLists = true;
-        }
+        preloadMobLists();
         switch (contents) {
             case "petshop_water" -> {
                 BlockState state = Blocks.WATER.defaultBlockState();
@@ -116,14 +129,14 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
         }
     }
 
-    private List<EntityType<?>> getAllMatchingEntities(TagKey<EntityType<?>> tag) {
+    private static List<EntityType<?>> getAllMatchingEntities(TagKey<EntityType<?>> tag) {
         return BuiltInRegistries.ENTITY_TYPE.stream().filter((type -> type.is(tag))).toList();
     }
 
     public void spawnAnimalsAt(LevelAccessor accessor, BlockPos at, int count, RandomSource random, EntityType... types) {
         if (types.length > 0 && count > 0 && accessor.getBlockState(at).getBlock() == Blocks.STRUCTURE_BLOCK && accessor instanceof ServerLevelAccessor serverLevel) {
             for (int i = 0; i < count; i++) {
-                int index = types.length == 1 ? 0 : random.nextInt(types.length - 1);
+                int index = random.nextInt(types.length);
                 Entity entity = types[index].create(serverLevel.getLevel());
                 entity.setPos(Vec3.atBottomCenterOf(at));
                 entity.setYRot(random.nextInt(360) - 180);
@@ -138,16 +151,16 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
     }
 
     @Override
-    protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox boundingBox, LiquidSettings p_352069_, boolean should) {
+    protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox boundingBox, LiquidSettings liquidSettings, boolean keepJigsaws) {
 
         StructurePlaceSettings structureplacesettings = new StructurePlaceSettings();
         structureplacesettings.setBoundingBox(boundingBox);
         structureplacesettings.setRotation(rotation);
         structureplacesettings.setKnownShape(true);
-        structureplacesettings.setLiquidSettings(p_352069_);
+        structureplacesettings.setLiquidSettings(this.overrideLiquidSettings.orElse(liquidSettings));
         structureplacesettings.setIgnoreEntities(false);
         structureplacesettings.setFinalizeEntities(true);
-        if (!should) {
+        if (!keepJigsaws) {
             structureplacesettings.addProcessor(JigsawReplacementProcessor.INSTANCE);
         }
         this.processors.value().list().forEach(structureplacesettings::addProcessor);

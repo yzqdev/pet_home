@@ -36,6 +36,7 @@ public class PetCompassTracker {
 
     // ==================== PetId 身份 ====================
 
+    /** 读宠物永久身份；未初始化或非法字符串返回 {@code null}（不生成，懒初始化只在 ensurePetId） */
     @Nullable
     public static UUID getPetId(LivingEntity pet) {
         CompoundTag tag = CitadelEntityData.getCitadelTag(pet);
@@ -97,7 +98,7 @@ public class PetCompassTracker {
         data.putPetRecord(updated);
     }
 
-    /** 宠物死亡：档案保留、alive 置 false（compass.md：罗盘不因 Entity UUID 消失而删档） */
+    /** 宠物死亡：档案保留、alive 置 false（罗盘档案不因实体消失而删除）。 */
     public static void onPetDeath(LivingEntity pet) {
         if (pet.level().isClientSide() || !TameableUtils.isTamed(pet)) {
             return;
@@ -207,6 +208,7 @@ public class PetCompassTracker {
         PacketDistributor.sendToPlayer(player, new PropertiesMessage(PHConstants.petCompassData, out, 0));
     }
 
+    /** 按 Entity UUID 在全部维度中查找在线实体（档案的 entityUuid 是字符串，解析失败返回 null） */
     @Nullable
     static Entity findEntityByEntityUuid(ServerPlayer player, String entityUuid) {
         try {

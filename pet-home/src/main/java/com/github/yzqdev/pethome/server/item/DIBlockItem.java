@@ -27,7 +27,7 @@ public class DIBlockItem extends BlockItem {
     }
 
     @Override
-    public void onDestroyed(ItemEntity p_150700_) {
+    public void onDestroyed(ItemEntity itemEntity) {
 
     }
 }

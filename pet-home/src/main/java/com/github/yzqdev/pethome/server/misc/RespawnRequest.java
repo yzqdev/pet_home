@@ -13,6 +13,11 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.world.level.Level;
 
+/**
+ * 宠物床复活请求（存于 {@link PHWorldData}，Codec 持久化）：宠物死亡且绑定宠物床时
+ * 由 ServerEvent.onLivingDie 用<b>完整实体 NBT</b>（含 UUID/PetId/装备/自定义名）建档，
+ * 次日白天第一 tick 由 {@code PetBedBlockEntity} 重建实体（复用原 UUID 与 PetId）。
+ */
 public record RespawnRequest(
         String entityType,
         String dimension,
@@ -35,10 +40,12 @@ public record RespawnRequest(
     );
 
 
+    /** 解析实体类型 id；id 失效时退回注册表默认值（minecraft:pig），调用方不会得到 null */
     public EntityType<?> getEntityType() {
         return BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(this.entityType));
     }
 
+    /** 维度 ResourceKey → 存档字符串（如 "minecraft:overworld"） */
     public static String processDimension(ResourceKey<Level> key) {
         return key.location().toString();
     }

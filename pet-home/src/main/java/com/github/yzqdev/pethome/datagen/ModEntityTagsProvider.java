@@ -19,15 +19,15 @@ public class ModEntityTagsProvider extends EntityTypeTagsProvider {
     @Override
     protected void addTags(HolderLookup.Provider provider) {
         tag(ModTags.blacklisted).add(EntityType.PAINTING);
-        //For the plains & taiga pet store cage
+        // 平原与针叶林宠物商店笼子的刷怪笼蛋
         this.tag(ModTags.petstore_cage_0).add(EntityType.WOLF).add(EntityType.CAT).add(EntityType.RABBIT);
-//        For the desert pet store cage
+// 沙漠宠物商店笼子的刷怪笼蛋（当前未启用）
         this.tag(ModTags.petstore_cage_1).add(EntityType.FROG).add(EntityType.RABBIT);
-//        For the snowy pet store cage
+// 雪原宠物商店笼子的刷怪笼蛋（当前未启用）
         this.tag(ModTags.petstore_cage_2).add(EntityType.FOX).add(EntityType.RABBIT);
-        //For the savanna pet store cage
+        // 热带草原宠物商店笼子的刷怪笼蛋
         this.tag(ModTags.petstore_cage_3).add(EntityType.FROG).add(EntityType.PARROT);
-        //For the plain pet store fish tank
+        // 平原宠物商店鱼缸的刷怪笼蛋
         this.tag(ModTags.petstore_fishtank).add(EntityType.TROPICAL_FISH);
 
         tag(ModTags.infamy_target_attracted).add(EntityType.DROWNED)

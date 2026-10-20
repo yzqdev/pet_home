@@ -40,7 +40,7 @@ public class ParticleBlight extends SimpleAnimatedParticle {
         return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
 
-    public int getLightColor(float p_107249_) {
+    public int getLightColor(float partialTick) {
         BlockPos blockpos = new BlockPos((int) this.x, (int) this.y, (int) this.z);
         return this.level.hasChunkAt(blockpos) ? LevelRenderer.getLightColor(this.level, blockpos) : 0;
     }

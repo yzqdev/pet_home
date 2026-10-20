@@ -19,6 +19,7 @@ import com.github.yzqdev.pethome.server.misc.trades.SellingRandomEnchantedBook;
 import com.github.yzqdev.pethome.util.FriendlyFireCommon;
 import com.github.yzqdev.pethome.util.LivingUtils;
 import com.github.yzqdev.pethome.util.TameableUtils;
+import com.github.yzqdev.pethome.worldgen.PetshopStructurePoolElement;
 import com.github.yzqdev.pethome.worldgen.VillageHouseManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.resources.language.I18n;
@@ -98,6 +99,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
+ * 杂项事件聚合（GAME bus）：世界 tick（项圈防抖/罗盘召回队列/经验转移/跨维度宠物重建）、
+ * 实体进出世界（罗盘档案、灯笼请求、health_boost 安全血量）、死亡复活请求、
+ * 爆炸拆除/发射物偏转/宠物床拆除/村民交易/附魔书 tooltip 等。
+ *
  * @author yzqde
  * @date time 2025/1/9 9:47
  * @modified By:
@@ -105,6 +110,7 @@ import java.util.stream.Collectors;
 
 @EventBusSubscriber(modid = PetHomeMod.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class ServerEvent {
+    /** 有宠物床的宠物死亡不掉落战利品（物品将由复活实体完整带回） */
     @SubscribeEvent
     public static void onLivingDrops(LivingDropsEvent event) {
         if (TameableUtils.isTamed(event.getEntity()) && TameableUtils.getPetBedPos(event.getEntity()) != null) {
@@ -117,11 +123,18 @@ public class ServerEvent {
     public static void serverStart(ServerAboutToStartEvent event) {
         RegistryAccess registryAccess = event.getServer().registryAccess();
         VillageHouseManager.addAllHouses(registryAccess);
+        PetshopStructurePoolElement.preloadMobLists();
     }
 
 
+    /** 跨维度宠物重建队列（宠物→罗盘召回、主人换维度携带）；ServerEvent.onServerTick 每 10 tick 消费 */
     public static List<Triple<Entity, ServerLevel, UUID>> teleportingPets = new ArrayList<>();
 
+    /**
+     * xp_transfer 附魔 per-player tick：主人 10 格内未坐下、无目标的已驯服宠物
+     * 吸附 10 格内经验球（近距给主人加分，远距施加吸力并寻路跟随经验球）。
+     * 由 onServerTick 每 10 tick 对每个 ServerPlayer 调用（仅服务端）。
+     */
     public static void onWorldTick(ServerPlayer serverPlayer, ServerLevel world) {
 
         AABB playerArea = serverPlayer.getBoundingBox().inflate(10.0);
@@ -178,6 +191,7 @@ public class ServerEvent {
         /** 项圈刚被取下/装备后短时间内不再 tick（自 1.20 移植） */
 
 
+        /** 项圈防抖判断：客户端恒 true；服务端查本维度的 CollarTickTracker 屏蔽表 */
         public static boolean canTickCollar(Entity entity) {
 
 
@@ -200,6 +214,7 @@ public class ServerEvent {
 
 
 
+        /** 项圈写入点（handleCollarTag）调用：屏蔽该实体 5 tick 的附魔 tick 防抖 */
         public static void blockCollarTick(Entity entity) {
 
 
@@ -219,6 +234,11 @@ public class ServerEvent {
 
 
 
+        /**
+         * 每 level tick：项圈防抖递减；主世界 %20 处理罗盘召回队列；
+         * %10 分频跑 onWorldTick（xp_transfer）与 teleportingPets 跨维度重建
+         * （create + restoreFrom + addFreshEntity + discard 原实体，落点窒息上探）。
+         */
         @SubscribeEvent
     public static void onServerTick(LevelTickEvent.Post tick) {
         if (!tick.getLevel().isClientSide()) {
@@ -266,6 +286,7 @@ public class ServerEvent {
         }
     }
 
+    /** 玩家换维度时把 20 格内有效随行者（isValidTeleporter）带去新维度 */
     @SubscribeEvent
     public static void onEntityTravelToDimension(EntityTravelToDimensionEvent event) {
         if (!event.isCanceled()) {
@@ -279,6 +300,7 @@ public class ServerEvent {
         }
     }
 
+    /** 玩家传送（同维）时携带随行者；跨维度由 onEntityTravelToDimension 分支处理 */
     @SubscribeEvent
     public static void onEntityTeleport(EntityTeleportEvent event) {
         if (event.getEntity() instanceof Player) {
@@ -286,6 +308,10 @@ public class ServerEvent {
         }
     }
 
+    /**
+     * 携带 20 格内 tethered_teleport 宠物：同维窒息上探直传 + POST_TELEPORT 票据防卸载；
+     * 跨维度入 {@link #teleportingPets} 队列等 10 tick 后统一重建。
+     */
     private static void teleportNearbyPets(Player owner, Vec3 fromPos, Vec3 toPos, Level fromLevel, Level toLevel) {
         double dist = 20;
         boolean removeAndReadd = fromLevel.dimension() != toLevel.dimension();
@@ -309,6 +335,10 @@ public class ServerEvent {
         }
     }
 
+    /**
+     * 发射物命中宠物：玩家自家宠物免伤；穿透箭打宠物时降为 0 穿透并销毁（修复原版软崩溃）；
+     * 偏转附魔宠物把发射物反向弹回并出护盾粒子。
+     */
     @SubscribeEvent
     public static void onProjectileImpactEvent(ProjectileImpactEvent event) {
         if (event.getRayTraceResult() instanceof EntityHitResult) {
@@ -321,7 +351,7 @@ public class ServerEvent {
             }
             if (TameableUtils.isTamed(hit)) {
                 if (event.getEntity() instanceof AbstractArrow arrow) {
-                    //fixes soft crash with vanilla
+                    // 规避原版实体的软崩溃
                     if (arrow.getPierceLevel() > 0) {
 
                         arrow.setPierceLevel((byte) 0);
@@ -345,6 +375,7 @@ public class ServerEvent {
         }
     }
 
+    /** 泡泡未到寿命时禁止主动下坐骑（bubbling 附魔的囚笼语义），破裂后自然释放 */
     @SubscribeEvent
     public static void onEntityMount(EntityMountEvent event) {
         if (event.getEntityBeingMounted() instanceof GiantBubbleEntity && event.isDismounting() && event.getEntityBeingMounted().isAlive()) {
@@ -352,6 +383,10 @@ public class ServerEvent {
         }
     }
 
+    /**
+     * 实体进入世界（区块加载/维度切换/宠物床复活）：更新罗盘档案（复活实体带原 PetId 重新绑定）；
+     * health_boost 宠物用安全血量抬回当前血；已驯服实体 join 时移除其迷途灯笼请求。
+     */
     @SubscribeEvent
     public static void onEntityJoinWorldEvent(EntityJoinLevelEvent event) {
 
@@ -374,6 +409,10 @@ public class ServerEvent {
         }
     }
 
+    /**
+     * 实体离开世界：跟随状态宠物（shouldUnloadToLantern）写入灯笼请求（含维度）；
+     * health_boost 宠物离场前记录安全血量。
+     */
     @SubscribeEvent
     public static void onEntityLeaveWorld(EntityLeaveLevelEvent event) {
         if (event.getEntity() instanceof LivingEntity living) {
@@ -393,6 +432,11 @@ public class ServerEvent {
         }
     }
 
+    /**
+     * 宠物死亡：有宠物床 → 完整实体 NBT 存为 RespawnRequest（次日复活）；
+     * 非原版 TamableAnimal 的宠物给在线主人补发死亡消息（原版不广播其死亡）；
+     * 最后交罗盘 onPetDeath 标记/清理档案。
+     */
     @SubscribeEvent
     public static void onLivingDie(LivingDeathEvent event) {
         if (TameableUtils.isTamed(event.getEntity())) {
@@ -415,12 +459,13 @@ public class ServerEvent {
                 }
             }
 
-            // 宠物罗盘：死亡档案保留，仅标记待宠物床复活（compass.md：不因 Entity UUID 消失而删档）
+            // 宠物罗盘：死亡档案保留，仅标记待宠物床复活（档案不因实体消失而删除）
             PetCompassTracker.onPetDeath(event.getEntity());
 
         }
     }
 
+    /** 拆除附魔（defusal）：30 格内爆炸中心若在其 10×等级 格范围内则取消爆炸并放灭火音效/云粒子 */
     @SubscribeEvent
     public static void onExplosion(ExplosionEvent.Start event) {
         float dist = 30;
@@ -448,6 +493,7 @@ public class ServerEvent {
         }
     }
 
+    /** 宠物床被拆：清掉本床全部复活请求（给拆者发 goodbye 消息）并重置周边宠物绑定 */
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.getState().getBlock() instanceof PetBedBlock) {
@@ -458,6 +504,7 @@ public class ServerEvent {
         }
     }
 
+    /** 苹果掉落物到期消失时按 10%×数量概率变腐烂苹果（阴森胡萝卜链的入口，rottenApple 配置） */
     @SubscribeEvent
     public static void onItemDespawnEvent(ItemExpireEvent event) {
         if (event.getEntity().getItem().getItem() == Items.APPLE && PetHomeConfig.rottenApple) {
@@ -474,6 +521,7 @@ public class ServerEvent {
 
 
 
+    /** 驯兽师村民 5 级交易表（硬编码；附魔书经 SellingRandomEnchantedBook/EnchantItemTrade 注入） */
     @SubscribeEvent
     public static void onVillagerTrades(VillagerTradesEvent event) {
 

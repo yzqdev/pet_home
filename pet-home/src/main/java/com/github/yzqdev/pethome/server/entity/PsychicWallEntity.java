@@ -25,6 +25,11 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 import java.util.*;
 
+/**
+ * psychic_wall 附魔的念力墙：按墙面朝向生成可伸缩碰撞盒（前 10 tick 生长动画），
+ * 推开非友军实体、反弹敌方投射物（同主人友军的投射物放行），寿命到或创建者死后
+ * 20 tick 内消散。碰撞/推挤/反弹行为配合 EntityMixin.canCollideWith 的同队豁免。
+ */
 public class PsychicWallEntity extends Entity {
 
     protected static final EntityDataAccessor<Direction> DIRECTION = SynchedEntityData.defineId(PsychicWallEntity.class, EntityDataSerializers.DIRECTION);
@@ -41,6 +46,10 @@ public class PsychicWallEntity extends Entity {
     }
 
 
+    /**
+     * 生长/保持/衰亡状态机：按墙向推离碰撞盒内的非友军（投射物反向弹回），
+     * 每实体 15 tick 反弹冷却（deflectedEntities 防重复）；创建者死后剩余寿命压到 20。
+     */
     public void tick() {
         super.tick();
         if (this.tickCount <= 10 || this.getLifespan() <= 10) {
@@ -203,6 +212,7 @@ public class PsychicWallEntity extends Entity {
     }
 
 
+    /** 创建者解析：服务端按 UUID 查实体（跨维度稳定），客户端用同步的实体自增 id 槽 */
     public Entity getCreator() {
         if (!level().isClientSide()) {
             UUID id = getCreatorId();
@@ -221,6 +231,7 @@ public class PsychicWallEntity extends Entity {
         return !this.isSameTeam(entity);
     }
 
+    /** 墙面碰撞盒：随寿命/存活 tick 缩放（min(10, lifespan, tickCount)/10），按朝向确定展开轴 */
     protected AABB makeBoundingBox() {
         Direction direction2 = this.getWallDirection().getOpposite();
         float scale = Math.min(10, Math.min(this.getLifespan(), this.tickCount)) / 10F;
@@ -257,8 +268,8 @@ public class PsychicWallEntity extends Entity {
         return new AABB(this.getX() + minX, this.getY() + minY, this.getZ() + minZ, this.getX() + maxX, this.getY() + maxY, this.getZ() + maxZ);
     }
 
-    public void setPos(double p_20210_, double p_20211_, double p_20212_) {
-        this.setPosRaw(p_20210_, p_20211_, p_20212_);
+    public void setPos(double x, double y, double z) {
+        this.setPosRaw(x, y, z);
         this.setBoundingBox(this.makeBoundingBox());
     }
 
@@ -270,6 +281,7 @@ public class PsychicWallEntity extends Entity {
     }
 
 
+    /** 与创建者同主人（或主人盟友）的实体视为同队：不推挤、可穿过 */
     public boolean isSameTeam(Entity entity) {
         Entity owner = this.getCreator();
         return owner instanceof LivingEntity && (TameableUtils.hasSameOwnerAs((LivingEntity) owner, entity) || owner.isAlliedTo(entity));

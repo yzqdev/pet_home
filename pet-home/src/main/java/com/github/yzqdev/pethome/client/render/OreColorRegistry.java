@@ -71,7 +71,7 @@ public class OreColorRegistry {
                 blue += localBlue;
                 count++;
             }
-        //Average color
+        // 求平均颜色
         return new Color((int) (red / count), (int) (green / count), (int) (blue / count));
     }
 

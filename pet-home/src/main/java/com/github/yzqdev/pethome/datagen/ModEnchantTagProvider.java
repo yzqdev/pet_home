@@ -97,7 +97,51 @@ public class ModEnchantTagProvider extends EnchantmentTagsProvider {
                 .replace(false)
 
         ;
-        this.tag(ModTags.INFUSE_EXTRA).addTag(ModTags.TradableEnchantmentKey);
+        this.tag(ModTags.InfuserAdvancedKey).addTag(ModTags.AllPetEnchantmentKey);
+
+        // 本模组全部附魔（含宝藏/诅咒）聚合标签：EI 高级灌注器经 InfuserAdvancedKey 引用，
+        // 宝藏附魔由此获得灌注器获取渠道
+        this.tag(ModTags.AllPetEnchantmentKey)
+                .addOptional(ModEnchantments.TOUGH.location())
+                .addOptional(ModEnchantments.BUBBLING.location())
+                .addOptional(ModEnchantments.VAMPIRE.location())
+                .addOptional(ModEnchantments.BLAZING_PROTECTION.location())
+                .addOptional(ModEnchantments.ORE_SCENTING.location())
+                .addOptional(ModEnchantments.SonicBoom.location())
+                .addOptional(ModEnchantments.SHARE.location())
+                .addOptional(ModEnchantments.PARALYSIS.location())
+                .addOptional(ModEnchantments.BLIGHT_CURSE.location())
+                .addOptional(ModEnchantments.INFAMY_CURSE.location())
+                .addOptional(ModEnchantments.IMMATURITY_CURSE.location())
+                .addOptional(ModEnchantments.AMPHIBIOUS.location())
+                .addOptional(ModEnchantments.HEALING_AURA.location())
+                .addOptional(ModEnchantments.CHAIN_LIGHTNING.location())
+                .addOptional(ModEnchantments.XP_Transfer.location())
+                .addOptional(ModEnchantments.LINKED_INVENTORY.location())
+                .addOptional(ModEnchantments.HEALTH_BOOST.location())
+                .addOptional(ModEnchantments.IMMUNITY_FRAME.location())
+                .addOptional(ModEnchantments.DEFLECTION.location())
+                .addOptional(ModEnchantments.FIREPROOF.location())
+                .addOptional(ModEnchantments.DEFUSAL.location())
+                .addOptional(ModEnchantments.TOTAL_RECALL.location())
+                .addOptional(ModEnchantments.SPEEDSTER.location())
+                .addOptional(ModEnchantments.HEALTH_SIPHON.location())
+                .addOptional(ModEnchantments.PSYCHIC_WALL.location())
+                .addOptional(ModEnchantments.SHEPHERD.location())
+                .addOptional(ModEnchantments.MAGNETIC.location())
+                .addOptional(ModEnchantments.GLUTTONOUS.location())
+                .addOptional(ModEnchantments.INTIMIDATION.location())
+                .addOptional(ModEnchantments.POISON_RESISTANCE.location())
+                .addOptional(ModEnchantments.FROST_FANG.location())
+                .addOptional(ModEnchantments.WARPING_BITE.location())
+                .addOptional(ModEnchantments.SHADOW_HANDS.location())
+                .addOptional(ModEnchantments.TETHERED_TELEPORT.location())
+                .addOptional(ModEnchantments.REJUVENATION.location())
+                .addOptional(ModEnchantments.VOID_CLOUD.location())
+                .addOptional(ModEnchantments.INSIGHT.location())
+                .addOptional(ModEnchantments.CHAOS.location())
+                .addOptional(ModEnchantments.NIGHT_VISION.location())
+                .addOptional(ModEnchantments.VIOLENT.location());
     }
 
     @Override

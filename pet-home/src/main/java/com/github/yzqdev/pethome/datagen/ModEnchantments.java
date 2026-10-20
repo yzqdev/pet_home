@@ -11,6 +11,11 @@ import net.minecraft.world.item.enchantment.Enchantment;
 
 import java.util.Arrays;
 
+/**
+ * 40 个宠物附魔的 {@code ResourceKey<Enchantment>} 常量表 + datagen bootstrap 定义。
+ * 虽在 datagen 包，但常量被全部运行时服务端代码引用（TameableUtils/事件/mixin），
+ * 不要按包名误判为纯 datagen 类。附魔载体均为项圈标签（ModTags.COLLAR_TAG_tagkey）。
+ */
 public class ModEnchantments {
     public static final ResourceKey<Enchantment> AMPHIBIOUS = ResourceKey.create(Registries.ENCHANTMENT,
             ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "amphibious"));
@@ -94,6 +99,7 @@ public class ModEnchantments {
             ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "violent"));
 
 
+    /** datagen：逐个注册附魔定义（稀有度/最高级/消耗曲线 + exclusiveWith 互斥组） */
     public static void bootstrap(BootstrapContext<Enchantment> context) {
         var enchantments = context.lookup(Registries.ENCHANTMENT);
         var items = context.lookup(Registries.ITEM);
@@ -209,7 +215,7 @@ public class ModEnchantments {
                 1,
                 Enchantment.dynamicCost(12, 7),
                 Enchantment.dynamicCost(25, 7),
-                2)).exclusiveWith(HolderSet.direct(enchantments.getOrThrow(ModEnchantments.HEALTH_BOOST), enchantments.getOrThrow(ModEnchantments.VAMPIRE), enchantments.getOrThrow(ModEnchantments.GLUTTONOUS), enchantments.getOrThrow(ModEnchantments.HEALING_AURA)))
+                2)).exclusiveWith(HolderSet.direct(enchantments.getOrThrow(ModEnchantments.HEALTH_BOOST), enchantments.getOrThrow(ModEnchantments.VAMPIRE), enchantments.getOrThrow(ModEnchantments.GLUTTONOUS), enchantments.getOrThrow(ModEnchantments.HEALING_AURA), enchantments.getOrThrow(ModEnchantments.SHARE)))
         );
         register(context, VAMPIRE, Enchantment.enchantment(Enchantment.definition(
                 items.getOrThrow(ModTags.COLLAR_TAG_tagkey),
@@ -390,7 +396,7 @@ public class ModEnchantments {
                 Enchantment.dynamicCost(4, 7),
                 Enchantment.dynamicCost(25, 7),
                 2))
-
+                .exclusiveWith(HolderSet.direct(enchantments.getOrThrow(ModEnchantments.HEALTH_SIPHON)))
         );
         register(context, NIGHT_VISION, Enchantment.enchantment(Enchantment.definition(
                 items.getOrThrow(ModTags.COLLAR_TAG_tagkey),

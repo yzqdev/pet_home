@@ -43,14 +43,14 @@ public abstract class AbstractHorseMixin extends Animal implements ModifedToBeTa
     public abstract void setTamed(boolean tame);
 
     @Shadow
-    public abstract void setIsJumping(boolean p_30656_);
+    public abstract void setIsJumping(boolean jumping);
 
     @Shadow
     public abstract boolean isStanding();
 
     @Shadow @Nullable public abstract UUID getOwnerUUID();
 
-    @Shadow public abstract void setOwnerUUID(@org.jetbrains.annotations.Nullable UUID p_30587_);
+    @Shadow public abstract void setOwnerUUID(@org.jetbrains.annotations.Nullable UUID uuid);
 
     @Inject(
             method = {"tickRidden(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/phys/Vec3;)V"},

@@ -27,13 +27,6 @@ public class DIRenderTypes extends RenderType {
         RenderSystem.resetTextureMatrix();
     });
 
-    protected static final TexturingStateShard PSYCHIC_WALL_TEXTURING = new TexturingStateShard(
-            "entity_glint_texturing", () -> {
-        setupPsychicWallTexturing(0.5F, 40L);
-    }, () -> {
-        RenderSystem.resetTextureMatrix();
-    });
-
 
     public static final RenderType IFRAME_GLINT = create("iframe_glint", DefaultVertexFormat.POSITION_TEX,
             VertexFormat.Mode.QUADS, 256, true, true, CompositeState.builder()
@@ -73,7 +66,6 @@ public class DIRenderTypes extends RenderType {
                     .setTextureState(new TextureStateShard(
                             ResourceLocation.parse(PetHomeMod.MODID + ":textures/psychic_wall_overlay.png"), false,
                             false))
-                    .setTexturingState(PSYCHIC_WALL_TEXTURING)
                     .setLightmapState(LIGHTMAP)
                     .setCullState(RenderStateShard.NO_CULL)
                     .setTransparencyState(RenderStateShard.LIGHTNING_TRANSPARENCY)
@@ -104,8 +96,8 @@ public class DIRenderTypes extends RenderType {
 
     public static final RenderType TRANSLUCENT_NO_CULL = translucentNoCull();
 
-    public DIRenderTypes(String p_173178_, VertexFormat p_173179_, VertexFormat.Mode p_173180_, int p_173181_, boolean p_173182_, boolean p_173183_, Runnable p_173184_, Runnable p_173185_) {
-        super(p_173178_, p_173179_, p_173180_, p_173181_, p_173182_, p_173183_, p_173184_, p_173185_);
+    public DIRenderTypes(String name, VertexFormat format, VertexFormat.Mode mode, int bufferSize, boolean affectsCrumbling, boolean sortOnUpload, Runnable setupState, Runnable clearState) {
+        super(name, format, mode, bufferSize, affectsCrumbling, sortOnUpload, setupState, clearState);
     }
 
     private static final java.util.Map<Long, RenderType> ZOMBIE_OVERLAY_CACHE = new java.util.HashMap<>();
@@ -156,16 +148,6 @@ public class DIRenderTypes extends RenderType {
         Matrix4f matrix4f = (new Matrix4f()).translation(0, f1, 0.0F);
         matrix4f.rotateZ((float) (Math.PI / 4F))
                 .scale(in);
-        RenderSystem.setTextureMatrix(matrix4f);
-    }
-
-    private static void setupPsychicWallTexturing(float in, long time) {
-        long i = Util.getMillis() * 2;
-        float f1 = (float) (i % 30000L) / 30000.0F;
-        float f2 = (float) Math.sin(i / 20000.0F) + 1.0F;
-        float f3 = (float) Math.cos(i / 20000.0F) + 1.0F;
-        Matrix4f matrix4f = (new Matrix4f()).translation(1 + f2, 1 + f3, 0.0F);
-        matrix4f.scale(in);
         RenderSystem.setTextureMatrix(matrix4f);
     }
 

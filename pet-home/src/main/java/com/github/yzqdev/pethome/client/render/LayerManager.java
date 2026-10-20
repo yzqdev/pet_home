@@ -12,7 +12,8 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 public class LayerManager {
 
     public static boolean canApply(EntityType<?> type) {
-        return true; //mojang provides no way to check if an entity is a child class from a arbitrary superclass from it's entitytype
+        // 原版没有提供「实体类型是否继承自某个任意父类」的查询手段，只能一律放行，由调用方 try/catch 兜底
+        return true;
     }
 
     public static void addLayerIfApplicable(EntityType<? extends LivingEntity> entityType, EntityRenderersEvent.AddLayers event) {

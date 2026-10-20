@@ -75,7 +75,7 @@ public class ParticlePsychicWall extends SimpleAnimatedParticle {
         consumer.addVertex(avector3f[3].x(), avector3f[3].y(), avector3f[3].z()).setUv(f6, f5).setColor(this.rCol, this.gCol, this.bCol, this.alpha).setLight(j);
     }
 
-    public int getLightColor(float p_172469_) {
+    public int getLightColor(float partialTick) {
         return 240;
     }
 

@@ -47,7 +47,7 @@ public class ParticleSniff extends SimpleAnimatedParticle {
         this.zd *= 0.8;
     }
 
-    public int getLightColor(float p_107249_) {
+    public int getLightColor(float partialTick) {
         BlockPos blockpos = BlockPos.containing(this.x, this.y, this.z);
         return this.level.hasChunkAt(blockpos) ? LevelRenderer.getLightColor(this.level, blockpos) : 0;
     }

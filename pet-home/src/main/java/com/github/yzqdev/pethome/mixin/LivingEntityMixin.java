@@ -25,6 +25,14 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 本侧宠物数据存储核心：给全部 LivingEntity 挂三个 SynchedEntityData 槽——
+ * {@code PET_HOME_SAVED_DATA}（CompoundTag 大块数据，即 citadel tag）与
+ * {@code PH_HEALING_AURA_TIME}/{@code PH_FROZEN_TIME}（高频 int 计时器），
+ * 并实现 {@link IPetbedDataEntity}/{@link PetSyncDataEntity} 两接口供工具类访问。
+ * 存档桥接 {@code citadel_writeAdditional/readAdditional} 把数据写回/读出
+ * 原版 NBT 的 {@code PetHomeEntityData} 键（与 1.20/26.1 存档格式互通）。
+ */
 @Mixin({LivingEntity.class})
 public abstract class LivingEntityMixin extends Entity implements IPetbedDataEntity, PetSyncDataEntity {
     @Unique
@@ -48,6 +56,7 @@ public abstract class LivingEntityMixin extends Entity implements IPetbedDataEnt
         super(entityType, world);
     }
 
+    /** defineSynchedData TAIL 注入：注册三个数据槽的默认值 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -58,6 +67,7 @@ public abstract class LivingEntityMixin extends Entity implements IPetbedDataEnt
         builder.define(PH_HEALING_AURA_TIME, 0);
         builder.define(PH_FROZEN_TIME, 0);
     }
+    /** 两栖附魔宠物在水中阻力降为陆地带（0.98），替代 Citadel 的入水行为 */
     @Inject(
             method = {"getWaterSlowDown()F"},
             remap = true,
@@ -145,6 +155,7 @@ public abstract class LivingEntityMixin extends Entity implements IPetbedDataEnt
         entityData.set(PH_FROZEN_TIME, time);
     }
 
+    /** 实体级附魔缓存：tag 引用不一致即重建（覆盖本端 force 写与网络同步换引用两条失效路径） */
     @Override
     public Map<ResourceLocation, Integer> ph_getEnchantCache(@Nullable CompoundTag currentTag) {
         // 引用比对覆盖两条失效路径：setCitadelEntityData 的显式失效（本端原地写），

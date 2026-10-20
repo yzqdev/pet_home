@@ -68,19 +68,19 @@ public class LayerPetOverlays extends RenderLayer {
         this.parent = parent;
     }
 
-    private static void addVertexPairAlex(VertexConsumer p_174308_, Matrix4f p_174309_, float p_174310_, float p_174311_, float p_174312_, int p_174313_, int p_174314_, int p_174315_, int p_174316_, float p_174317_, float p_174318_, float p_174319_, float p_174320_, int p_174321_, boolean p_174322_) {
-        float f = (float) p_174321_ / 8.0F;
-        int i = (int) Mth.lerp(f, (float) p_174313_, (float) p_174314_);
-        int j = (int) Mth.lerp(f, (float) p_174315_, (float) p_174316_);
+    private static void addVertexPairAlex(VertexConsumer consumer, Matrix4f matrix, float x, float y, float z, int entityBlockLightLevel, int leashHolderBlockLightLevel, int entitySkyLightLevel, int leashHolderSkyLightLevel, float yBottom, float yOffset, float xOffset, float zOffset, int index, boolean circularSegment) {
+        float f = (float) index / 8.0F;
+        int i = (int) Mth.lerp(f, (float) entityBlockLightLevel, (float) leashHolderBlockLightLevel);
+        int j = (int) Mth.lerp(f, (float) entitySkyLightLevel, (float) leashHolderSkyLightLevel);
         int k = LightTexture.pack(i, j);
         float f2 = 0;
         float f3 = 0;
         float f4 = 0;
-        float f5 = p_174310_ * f;
-        float f6 = p_174311_ < 0.0F ? p_174311_ * f * f : p_174311_ - p_174311_ * (1.0F - f) * (1.0F - f);
-        float f7 = p_174312_ * f;
-        p_174308_.addVertex(p_174309_, f5 - p_174319_, f6 + p_174318_, f7 + p_174320_).setColor(f2, f3, f4, 1.0F).setUv2(k, k);
-        p_174308_.addVertex(p_174309_, f5 + p_174319_, f6 + p_174317_ - p_174318_, f7 - p_174320_).setColor(f2, f3, f4, 1.0F).setUv2(k, k);
+        float f5 = x * f;
+        float f6 = y < 0.0F ? y * f * f : y - y * (1.0F - f) * (1.0F - f);
+        float f7 = z * f;
+        consumer.addVertex(matrix, f5 - xOffset, f6 + yOffset, f7 + zOffset).setColor(f2, f3, f4, 1.0F).setUv2(k, k);
+        consumer.addVertex(matrix, f5 + xOffset, f6 + yBottom - yOffset, f7 - zOffset).setColor(f2, f3, f4, 1.0F).setUv2(k, k);
     }
 
     public static <E extends Entity> void renderShadowString(Entity from, Vec3 fromVec, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, Vec3 to) {
@@ -108,8 +108,8 @@ public class LayerPetOverlays extends RenderLayer {
         poseStack.popPose();
     }
 
-    private static void vertex(VertexConsumer p_114090_, Matrix4f p_114091_, PoseStack.Pose p_114092_, int p_114093_, float p_114094_, int p_114095_, int p_114096_, int p_114097_, float alpha) {
-        p_114090_.addVertex(p_114091_, p_114094_ - 0.5F, (float) p_114095_ - 0.5F, 0.0F).setColor(255, 255, 255, alpha * 255).setUv((float) p_114096_, (float) p_114097_).setOverlay(OverlayTexture.NO_OVERLAY).setUv2(p_114093_, p_114093_).setNormal(p_114092_, 0.0F, 1.0F, 0.0F);
+    private static void vertex(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose, int lightCoords, float x, int y, int u, int v, float alpha) {
+        consumer.addVertex(matrix, x - 0.5F, (float) y - 0.5F, 0.0F).setColor(255, 255, 255, alpha * 255).setUv((float) u, (float) v).setOverlay(OverlayTexture.NO_OVERLAY).setUv2(lightCoords, lightCoords).setNormal(pose, 0.0F, 1.0F, 0.0F);
     }
 
     @Override
@@ -312,10 +312,10 @@ public class LayerPetOverlays extends RenderLayer {
         this.renderVoidCloudFace(entity, cubeAt, consumer, 0.0F, 1.0F, 1.0F, 1.0F, 1.0F, 1.0F, 0.0F, 0.0F, Direction.UP);
     }
 
-    private void renderVoidCloudFace(Entity entity, Matrix4f p_173696_, VertexConsumer p_173697_, float p_173698_, float p_173699_, float p_173700_, float p_173701_, float p_173702_, float p_173703_, float p_173704_, float p_173705_, Direction p_173706_) {
-        p_173697_.addVertex(p_173696_, p_173698_, p_173700_, p_173702_).setOverlay(240);
-        p_173697_.addVertex(p_173696_, p_173699_, p_173700_, p_173703_).setOverlay(240);
-        p_173697_.addVertex(p_173696_, p_173699_, p_173701_, p_173704_).setOverlay(240);
-        p_173697_.addVertex(p_173696_, p_173698_, p_173701_, p_173705_).setOverlay(240);
+    private void renderVoidCloudFace(Entity entity, Matrix4f matrix, VertexConsumer consumer, float x1, float x2, float y1, float y2, float u1, float u2, float v1, float v2, Direction facing) {
+        consumer.addVertex(matrix, x1, y1, u1).setOverlay(240);
+        consumer.addVertex(matrix, x2, y1, u2).setOverlay(240);
+        consumer.addVertex(matrix, x2, y2, v1).setOverlay(240);
+        consumer.addVertex(matrix, x1, y2, v2).setOverlay(240);
     }
 }

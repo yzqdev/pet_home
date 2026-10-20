@@ -19,6 +19,11 @@ import java.util.Map;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * 主世界 SavedData（{@link #get} 恒定路由到 OVERWORLD，跨维度共享同一份），
+ * 承载三块状态：宠物床复活请求 / 迷途灯笼请求 / 宠物罗盘档案（PetId 复合键）。
+ * 约定：{@code get()} 不标脏（高频读点不能引起白写盘），只有增删方法显式 {@code setDirty()}。
+ */
 public class PHWorldData extends SavedData {
 
     private static final String IDENTIFIER = "pet_home_world_data";
@@ -35,6 +40,10 @@ public class PHWorldData extends SavedData {
         return new PHWorldData();
     }
 
+    /**
+     * 取本 mod 世界数据：任意 ServerLevel 调用都路由到主世界的数据存储（computeIfAbsent），
+     * 客户端 level 返回 {@code null}，调用方需判空。
+     */
     public static PHWorldData get(Level world) {
         if (world instanceof ServerLevel) {
             ServerLevel overworld = world.getServer().getLevel(Level.OVERWORLD);
@@ -122,6 +131,7 @@ public class PHWorldData extends SavedData {
         setDirty();
     }
 
+    /** 按维度字符串 + 床坐标过滤复活请求（PetBedBlockEntity.tick 早晨触发/床被拆清理时使用） */
     public List<RespawnRequest> getRespawnRequestsFor(Level level, BlockPos pos) {
         List<RespawnRequest> list = new ArrayList<>();
         String dimension = level.dimension().toString();
@@ -148,6 +158,7 @@ public class PHWorldData extends SavedData {
         setDirty();
     }
 
+    /** 主人在 64 格内的灯笼轮询（WaywardLanternBlockEntity 拉取快照用），按主人 UUID 过滤 */
     public List<LanternRequest> getLanternRequestsFor(UUID uuid) {
         List<LanternRequest> list = new ArrayList<>();
         for (LanternRequest request : this.lanternRequestList) {
@@ -183,6 +194,7 @@ public class PHWorldData extends SavedData {
         }
     }
 
+    /** 该主人的全部罗盘档案，按显示名排序（GUI 列表顺序） */
     public List<PetRecord> getPetRecordsFor(UUID ownerId) {
         List<PetRecord> list = new ArrayList<>();
         for (PetRecord record : this.petRecords.values()) {

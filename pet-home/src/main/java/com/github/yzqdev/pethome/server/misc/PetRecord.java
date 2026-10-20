@@ -7,7 +7,7 @@ import java.util.UUID;
 /**
  * 宠物罗盘的宠物档案：以 PetId（宠物永久逻辑身份）为主键，随宠物整个生命周期（含死亡/宠物床复活）不变。
  * Entity UUID 只是「当前实体实例」的定位手段——宠物床复活会生成新实体（新 Entity UUID），PetId 不变，
- * 罗盘始终以 PetId 识别宠物（compass.md 核心要求：Entity UUID 表示实体实例，PetId 表示宠物本身）。
+ * 罗盘始终以 PetId 识别宠物：Entity UUID 表示实体实例，PetId 表示宠物本身（实体重建后 UUID 变化而 PetId 不变）。
  */
 public class PetRecord {
 

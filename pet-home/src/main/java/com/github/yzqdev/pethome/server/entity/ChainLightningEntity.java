@@ -17,6 +17,11 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * chain_lightning 附魔的连锁闪电视觉/伤害体：附着在当前目标身上放电 3 点，
+ * 再在 8 格内向最近的有效 Mob（同主人/友军除外）生成子闪电递归跳跃
+ * （chainsLeft 递减），5 tick 后消散。纯瞬时对象：存档序列化为空（不持久化）。
+ */
 public class ChainLightningEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> CREATOR_ID = SynchedEntityData.defineId(ChainLightningEntity.class, EntityDataSerializers.INT);
@@ -46,6 +51,7 @@ public class ChainLightningEntity extends Entity {
     }
 
 
+    /** 贴住目标放电 → 找下一个链式目标生成子闪电 → 倒计时自毁；服务端逻辑，客户端仅定位 */
     @Override
     public void tick() {
         super.tick();
@@ -166,12 +172,12 @@ public class ChainLightningEntity extends Entity {
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag p_20052_) {
+    protected void readAdditionalSaveData(CompoundTag compound) {
 
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag p_20139_) {
+    protected void addAdditionalSaveData(CompoundTag compound) {
 
     }
 }

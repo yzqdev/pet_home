@@ -47,7 +47,7 @@ public class GlobalLootModifier extends GlobalLootModifierProvider {
                           BuiltInLootTables.SPAWN_BONUS_CHEST)).build()}, 7));
         add("tough_enchant_book", new PHLootModifier(new LootItemCondition[]{LootTableIdCondition.builder(
                 BuiltInLootTables.ABANDONED_MINESHAFT.location()).build()}, 8));
-        // below using table but its chance is constant
+        // 下面注释掉的写法用 loot table，但概率是固定的，不如上面的随机附魔实现
 //        add("tough_enchant_book", new AddTableLootModifier(new LootItemCondition[]{LootTableIdCondition.builder(BuiltInLootTables.ABANDONED_MINESHAFT.location()).build()},LootTableGen.PET_PROTECTION_TABLE) );
     }
 

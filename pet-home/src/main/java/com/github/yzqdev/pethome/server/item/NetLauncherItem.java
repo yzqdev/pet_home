@@ -23,6 +23,11 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nonnull;
 import java.util.List;
 
+/**
+ * 捕网发射器：蓄力发射 NetEntity 投射物。潜行右键在抓捕模式（发射空网抓生物）
+ * 与释放模式（从背包找有内容的网发射放出实体）间切换，模式存
+ * {@link PHDataComponents#RELEASE_MODE} 组件并反映在物品名后缀。
+ */
 public class NetLauncherItem extends Item {
 
     public NetLauncherItem(Properties properties) {
@@ -37,9 +42,7 @@ public class NetLauncherItem extends Item {
 
     }
 
-    /**
-     * Called when the player stops using an Item (stops holding the right mouse button).
-     */
+    /** 松开右键：蓄力达到阈值才发射（抓捕模式发空网 / 释放模式消耗背包内一个有内容的网），耐久-1 */
     @Override
     public void releaseUsing(ItemStack stack, Level worldIn, LivingEntity entityLiving, int timeLeft) {
         if (entityLiving instanceof Player player) {
@@ -127,9 +130,7 @@ public class NetLauncherItem extends Item {
     }
 
 
-    /**
-     * Called when the equipped item is right clicked.
-     */
+    /** 蓄力 → 初速（弓弦公式，上限 1.5）；副手切换模式；两种模式都 startUsingItem 蓄力 */
     @Override
     @Nonnull
     public InteractionResultHolder<ItemStack> use(Level worldIn, Player player, @Nonnull InteractionHand hand) {
@@ -164,12 +165,13 @@ public class NetLauncherItem extends Item {
         return base.append(" (").append(isCaptureMode(stack) ? CAPTURE : RELEASE).append(")");
     }
 
-    //helpers
+    /** 是否抓捕模式：RELEASE_MODE 组件缺省或 false 均视为抓捕（默认行为） */
     public static boolean isCaptureMode(ItemStack stack) {
 
         return (!stack.has(PHDataComponents.RELEASE_MODE)) || Boolean.FALSE.equals(stack.get(PHDataComponents.RELEASE_MODE));
     }
 
+    /** 释放模式找第一个有内容的网：先副手→主手→背包；找不到返回 EMPTY（发射前提示） */
     protected ItemStack findNet(Player player) {
         ItemStack stack = player.getMainHandItem();
 

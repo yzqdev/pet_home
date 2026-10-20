@@ -24,6 +24,11 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * total_recall（全面召回）附魔的召回宝盒：宠物濒死时被收入盒中（完整 NBT 存同步数据槽），
+ * 落地漂浮、仅主人可交互打开；开启动画播完（openProgress≥1）在服务端重建宠物实体
+ * （25% 血量下限），随后收拢消失。未开封状态才存盘（shouldBeSaved）。
+ */
 public class RecallBallEntity extends Entity {
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(RecallBallEntity.class, EntityDataSerializers.OPTIONAL_UUID);
@@ -56,6 +61,7 @@ public class RecallBallEntity extends Entity {
         return !this.isFinished();
     }
 
+    /** 仅主人可打开（无主宝盒被碰即消失）；未开封时 pickable 让玩家撞到可拾取交互 */
     public InteractionResult interact(Player player, InteractionHand hand) {
         if (!this.isFinished()) {
             if (this.getOwnerUUID() == null) {
@@ -69,6 +75,7 @@ public class RecallBallEntity extends Entity {
         return InteractionResult.PASS;
     }
 
+    /** 自转+开合插值+ portal 粒子；服务端在开启动画结束后从 ContainedData 重建宠物（生命 25% 下限）并标记完成 */
     public void tick() {
         super.tick();
         this.setYRot(this.getYRot() + 1);
@@ -115,6 +122,7 @@ public class RecallBallEntity extends Entity {
         return true;
     }
 
+    /** 已开封（宠物已放出）的空盒不存盘，避免下次加载重复弹实体 */
     public boolean shouldBeSaved() {
         return !this.isFinished() && super.shouldBeSaved();
     }

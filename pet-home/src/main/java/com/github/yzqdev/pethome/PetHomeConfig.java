@@ -1,5 +1,6 @@
 package com.github.yzqdev.pethome;
 
+import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
@@ -15,6 +16,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 
+/**
+ * 全 mod 配置（COMMON，NeoForge ModConfigSpec，字段经 {@code onLoad} 刷到 public static 供全代码直读）。
+ * 涉及注册表解析的名单类配置在加载前先给空集合兜底（捕捉网/伤害管线加载早期就可能读）。
+ */
 @EventBusSubscriber(modid = PetHomeMod.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class PetHomeConfig {
 
@@ -76,7 +81,7 @@ public class PetHomeConfig {
     private static final ModConfigSpec.BooleanValue TRINARY_COMMAND_SYSTEM = BUILDER.comment("true if the trinary command system (wander/follow/stay) is enabled").define("trinary_command_system", true);
     private static final ModConfigSpec.BooleanValue PET_BED_RESPAWNS = BUILDER.comment("true if mobs can respawn in pet beds the next morning after they die").define("pet_bed_respawns", true);
     private static final ModConfigSpec.BooleanValue RABBITS_SCARE_RAVAGERS = BUILDER.comment("true if rabbits scare ravagers like they used to do").define("rabbits_scare_ravagers", true);
-    // —— 宠物罗盘（compass.md：enable / 两个传送完全独立）——
+    // —— 宠物罗盘（总开关 / 两个传送功能完全独立）——
     private static final ModConfigSpec.BooleanValue PET_COMPASS_ENABLE = BUILDER.comment("master switch for the pet compass system").define("petCompassEnable", true);
     private static final ModConfigSpec.BooleanValue PET_COMPASS_TELEPORT_PLAYER_TO_PET = BUILDER.comment("allow teleporting the player to the pet").define("teleportPlayerToPet", true);
     private static final ModConfigSpec.BooleanValue PET_COMPASS_TELEPORT_PET_TO_PLAYER = BUILDER.comment("allow teleporting (recalling) the pet to the player").define("teleportPetToPlayer", true);
@@ -143,6 +148,10 @@ public class PetHomeConfig {
     public static boolean petInfoOverlayIgnoreJade = false;
     public static Set<EntityType<?>> mobcatcherBlackList = Set.of();
 
+    /**
+     * 配置载入/重载（LOADING 与 RELOADING 均触发）时把 spec 值刷入 public static 字段：
+     * 业务代码只读 static 字段不读 ModConfigSpec；名单字符串在此一次性解析为注册表对象集合。
+     */
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
         mobcatcherOnlyTamableAnimal = MOBCATCHER_ONLY_TAMABLE_ANIMAL.get();
@@ -186,5 +195,6 @@ public class PetHomeConfig {
         playerCantHurtEntity = (PLAYER_CANT_HURT_ENTITY.get()).stream().map((entityTypeName) -> BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(entityTypeName))).collect(Collectors.toSet());
         canHurtPetItem = (CAN_HURT_PET_ITEM.get()).stream().map(i -> BuiltInRegistries.ITEM.get(ResourceLocation.parse(i))).collect(Collectors.toSet());
         canHurtAllItem = (CAN_HURT_ALL_ITEM.get()).stream().map(i -> BuiltInRegistries.ITEM.get(ResourceLocation.parse(i))).collect(Collectors.toSet());
+        TameableUtils.refreshSpeciesGates();
     }
 }

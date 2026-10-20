@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 宠物罗盘 GUI（compass.md 第九/二十三节）：手持罗盘右键打开，列表展示玩家全部宠物
+ * 宠物罗盘 GUI：手持罗盘右键打开，列表展示玩家全部宠物
  * （名称/类型/位置/维度/状态），左键选中，选中行提供「传送至宠物」「召回宠物」操作——
  * 两个按钮分别由 teleportPlayerToPet / teleportPetToPlayer 配置独立显示（服务端权威下发）。
  * 数据由服务端在 C2S pet_compass_open 后打包 S2C 下发，本类不向服务端查询任何东西。
@@ -36,6 +36,7 @@ public class PetCompassScreen extends Screen {
     /** 列表第一行的 y（PANEL_TOP + 30）；渲染与点击命中共用 */
     private static final int LIST_TOP = 54;
 
+    /** 罗盘档案行（服务端打包字段的客户端载体）；sameDim 由客户端按玩家当前维度补充计算 */
     public record Entry(UUID petId, String name, String type, String dim, int x, int y, int z, int dist,
                         boolean loaded, boolean alive, boolean sameDim, long lastTime) {
     }
@@ -102,6 +103,7 @@ public class PetCompassScreen extends Screen {
         };
     }
 
+    /** 面板绘制：底色边框标题 + scissor 裁剪的行列表（滚动偏移在此收敛） */
     @Override
     public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
@@ -137,6 +139,7 @@ public class PetCompassScreen extends Screen {
         guiGraphics.disableScissor();
     }
 
+    /** 单行：名称/类型 + 状态行（死亡红字 / 坐标距离 + 装载态）；选中且存活时按配置渲染右侧操作按钮 */
     private void renderEntry(GuiGraphics guiGraphics, Entry entry, int left, int top, int rowWidth, int mouseX, int mouseY) {
         boolean hovered = mouseX >= left - 6 && mouseX <= left + rowWidth + 6 && mouseY >= top && mouseY < top + ROW_HEIGHT - 4;
         boolean isSelected = entry.petId.equals(this.selected);
@@ -166,7 +169,7 @@ public class PetCompassScreen extends Screen {
             guiGraphics.drawString(this.font, dimName(entry.dim).withStyle(ChatFormatting.GRAY).append("  ").append(status), left, top + 24, 0xFFFFFFFF);
         }
 
-        // 选中行的操作按钮（按配置独立显示，compass.md 第二十三节）
+        // 选中行的操作按钮（传送/召回是否显示由配置独立控制）
         if (isSelected && entry.alive) {
             int buttonY = top + 5;
             int buttonX = left + rowWidth - BUTTON_WIDTH;
@@ -187,6 +190,7 @@ public class PetCompassScreen extends Screen {
         guiGraphics.drawCenteredString(this.font, msg(key), x + BUTTON_WIDTH / 2, y + 4, 0xFFFFFFFF);
     }
 
+    /** 左键：命中行先选中；命中行内按钮（存活时）经 {@link #sendAction} 发 C2S petCompassAction */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         int panelX0 = this.width / 2 - PANEL_HALF_WIDTH;
@@ -218,6 +222,7 @@ public class PetCompassScreen extends Screen {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
+    /** 按钮动作（to_pet / to_player）发服务端；仅发 PetId+Action，服务端再校验所有权与配置 */
     private void sendAction(Entry entry, String action) {
         CompoundTag tag = new CompoundTag();
         tag.putString("PetId", entry.petId.toString());
@@ -225,6 +230,7 @@ public class PetCompassScreen extends Screen {
         PacketDistributor.sendToServer(new PropertiesMessage(PHConstants.petCompassAction, tag, 0));
     }
 
+    /** 滚轮滚动列表（consume，不透传）；打开时游戏不暂停 */
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double xAmount, double yAmount) {
         this.scrollOffset -= (int) Math.signum(yAmount);

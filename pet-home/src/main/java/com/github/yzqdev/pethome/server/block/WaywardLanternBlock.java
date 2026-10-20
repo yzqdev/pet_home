@@ -57,7 +57,7 @@ public class WaywardLanternBlock extends BaseEntityBlock {
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, Boolean.valueOf(false)));
     }
 
-    public VoxelShape getShape(BlockState p_49038_, BlockGetter p_49039_, BlockPos p_49040_, CollisionContext p_49041_) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
@@ -113,8 +113,8 @@ public class WaywardLanternBlock extends BaseEntityBlock {
     }
 
     @javax.annotation.Nullable
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level p_152180_, BlockState p_152181_, BlockEntityType<T> p_152182_) {
-        return p_152180_.isClientSide ? null : createTickerHelper(p_152182_, PHTileEntityRegistry.WAYWARD_LANTERN.get(), WaywardLanternBlockEntity::tick);
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        return level.isClientSide ? null : createTickerHelper(type, PHTileEntityRegistry.WAYWARD_LANTERN.get(), WaywardLanternBlockEntity::tick);
     }
 
 

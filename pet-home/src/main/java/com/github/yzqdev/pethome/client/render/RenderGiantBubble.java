@@ -45,8 +45,8 @@ public class RenderGiantBubble extends EntityRenderer<GiantBubbleEntity> {
 
     }
 
-    private static void vertex(VertexConsumer p_114090_, Matrix4f p_114091_, PoseStack.Pose p_114092_, int p_114093_, float p_114094_, int p_114095_, int p_114096_, int p_114097_) {
-        p_114090_.addVertex(p_114091_, p_114094_ - 0.5F, (float) p_114095_ - 0.25F, 0.0F).setColor(255, 255, 255, 255).setUv((float) p_114096_, (float) p_114097_).setOverlay(OverlayTexture.NO_OVERLAY).setUv2(p_114093_, p_114093_).setNormal(p_114092_, 0.0F, 1.0F, 0.0F);
+    private static void vertex(VertexConsumer consumer, Matrix4f matrix, PoseStack.Pose pose, int lightCoords, float x, int y, int u, int v) {
+        consumer.addVertex(matrix, x - 0.5F, (float) y - 0.25F, 0.0F).setColor(255, 255, 255, 255).setUv((float) u, (float) v).setOverlay(OverlayTexture.NO_OVERLAY).setUv2(lightCoords, lightCoords).setNormal(pose, 0.0F, 1.0F, 0.0F);
     }
 
     @Override

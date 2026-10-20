@@ -120,13 +120,13 @@ public class FollowOwner2Goal extends Goal {
 
     }
 
-    private boolean maybeTeleportTo(int p_25304_, int p_25305_, int p_25306_) {
-        if (Math.abs((double) p_25304_ - this.owner.getX()) < 2.0D && Math.abs((double) p_25306_ - this.owner.getZ()) < 2.0D) {
+    private boolean maybeTeleportTo(int x, int y, int z) {
+        if (Math.abs((double) x - this.owner.getX()) < 2.0D && Math.abs((double) z - this.owner.getZ()) < 2.0D) {
             return false;
-        } else if (!this.canTeleportTo(new BlockPos(p_25304_, p_25305_, p_25306_))) {
+        } else if (!this.canTeleportTo(new BlockPos(x, y, z))) {
             return false;
         } else {
-            this.tamable.moveTo((double) p_25304_ + 0.5D, p_25305_, (double) p_25306_ + 0.5D, this.tamable.getYRot(), this.tamable.getXRot());
+            this.tamable.moveTo((double) x + 0.5D, y, (double) z + 0.5D, this.tamable.getYRot(), this.tamable.getXRot());
             this.navigation.stop();
             return true;
         }
@@ -150,7 +150,7 @@ public class FollowOwner2Goal extends Goal {
         }
     }
 
-    private int randomIntInclusive(int p_25301_, int p_25302_) {
-        return this.tamable.getRandom().nextInt(p_25302_ - p_25301_ + 1) + p_25301_;
+    private int randomIntInclusive(int min, int max) {
+        return this.tamable.getRandom().nextInt(max - min + 1) + min;
     }
 }

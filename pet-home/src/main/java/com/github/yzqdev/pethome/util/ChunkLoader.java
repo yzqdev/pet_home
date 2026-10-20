@@ -17,16 +17,20 @@ public class ChunkLoader {
     private static final TicketType<ChunkPos> PET_HOME_TICKET =
             TicketType.create(PetHomeMod.MODID, Comparator.comparingLong(ChunkPos::toLong));
 
-    // Request a chunk ticket (e.g., in your block entity or item)
+    /**
+     * 对指定区块请求 FORCED 语义的 region ticket（level 0，随存档持久化）。
+     * 每次强载必须与 {@link #unloadChunk} 严格配对（灯笼/召回队列的成对调用点），
+     * 否则票据残留导致区块永久加载。
+     */
     public static void forceLoadChunk(Level level, ChunkPos chunkPos) {
         ServerLevel serverLevel = (ServerLevel) level;
 
-        // Request a ticket with infinite duration
+        // 以无限时长请求 region ticket
         var ticketManager = serverLevel.getChunkSource().chunkMap.getDistanceManager();
         ticketManager.addRegionTicket(PET_HOME_TICKET, chunkPos, 0, chunkPos);
     }
 
-    // Release the ticket when done
+    /** 移除 {@link #forceLoadChunk} 添加的票据（实体传送完成/请求放弃/灯笼移除时） */
     public static void unloadChunk(Level level, ChunkPos chunkPos) {
         ServerLevel serverLevel = (ServerLevel) level;
 

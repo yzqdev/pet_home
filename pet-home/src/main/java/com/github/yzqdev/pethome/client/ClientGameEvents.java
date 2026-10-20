@@ -18,6 +18,10 @@ import java.util.WeakHashMap;
 import java.util.Map;
 
 /**
+ * 客户端杂项事件：粒子工厂注册、矿石高亮描边色、暗影手渲染数据。
+ * {@code shadowPunchRenderData}（WeakHashMap）只能由客户端写（EntityTickHandler 客户端分支），
+ * 服务端写无人消费且实体卸载后泄漏。
+ *
  * @author yzqde
  * @date time 2025/1/9 8:27
  * @modified By:
@@ -25,19 +29,23 @@ import java.util.Map;
 @OnlyIn(Dist.CLIENT)
 @EventBusSubscriber(value = Dist.CLIENT)
 public class ClientGameEvents {
+    /** 暗影手渲染插值：每 Mob → 上帧出拳进度数组（渲染层每帧读取） */
     public static Map<Entity, int[]> shadowPunchRenderData = new WeakHashMap<>();
 
+    /** MOD bus 监听注册入口（构造期由 PetHomeModClient 调用一次） */
     public static void registerClientListeners(IEventBus iEventBus) {
         iEventBus.addListener(ClientGameEvents::setupParticles);
 
 
     }
 
+    /** 由 EntityTickHandler 客户端分支每 tick 写入（服务端勿调） */
     public static void updateVisualDataForMob(Entity entity, int[] arr) {
         shadowPunchRenderData.put(entity, arr);
     }
 
 
+    /** 注册全部 11 种粒子的工厂（special 两个 / sprite set 其余） */
     public static void setupParticles(RegisterParticleProvidersEvent event) {
         PetHomeMod.LOGGER.debug("Registered particle factories");
         event.registerSpecial(PHParticleRegistry.DEFLECTION_SHIELD.get(), new ParticleDeflectionShield.Factory());
@@ -51,9 +59,9 @@ public class ClientGameEvents {
         event.registerSpecial(PHParticleRegistry.INTIMIDATION.get(), new ParticleIntimidation.Factory());
         event.registerSpriteSet(PHParticleRegistry.BLIGHT.get(), ParticleBlight.Factory::new);
         event.registerSpriteSet(PHParticleRegistry.QUESTION_MARK_PARTICLE_TYPE.get(), ParticleQuestionMark.Factory::new);
-//        event.registerSpriteSet(DIParticleRegistry.LANTERN_BUGS.get(), ParticleLanternBugs.Factory::new);
     }
 
+    /** 矿石嗅探高亮方块按矿石方块态取描边色（OreColorRegistry） */
     @SubscribeEvent
     public static void onOutlineColor(EventGetOutlineColor event) {
         if (event.getEntityIn() instanceof HighlightedBlockEntity) {

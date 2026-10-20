@@ -27,7 +27,7 @@ public class DataGenerators {
         ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
         CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
 
-        //datapack
+        // 数据包资源（loot table / recipe / advancement 等由各 Provider 生成）
         var datapack = new ModDatapackProvider(packOutput, lookupProvider);
         var datapackLookProvider = datapack.getRegistryProvider();
         generator.addProvider(event.includeServer(), datapack);

@@ -42,6 +42,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * 捕网：空网右键生物经 canCatchMob 校验后把完整实体 NBT 存入
+ * {@link PHDataComponents#ENTITY_HOLDER} 数据组件、原实体 discard、5 tick 冷却；
+ * 有内容的网 useOn 放出实体。掉落物形态发光/无敌/防坠虚空（onEntityItemUpdate）。
+ */
 public class NetItem extends Item {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -56,6 +61,7 @@ public class NetItem extends Item {
         return type;
     }
 
+    /** 有内容的网放到方块上：从 NBT 重建实体到点击点上方一格，清空组件；创造模式还给空网 */
     @Override
     @Nonnull
     public InteractionResult useOn(UseOnContext context) {
@@ -83,6 +89,7 @@ public class NetItem extends Item {
         return InteractionResult.SUCCESS;
     }
 
+    /** 空网右键生物：黑名单/存活校验后抓捕（NBT 入组件、discard 实体、入背包或掉落），仅服务端生效 */
     @Override
     public @NotNull InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
         if (target.getCommandSenderWorld().isClientSide || target instanceof Player || !target.isAlive() || containsEntity(stack)) {
@@ -114,6 +121,7 @@ public class NetItem extends Item {
     // 已警告过的解析失败实体名，避免每帧 getName 刷日志；三侧原版均未初始化（NPE），此处补上
     static Set<String> warned = new HashSet<>();
 
+    /** 网掉落物每 tick：常亮+无敌；掉出世界底部时悬停冻结在 minY（存档里的宠物不丢失） */
     @Override
     public boolean onEntityItemUpdate(ItemStack stack, ItemEntity entity) {
         if (!entity.isCurrentlyGlowing()) {
@@ -166,6 +174,7 @@ public class NetItem extends Item {
         }
     }
 
+    /** registryAccess：优先服务端；无服务端（客户端 tooltip 场景）回退客户端 world，避免专用类依赖 */
     public static RegistryAccess registryAccess() {
         if (ServerLifecycleHooks.getCurrentServer() != null) {
             return ServerLifecycleHooks.getCurrentServer().registryAccess();
@@ -211,7 +220,7 @@ public class NetItem extends Item {
         return new NetEntity(shooter.getX(), shooter.getY() + 1.25, shooter.getZ(), worldIn, newStack);
     }
 
-    //helper methods
+    // 辅助方法
 
     public static boolean containsEntity(ItemStack stack) {
         return stack != null && stack.has(PHDataComponents.ENTITY_HOLDER);
@@ -229,6 +238,10 @@ public class NetItem extends Item {
         return type == EntityType.PLAYER || PetHomeConfig.mobcatcherBlackList.contains(type);
     }
 
+    /**
+     * 抓捕白名单：默认全生物可抓（玩家恒排除 + 配置黑名单）；
+     * mobcatcherOnlyTamableAnimal 开启时仅 TamableAnimal 可抓。
+     */
     public static boolean canCatchMob(Entity livingEntity) {
         var type = livingEntity.getType();
         if (PetHomeConfig.mobcatcherOnlyTamableAnimal) {
@@ -248,6 +261,7 @@ public class NetItem extends Item {
 
     }
 
+    /** 从 NBT 重建实体；{@code withInfo=false} 只按 id 创建不 load（调用方需自担 null 实体风险） */
     public static Entity getEntityFromNBT(CompoundTag nbt, Level world, boolean withInfo) {
         Entity entity = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(getEntityID(nbt))).create(world);
         if (withInfo) {

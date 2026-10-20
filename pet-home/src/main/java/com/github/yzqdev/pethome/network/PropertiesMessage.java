@@ -24,6 +24,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * @modified By:
  *
  */
+/**
+ * 全 mod 唯一的双向 payload：{@code propertyID} 分发 4 个逻辑通道——
+ * entityDataTagUpdate（宠物 tag 客户端↔服务端互写）/ petCompassOpen / petCompassAction（C2S）/
+ * petCompassData（S2C 罗盘列表）。{@code entityID} 仅 entityDataTagUpdate 使用。
+ */
 public record PropertiesMessage(String propertyID, CompoundTag compound, int entityID) implements CustomPacketPayload {
     public static final StreamCodec<FriendlyByteBuf, PropertiesMessage> STREAM_CODEC  = StreamCodec.composite(
             ByteBufCodecs.STRING_UTF8, PropertiesMessage::propertyID,
@@ -39,6 +44,11 @@ public record PropertiesMessage(String propertyID, CompoundTag compound, int ent
     public Type<? extends CustomPacketPayload> type() {
         return TYPE;
     }
+    /**
+     * C2S 分发（enqueueWork 主线程执行）：罗盘开/动作两通道各自校验所有权与配置；
+     * entityDataTagUpdate 必须校验实体归属为发包玩家后才写 citadel tag（防伪造包篡改任意实体）。
+     * 任一异常经 exceptionally 断开连接（LangDefinition.network_failed）。
+     */
     public static void handleServer(final PropertiesMessage data, final IPayloadContext context) {
 
         context.enqueueWork(() -> {
@@ -63,11 +73,16 @@ public record PropertiesMessage(String propertyID, CompoundTag compound, int ent
                     }
                 })
                 .exceptionally(e -> {
-                    // Handle exception
+                    // 吞掉反序列化异常：损坏的旧档数据按无数据处理
                     context.disconnect(Component.translatable(LangDefinition.network_failed, e.getMessage()));
                     return null;
                 });
     }
+    /**
+     * S2C 分发：petCompassData 交给 PetCompassScreen 开/刷 GUI；
+     * entityDataTagUpdate 在客户端本地写实体数据槽（渲染/tooltip 用，服务端不可信其即时性）。
+     * 异常同样断连（保持两端语义一致）。
+     */
     public static void handleClient(final PropertiesMessage data, final IPayloadContext context) {
 
         context.enqueueWork(() -> {
@@ -88,7 +103,7 @@ public record PropertiesMessage(String propertyID, CompoundTag compound, int ent
                     }
                 })
                 .exceptionally(e -> {
-                    // Handle exception
+                    // 吞掉反序列化异常：损坏的旧档数据按无数据处理
                     context.disconnect(Component.translatable(LangDefinition.network_failed, e.getMessage()));
                     return null;
                 });

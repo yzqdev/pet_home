@@ -41,8 +41,8 @@ public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IC
     @Shadow @Final private static EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_0;
     @Shadow @Final private static EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_1;
     @Shadow abstract void addTrustedUUID(UUID uuid);
-    @Shadow public abstract void setSitting(boolean p_28611_);
-    @Shadow abstract void setSleeping(boolean p_28627_);
+    @Shadow public abstract void setSitting(boolean sitting);
+    @Shadow abstract void setSleeping(boolean sleeping);
 
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(Fox.class, EntityDataSerializers.INT);
 

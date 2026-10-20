@@ -10,6 +10,12 @@ import net.minecraft.world.level.Level;
 
 import java.util.UUID;
 
+/**
+ * 迷途灯笼召回请求：跟随状态宠物随区块卸载时由 ServerEvent.onEntityLeaveWorld 写入
+ * {@link PHWorldData}（含宠物/主人 UUID、最后位置、时间、名字、所在维度）。
+ * 灯笼方块实体拉取后到<b>请求维度</b>强载区块找回实体并传回灯笼旁；
+ * 实体重新 join 世界时按 petUUID 清除。
+ */
 public class LanternRequest {
     private String entityType;
     private long timestamp;
@@ -61,6 +67,7 @@ public class LanternRequest {
         return this.dimension;
     }
 
+    /** 存档字符串 → 维度 ResourceKey（跨维度查找实体/强载区块时用） */
     public ResourceKey<Level> getDimensionKey() {
         return ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(this.dimension));
     }

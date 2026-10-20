@@ -21,12 +21,18 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.function.Predicate;
 
+/**
+ * 宠物床复活执行者：死亡宠物的 RespawnRequest（完整 NBT）在次日白天第一 tick
+ * 于床上重建实体（复用原 UUID/PetId、满血、朝向、停留态）。
+ * 请求存于 {@link PHWorldData}（主世界共享，跨维度有效）。
+ */
 public class PetBedBlockEntity extends BlockEntity {
 
     public PetBedBlockEntity(BlockPos pos, BlockState state) {
         super(PHTileEntityRegistry.PET_BED.get(), pos, state);
     }
 
+    /** BlockEntity ticker：每天 dayTime%24000==1 的那一 tick 处理本床的全部复活请求，成功即移除并标脏 */
     public static void tick(Level level, BlockPos pos, BlockState state, PetBedBlockEntity blockEntity) {
         long time = level.dayTime() % 24000L;
         if (time == 1) {
@@ -42,6 +48,7 @@ public class PetBedBlockEntity extends BlockEntity {
         }
     }
 
+    /** 清除本床的全部复活请求（床被拆/放生时调用），并对每个请求向 message 玩家发告别消息 */
     public void removeAllRequestsFor(@Nullable Player message) {
         PHWorldData data = PHWorldData.get(level);
         if (data != null) {
@@ -55,6 +62,11 @@ public class PetBedBlockEntity extends BlockEntity {
         }
     }
 
+    /**
+     * 用请求里的完整 NBT 重建宠物：load 恢复（含 UUID/PetId）→ 满血/名字/朝向 →
+     * 指令置停留(1)、原版 TamableAnimal 坐下 → 放入世界并通知在线主人。
+     * 返回是否成功（成功调用方才移除请求）。
+     */
     private static boolean addAndRemoveEntity(Level level, BlockPos pos, Direction dir, RespawnRequest request) {
         EntityType type = request.getEntityType();
         if (type != null) {
@@ -97,6 +109,7 @@ public class PetBedBlockEntity extends BlockEntity {
         return false;
     }
 
+    /** 重绑 10×5×10 范围内绑定到本床坐标的宠物：清除其床绑定并通知主人（床被拆时调用） */
     public void resetBedsForNearbyPets() {
         Predicate<Entity> pet = (animal) -> TameableUtils.isTamed(animal) && TameableUtils.getPetBedPos((LivingEntity) animal) != null && TameableUtils.getPetBedPos((LivingEntity) animal).equals(this.getBlockPos());
         List<LivingEntity> list = level.getEntitiesOfClass(LivingEntity.class, new AABB(this.getBlockPos().offset(-10, -5, -10).getCenter(), this.getBlockPos().offset(10, 5, 10).getCenter()), EntitySelector.NO_SPECTATORS.and(pet));

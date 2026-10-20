@@ -27,6 +27,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * 迷途灯笼：召回走失宠物的方块实体。周期（200-600 tick）拉取 64 格内玩家的 LanternRequest
+ * 快照（WorkingRequest 包装，每请求独立耐心/轮次），按请求<b>维度</b>强载最后位置 3×3 区块
+ * 找实体，找到经碰撞检测落点传回灯笼旁并通知主人；一轮 200 tick 找不到记一次失败，
+ * 3 轮后放弃（abandonedRequests 本地跳过，请求留世界数据自愈）；setRemoved 释放全部票据。
+ */
 public class WaywardLanternBlockEntity extends BlockEntity {
 
     /** 一轮等待实体从强载区块中出现的耐心（tick） */
@@ -73,6 +79,12 @@ public class WaywardLanternBlockEntity extends BlockEntity {
         super.setRemoved();
     }
 
+    /**
+     * 每 tick：先落账 finishedRequests（从工作列表移除 + 删世界数据请求）；
+     * 空闲则倒计时后按 64 格内玩家拉取新请求快照；有请求则强载来源维度区块 →
+     * 找到实体即传送（同维 teleportTo/跨维 Entity.teleportTo(ServerLevel,…)）、
+     * 超时计次、3 轮放弃并释放区块。
+     */
     public static void tick(Level level, BlockPos pos, BlockState state, WaywardLanternBlockEntity te) {
         if (!te.finishedRequests.isEmpty()) {
             te.workingRequests.removeIf(working -> te.finishedRequests.contains(working.request.getPetUUID()));
@@ -114,7 +126,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
                 loadChunksAround(targetLevel, request.getChunkPosition(), true);
                 Entity entityFromChunk = targetLevel.getEntity(request.getPetUUID());
                 working.ticksWaiting++;
-                //takes a while to load in entities from the forced chunk, be patient...
+                // 强载区块内的实体要等几个 tick 才加载完，需多等几拍再取
                 if (entityFromChunk != null || working.ticksWaiting > ENTITY_LOAD_TIMEOUT) {
                     working.ticksWaiting = 0;
                     if (entityFromChunk != null) {
@@ -154,6 +166,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
         return anyLevel.getServer().getLevel(request.getDimensionKey());
     }
 
+    /** 以中心区块外扩 1 圈（3×3）成对加/卸 FORCED 票据（load=false 时全部释放） */
     private static void loadChunksAround(ServerLevel serverLevel, BlockPos center, boolean load) {
         int centerChunkX = center.getX() >> 4;
         int centerChunkZ = center.getZ() >> 4;
@@ -169,6 +182,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
         }
     }
 
+    /** 灯笼 64 格（平方距离）内的玩家列表：只为其拉取灯笼请求，避免无人驻守时空转 */
     private static List<Player> getPlayers(Level level, BlockPos pos) {
         double dist = 64 * 64;
         List<Player> withinDist = new ArrayList<>();

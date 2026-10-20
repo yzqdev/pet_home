@@ -3,6 +3,8 @@ package com.github.yzqdev.pethome.util;
 import com.github.yzqdev.pethome.PHConstants;
 import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
+import com.github.yzqdev.pethome.server.NbtKeys;
+import net.minecraft.nbt.NumericTag;
 import net.minecraft.world.entity.animal.Fox;
 import net.minecraft.world.entity.animal.Rabbit;
 import net.minecraft.world.entity.animal.axolotl.Axolotl;
@@ -53,6 +55,17 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
+ * 全 mod 的核心工具类（门面）：驯服判定与归属、宠物附魔读写与属性修改、
+ * 各类附魔计时器（低频走 citadel tag、高频走 {@link PetSyncDataEntity} 数据槽）、
+ * 宠物床坐标、定位/传送/索敌等行为辅助。几乎所有 server 代码与 mixin 依赖它。
+ * 本侧（1.21）数据存储在 LivingEntity 的 SynchedEntityData CompoundTag 槽内（非 26.1 的附件）。
+ *
+ * <p>方法体按功能域分区（区注释导航）：所有 public 签名保持稳定——引用文件与 mixin 不经 import 变更；
+ * 不拆子类的原因：sync/hasEnchant/isTamed 跨域调用密集，强拆需大量包级交叉暴露，四向同步成本高于收益。
+ *
+ * <p>分区：一、归属与驯服判定 → 二、灯笼卸载判定 → 三、宠物床坐标 → 四、附魔读写与属性 →
+ * 五、计时器（tag + 独立数据槽） → 六、行为辅助（附魔战斗/生存效果执行） → 七、传送与近距离查询。
+ *
  * @author yzqde
  * @date time 2025/1/9 7:52
  * @modified By:
@@ -69,8 +82,6 @@ public class TameableUtils {
     private static final String PSYCHIC_WALL_COOLDOWN = "PetPsychicWallCooldown";
     private static final String INTIMIDATION_COOLDOWN = "PetIntimidationCooldown";
     private static final String SHADOW_PUNCH_STRIKING = "PetShadowPunchStriking";
-    private static final String JUKEBOX_FOLLOWER_UUID = "PetJukeboxFollowerUUID";
-    private static final String JUKEBOX_FOLLOWER_DISC = "PetJukeboxFollowerDisc";
     private static final String BLAZING_PROTECTION_BARS = "PetBlazingProtectionBars";
     private static final String BLAZING_PROTECTION_COOLDOWN = "PetBlazingProtectionCooldown";
     public static final String HEALING_AURA_TIME = "PetHealingAuraTime";
@@ -82,7 +93,6 @@ public class TameableUtils {
     private static final String PET_BED_Z = "PetBedZ";
     private static final String PET_BED_DIMENSION = "PetBedDimension";
     private static final String FALL_DISTANCE_SYNC = "SyncedFallDistance";
-    private static final String ZOMBIE_PET = "ZombiePet";
     private static final String SAFE_PET_HEALTH = "SafePetHealth";
     private static final String COLLAR_SWAP_COOLDOWN = "CollarSwapCooldown";
     private static final ResourceLocation HEALTH_BOOST_UUID = ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "health_boost");// UUID.fromString("556E1665-8B10-40C8-8F9D-CF9B166EEEEE");
@@ -91,7 +101,10 @@ public class TameableUtils {
     private static final ResourceLocation RESISTANCE_BOOST_UUID = ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "resistance_boost");// UUID.fromString("ff465ded-9040-4eb5-93a1-7bbe97c31744");
 
     private static final ResourceLocation SPEED_BOOST_AQUATIC_LAND_UUID = ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "speed_boost_aqua");// UUID.fromString("ff465ded-9040-4eb5-93a1-7bbe97c31745");
+    // ==================== 一、归属与驯服判定（isTamed / isPetOf / owner 系列） ====================
 
+
+    /** 归属 UUID：兼容本 mod 改造动物（ModifedToBeTameable）与原版 TamableAnimal；非驯服实体返回 {@code null} */
     public static UUID getOwnerUUIDOf(Entity entity) {
         if (entity instanceof ModifedToBeTameable) {
             return ((ModifedToBeTameable) entity).getTameOwnerUUID();
@@ -108,28 +121,49 @@ public class TameableUtils {
         return tag.contains(COLLAR_TAG) && tag.getBoolean(COLLAR_TAG);
     }
 
+    /**
+     * 卸载时是否应记入迷途灯笼（召回等待）。只认「跟随状态」：
+     * 三态指令开启时 command==2（跟随）才召回；关闭时读实体 NBT 里任意 {@code *Command} 键
+     * （兼容 Alex's Mobs 等第三方宠物，其编号 1=跟随，跳过本模组的 DICommand），
+     * 都没有则按原版 TamableAnimal「未坐下=跟随」兜底。
+     * 由 ServerEvent.onEntityLeaveWorld 在实体随区块卸载时调用。
+     */
     public static boolean shouldUnloadToLantern(LivingEntity tameable) {
-        if (PetHomeConfig.trinaryCommandSystem && tameable instanceof IComandableMob commandableMob) {
-            return commandableMob.getCommand() == 2;
-        } else {
-            CompoundTag tag = new CompoundTag();
-            tameable.addAdditionalSaveData(tag);
-            int command = -1;
-            //compat with alexs mobs
-            for (String s : tag.getAllKeys()) {
-                if (s.endsWith("Command") && tag.contains(s, 1)) {
-                    command = tag.getInt(s);
-                }
+        if (tameable instanceof IComandableMob commandableMob) {
+            if (PetHomeConfig.trinaryCommandSystem) {
+                return commandableMob.getCommand() == 2;
             }
-            if (command != -1) {
-                return command == 1;
-            } else if (tameable instanceof TamableAnimal animal) {
-                return !animal.isOrderedToSit();
-            }
+            // 未启用三态：原版语义下「未停留」即为跟随
+            return !(tameable instanceof TamableAnimal animal) || !animal.isOrderedToSit();
         }
-        return false;
+        int foreignCommand = readForeignCommand(tameable);
+        if (foreignCommand != -1) {
+            return foreignCommand == 1;
+        }
+        return tameable instanceof TamableAnimal animal && !animal.isOrderedToSit();
     }
 
+    /**
+     * 读第三方宠物 NBT 里的 {@code *Command} 键（兼容 Alex's Mobs 等：其实体未实现 IComandableMob，
+     * 编号 1=跟随）。 必须跳过本模组自己的 {@code DICommand}：它按三态编号写（2 = 跟随），
+     * 与第三方编号体系不通用——三态关闭时若把自家宠物的 DICommand 当第三方键读，跟随中的宠物会被误判不召回。
+     * 经 {@link com.github.yzqdev.pethome.mixin.EntityInvoker} 只序列化附加数据——
+     * {@code saveWithoutId} 会连带打包 Brain/属性/药效等大块状态，本方法在实体卸载路径上调用，不值得。
+     */
+    private static int readForeignCommand(LivingEntity tameable) {
+        CompoundTag tag = new CompoundTag();
+        ((com.github.yzqdev.pethome.mixin.EntityInvoker) tameable)
+                .pet_home$invokeAddAdditionalSaveData(tag);
+        int command = -1;
+        for (String s : tag.getAllKeys()) {
+            if (s.endsWith("Command") && !NbtKeys.DI_COMMAND.equals(s) && tag.contains(s, 99)) {
+                command = tag.getInt(s);
+            }
+        }
+        return command;
+    }
+
+    /** health_boost 宠物的「卸载前安全血量」：离开世界时记录、join 时用它抬回当前血量（防血上限回落扣血） */
     public static double getSafePetHealth(LivingEntity enchanted) {
         CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
         return tag.getDouble(SAFE_PET_HEALTH);
@@ -141,35 +175,44 @@ public class TameableUtils {
         sync(enchanted, tag);
     }
 
-    public static boolean isTamed(Entity entity) {
-        //sometimes these are not bound on runtime
-        if (entity instanceof Axolotl) {
-            if (entity instanceof ModifedToBeTameable modifedToBeTameable) {
-                return modifedToBeTameable.isTame() && PetHomeConfig.tameableAxolotl;
-            }
-            return false;
-        }
-        if (entity instanceof Fox) {
-            if (entity instanceof ModifedToBeTameable modifedToBeTameable) {
-                return modifedToBeTameable.isTame() && PetHomeConfig.tameableFox;
-            }
-            return false;
-        }
-        if (entity instanceof Rabbit) {
-            if (entity instanceof ModifedToBeTameable modifedToBeTameable) {
-                return modifedToBeTameable.isTame() && PetHomeConfig.tameableRabbit;
-            }
-            return false;
-        }
-        if (entity instanceof Frog) {
-            if (entity instanceof ModifedToBeTameable modifedToBeTameable) {
-                return modifedToBeTameable.isTame() && PetHomeConfig.tameableFrog;
-            }
-            return false;
-        }
-        return entity instanceof ModifedToBeTameable && ((ModifedToBeTameable) entity).isTame() || entity instanceof TamableAnimal && ((TamableAnimal) entity).isTame();
+    /**
+     * 改造物种 → {@code PetHomeConfig.tameable*} 开关的运行时视图（{@link #isTamed} 用）：
+     * {@code null} 值表示该物种不是改造驯服对象（无需开关门）。马走 {@code TamableAnimal} 分支 +
+     * {@link com.github.yzqdev.pethome.mixin.AbstractHorseMixin} 自身覆写 {@code isTame}，不经此表。
+     * 惰性初始化，配置刷新后由 {@code PetHomeConfig.refresh} 重算。
+     */
+    private static final Map<EntityType<?>, Boolean> SPECIES_TAME_GATES = new HashMap<>();
+
+    /** 重算物种开关表（{@link PetHomeConfig} 配置加载后调用）。 */
+    public static void refreshSpeciesGates() {
+        SPECIES_TAME_GATES.clear();
+        SPECIES_TAME_GATES.put(EntityType.AXOLOTL, PetHomeConfig.tameableAxolotl);
+        SPECIES_TAME_GATES.put(EntityType.FOX, PetHomeConfig.tameableFox);
+        SPECIES_TAME_GATES.put(EntityType.RABBIT, PetHomeConfig.tameableRabbit);
+        SPECIES_TAME_GATES.put(EntityType.FROG, PetHomeConfig.tameableFrog);
     }
 
+    /**
+     * 驯服判定。美西螈/狐狸/兔子/青蛙是本 mod 经 mixin 改造的可驯服动物，
+     * 需 {@code ModifedToBeTameable.isTame()} 且对应配置开关（tameable_axolotl 等）同时开启；
+     * 其余实体按 ModifedToBeTameable / TamableAnimal 的 isTame 判定。
+     */
+    public static boolean isTamed(Entity entity) {
+        // 改造实体的 Mixin 接口在运行时可能未绑定，需先 instanceof 再判 isTame
+        if (entity instanceof ModifedToBeTameable modifedToBeTameable) {
+            if (!modifedToBeTameable.isTame()) {
+                return false;
+            }
+            Boolean gate = SPECIES_TAME_GATES.get(entity.getType());
+            return gate == null || gate;
+        }
+        return entity instanceof TamableAnimal tamableAnimal && tamableAnimal.isTame();
+    }
+
+    /**
+     * player 是否是 entity 的主人（或友军）：team 友军判定，或单向 owner 链匹配。
+     * 交互/保护/传送判定的高频入口，client/server 两端都可用。
+     */
     public static boolean isPetOf(Player player, Entity entity) {
         return entity != null && (entity.isAlliedTo(player) || hasSameOwnerAsOneWay(entity, player));
     }
@@ -203,6 +246,9 @@ public class TameableUtils {
         return false;
     }
 
+    // ==================== 三、宠物床坐标（数据槽存储） ====================
+
+    /** 绑定的宠物床坐标；未绑定（HasPetBed=false）返回 {@code null}。死亡复活/罗盘传送都以此为准 */
     @Nullable
     public static BlockPos getPetBedPos(LivingEntity enchanted) {
         CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
@@ -226,7 +272,10 @@ public class TameableUtils {
         tag.putBoolean(HAS_PET_BED, false);
         sync(enchanted, tag);
     }
+    // ==================== 五、计时器（低频走 citadel tag，高频走独立数据槽） ====================
 
+
+    /** 灯笼/复活需要维度信息：未记录时默认主世界。写入路径 setPetBedDimension 经 sync 同步 */
     public static String getPetBedDimension(LivingEntity enchanted) {
         CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
         return !tag.contains(PET_BED_DIMENSION) ? "minecraft:overworld" : tag.getString(PET_BED_DIMENSION);
@@ -270,6 +319,11 @@ public class TameableUtils {
         sync(enchanted, tag);
     }
 
+    /**
+     * 写回宠物数据（本类所有写入的统一出口）：
+     * 服务端 {@code setCitadelTag} force 写 SynchedEntityData 槽，由原版把变化发给追踪者（不再全服广播）；
+     * 客户端额外发 C2S entityDataTagUpdate 回写服务端（服务端 handleServer 校验所有权后才落槽）。
+     */
     private static void sync(LivingEntity entity, CompoundTag tag) {
         // 服务端不再手动全服广播：setCitadelEntityData 内部 force 写 entityData，
         // vanilla 只把变化发给追踪该实体的玩家（原先 sendToAllPlayers 发给全服所有玩家，双通道冗余）
@@ -278,11 +332,18 @@ public class TameableUtils {
             PacketDistributor.sendToServer(new PropertiesMessage(PHConstants.entityDataTagUpdate, tag.copy(), entity.getId()));
         }
     }
+    // ==================== 四、附魔读写与属性（ENCHANTMENT_TAG + 实体级缓存 + onUpdateEnchants） ====================
 
+
+    /** 清空宠物全部附魔（项圈替换/契约解除时调用），并触发属性修饰符重算 */
     public static void clearEnchants(LivingEntity entity) {
         setEnchantmentTag(entity, new ListTag());
     }
 
+    /**
+     * 用给定列表整体替换附魔集（非增量）：同时视为「已装备项圈」，写入 20 tick 项圈交换冷却
+     * （CollarTickTracker 防抖），最后按新旧差集重算属性修饰符。
+     */
     private static void setEnchantmentTag(LivingEntity enchanted, ListTag enchants) {
         CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
         Map<ResourceLocation, Integer> prevEnchants = getEnchants(enchanted);
@@ -297,6 +358,12 @@ public class TameableUtils {
         return enchanted.getType().getCategory() == MobCategory.WATER_CREATURE || enchanted.getType().getCategory() == MobCategory.UNDERGROUND_WATER_CREATURE || enchanted.getType().getCategory() == MobCategory.WATER_AMBIENT;
     }
 
+    /**
+     * 附魔变化后的属性收口：health_boost(+10/级最大生命)、speedster(+0.075/级速度)、
+     * tough(+3/级护甲与击退抗性)、两栖水中生物的陆地加速；
+     * 幼体诅咒（新增或刚移除）时切幼年姿态并 refreshDimensions 通知客户端。
+     * 修饰符按固定 ResourceLocation 增删，等级 0 即移除。
+     */
     private static void onUpdateEnchants(@Nullable Map<ResourceLocation, Integer> prevEnchants, LivingEntity enchanted) {
         int healthExtra = getEnchantLevel(enchanted, ModEnchantments.HEALTH_BOOST);
         int speedExtra = getEnchantLevel(enchanted, ModEnchantments.SPEEDSTER);
@@ -308,7 +375,7 @@ public class TameableUtils {
         var resistance = enchanted.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
         var enchantReg = enchanted.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
         if (hasEnchant(enchanted, ModEnchantments.IMMATURITY_CURSE) || prevEnchants != null && prevEnchants.containsKey(ModEnchantments.IMMATURITY_CURSE.registry())) {
-            //change pose to update client
+            // 切换 Pose 以触发维度同步，让客户端立即看到幼年形态
             enchanted.setPose(Pose.FALL_FLYING);
             AgeableMob ageable = (AgeableMob) enchanted;
             ageable.setBaby(true); // 直接设为幼年
@@ -378,9 +445,14 @@ public class TameableUtils {
             }
         }
     }
+    /** 有该宠物附魔即等级 &gt; 0 */
     public static boolean hasEnchant(LivingEntity entity, ResourceKey<Enchantment> enchantment) {
         return getEnchantLevel(entity, enchantment) > 0;
     }
+    /**
+     * 附魔等级（mixin/渲染/tick 热路径入口）：PetSyncDataEntity 实现者走实体级缓存
+     * （{@code ph_getEnchantCache}，tag 引用比对失效），否则全量扫描 NBT 列表。无该附魔返回 0。
+     */
     public static int getEnchantLevel(LivingEntity entity, ResourceKey<Enchantment> enchantment) {
         if (entity instanceof PetSyncDataEntity holder) {
             // 实体级缓存：附魔集合只在 tag 变化时解析一次，热路径（mixin/渲染/tick）不再反复扫描 NBT 列表
@@ -430,6 +502,10 @@ public class TameableUtils {
         return null;
     }
 
+    /**
+     * 宠物附魔描述行（金色标题 + 每条附魔名与等级；含 "curse" 的显示为红色）。
+     * 供 Jade/tooltip 等展示宠物附魔概览。
+     */
     public static List<Component> getEnchantDescriptions(LivingEntity entity) {
         List<Component> list = new ArrayList<>();
         list.add(Component.literal("   ").append(Component.translatable("message.pet_home.enchantments").withStyle(ChatFormatting.GOLD)));
@@ -445,6 +521,7 @@ public class TameableUtils {
         return list;
     }
 
+    /** 附魔列表 → {附魔 id → 等级}；无 StoredPetEnchantments 键时返回 {@code null}（与空列表区分） */
     public static Map<ResourceLocation, Integer> getEnchants(LivingEntity entity) {
         ListTag listtag = getEnchantmentList(entity);
         if (listtag == null) {
@@ -468,6 +545,10 @@ public class TameableUtils {
         return compoundtag;
     }
 
+    /**
+     * 把物品附魔（{@code ItemEnchantments}，如项圈物品上记录的）整体写入宠物：
+     * 是替换而非追加——换项圈时旧附魔已先经 clearEnchants 落回旧项圈物品。
+     */
     public static void addEnchant(LivingEntity entity, ItemEnchantments itemEnchantments) {
         ListTag listTag = new ListTag();
 
@@ -484,7 +565,10 @@ public class TameableUtils {
     public static boolean hasSameOwnerAs(LivingEntity tameable, Entity target) {
         return hasSameOwnerAsOneWay(tameable, target) || hasSameOwnerAsOneWay(target, tameable);
     }
+    // ==================== 六、行为辅助（附魔战斗/生存效果执行） ====================
 
+
+    /** xp_transfer：吸附 3 格内经验球给主人（近距直接到账，8 格内施加吸力）；宠物自身不给经验 */
     public static void xpTransfer(LivingEntity living) {
         for (ExperienceOrb experienceorb : living.level().getEntitiesOfClass(ExperienceOrb.class, living.getBoundingBox().inflate(3D))) {
 
@@ -505,6 +589,7 @@ public class TameableUtils {
         }
     }
 
+    /** rejuvenation：吸收 3 格内经验球给自己回血（满血停止；溢出部分折回经验球价值），仅服务端 */
     public static void absorbExpOrbs(LivingEntity living) {
         if (living.getHealth() < living.getMaxHealth() && !living.level().isClientSide()) {
             for (ExperienceOrb experienceorb : living.level().getEntitiesOfClass(ExperienceOrb.class, living.getBoundingBox().inflate(3D))) {
@@ -537,6 +622,7 @@ public class TameableUtils {
         }
     }
 
+    /** 治疗光环相位计时器：走 PH_HEALING_AURA_TIME 独立 int 数据槽（每 tick 增减只同步小整数），非数据槽实现者恒 0 */
     public static int getHealingAuraTime(LivingEntity enchanted) {
         if (enchanted instanceof PetSyncDataEntity holder) {
             return holder.ph_getHealingAuraTime();
@@ -673,6 +759,7 @@ public class TameableUtils {
         }
     }
 
+    /** 理论上可驯服（无需已驯服）：本 mod 改造动物或原版 TamableAnimal */
     public static boolean couldBeTamed(Entity entity) {
         return entity instanceof ModifedToBeTameable || entity instanceof TamableAnimal;
     }
@@ -759,6 +846,7 @@ public class TameableUtils {
         }
     }
 
+    /** 免疫帧剩余时间：仅免疫帧附魔存在时有效（无附魔读写都被跳过），由 EntityTickHandler 每 tick 递减 */
     public static int getImmuneTime(LivingEntity enchanted) {
         if (hasEnchant(enchanted, ModEnchantments.IMMUNITY_FRAME)) {
             CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
@@ -775,6 +863,7 @@ public class TameableUtils {
         }
     }
 
+    /** 冰冻倒计时：走 PH_FROZEN_TIME 独立 int 数据槽（frost_fang 命中时由伤害管线写入），非数据槽实现者恒 0 */
     public static int getFrozenTime(LivingEntity enchanted) {
         if (enchanted instanceof PetSyncDataEntity holder) {
             return holder.ph_getFrozenTime();
@@ -837,7 +926,13 @@ public class TameableUtils {
         CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
         return tag.getIntArray(SHADOW_PUNCH_STRIKING);
     }
+    // ==================== 七、传送与近距离查询 ====================
 
+
+    /**
+     * tethered_teleport 的随行者判定（ServerEvent.teleportNearbyPets 的过滤条件）：
+     * 需有附魔，且三态跟随（command==2）或原版未坐下且距主人 10 格内。
+     */
     public static boolean isValidTeleporter(LivingEntity owner, Mob animal) {
         if (hasEnchant(animal, ModEnchantments.TETHERED_TELEPORT)) {
             if (animal instanceof IComandableMob commandableMob) {
@@ -868,6 +963,10 @@ public class TameableUtils {
         );
     }
 
+    /**
+     * sonic_boom 附魔攻击：附近敌方生物多于 3 个时对全部目标齐射，否则只打当前目标；
+     * 服务端调用（sendParticles/伤害）。{@code sonicBoomAttack} 画音波粒子轨迹并造成 10 点音波伤害+击退。
+     */
     public static void performSonicBook(LivingEntity maid, LivingEntity monster, ServerLevel serverLevel) {
         var livings = getNearbyMobs(maid, 5.0).stream().filter(i -> i instanceof Enemy).collect(Collectors.toSet());
         if (livings.size() > 3) {

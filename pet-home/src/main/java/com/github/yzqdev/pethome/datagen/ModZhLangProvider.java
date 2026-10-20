@@ -141,7 +141,7 @@ public class ModZhLangProvider extends LanguageProvider {
         add(LangDefinition.SOUND_SUBTITLE_BLAZING_PROTECTION, "燃烧的棍消失了");
         add(LangDefinition.JADE_COLLAR_TAG, "项圈描述");
         add(LangDefinition.NOTIF_FRIENDLY_FIRE_PROTECTED, "这只%s受保护。潜行状态可绕过保护。");
-        // new gen
+        // 新增生成段落
         add(LangDefinition.animal_tamer_villager_conf, "驯兽师");
         add(LangDefinition.protectChildren_conf_tooltip, "是否保护幼年生物");
         add(LangDefinition.displayHitWarning_conf_tooltip, "是否显示保护提示");

@@ -45,7 +45,7 @@ import java.util.UUID;
 @Mixin(Axolotl.class)
 public abstract class AxolotlMixin extends Animal implements ModifedToBeTameable, IComandableMob {
 
-    @Shadow public abstract void readAdditionalSaveData(CompoundTag p_149145_);
+    @Shadow public abstract void readAdditionalSaveData(CompoundTag compound);
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.INT);

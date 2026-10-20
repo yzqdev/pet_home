@@ -24,10 +24,10 @@ public class AmphibianStayBehavior<T extends Animal> extends Behavior<T> {
 
     }
 
-    protected void stop(ServerLevel p_23492_, T axolotl, long gameTime) {
+    protected void stop(ServerLevel level, T axolotl, long gameTime) {
     }
 
-    protected void tick(ServerLevel p_23503_, T axolotl, long gameTime) {
+    protected void tick(ServerLevel level, T axolotl, long gameTime) {
         axolotl.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
         axolotl.getNavigation().stop();
     }

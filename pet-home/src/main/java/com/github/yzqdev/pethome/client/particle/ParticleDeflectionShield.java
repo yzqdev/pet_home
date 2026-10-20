@@ -58,7 +58,7 @@ public class ParticleDeflectionShield extends Particle {
         float scale = (fadeIn - fadeOut) * 1.85F;
         posestack.pushPose();
         posestack.translate(f, f1 + up + down, f2);
-        //xRot + 45 - 45 * fadeIn + 45 * fadeOut
+        // 护盾绕 X 轴立起 45°，随淡入/淡出在 0°~45° 间摆动（xRot + 45*(fadeIn-fadeOut)）
         posestack.mulPose(Axis.YP.rotationDegrees(yRot));
         posestack.mulPose(Axis.XN.rotationDegrees(xRot));
         posestack.scale(scale, scale, scale);

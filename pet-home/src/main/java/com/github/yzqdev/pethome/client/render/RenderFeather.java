@@ -40,7 +40,7 @@ public class RenderFeather extends EntityRenderer<FeatherEntity> {
         Minecraft.getInstance().getItemRenderer().renderStatic(feather, ItemDisplayContext.GROUND, light, OverlayTexture.NO_OVERLAY, poseStack, buffer, entity.level(), entity.getId());
         poseStack.popPose();
 
-        //fishng rod stuff
+        // 钓线部分：羽毛实体始终与主人手持的「羽毛钓竿」成对渲染
         if (player != null) {
             poseStack.pushPose();
 
@@ -100,23 +100,23 @@ public class RenderFeather extends EntityRenderer<FeatherEntity> {
         return null;
     }
 
-    //fishing rod stuff
-    private static float fraction(int p_114691_, int p_114692_) {
-        return (float) p_114691_ / (float) p_114692_;
+    /** 钓线绘制辅助：沿吊钩下垂曲线插值顶点（仿原版 FishingHookRenderer）。 */
+    private static float fraction(int numerator, int denominator) {
+        return (float) numerator / (float) denominator;
     }
 
-    private static void stringVertex(float p_174119_, float p_174120_, float p_174121_, VertexConsumer p_174122_, PoseStack.Pose p_174123_, float p_174124_, float p_174125_) {
-        float f = p_174119_ * p_174124_;
-        float f1 = p_174120_ * (p_174124_ * p_174124_ + p_174124_) * 0.5F + 0.25F;
-        float f2 = p_174121_ * p_174124_;
-        float f3 = p_174119_ * p_174125_ - f;
-        float f4 = p_174120_ * (p_174125_ * p_174125_ + p_174125_) * 0.5F + 0.25F - f1;
-        float f5 = p_174121_ * p_174125_ - f2;
+    private static void stringVertex(float x, float y, float z, VertexConsumer consumer, PoseStack.Pose pose, float stringFraction, float nextStringFraction) {
+        float f = x * stringFraction;
+        float f1 = y * (stringFraction * stringFraction + stringFraction) * 0.5F + 0.25F;
+        float f2 = z * stringFraction;
+        float f3 = x * nextStringFraction - f;
+        float f4 = y * (nextStringFraction * nextStringFraction + nextStringFraction) * 0.5F + 0.25F - f1;
+        float f5 = z * nextStringFraction - f2;
         float f6 = Mth.sqrt(f3 * f3 + f4 * f4 + f5 * f5);
         f3 /= f6;
         f4 /= f6;
         f5 /= f6;
-        p_174122_.addVertex(p_174123_.pose(), f, f1, f2).setColor(0, 0, 0, 255).setNormal(p_174123_, f3, f4, f5);
+        consumer.addVertex(pose.pose(), f, f1, f2).setColor(0, 0, 0, 255).setNormal(pose, f3, f4, f5);
     }
 
 }

@@ -1,0 +1,3 @@
+# data generation output (regenerate via runData/genData)
+src/generated/
+src/main/generated/

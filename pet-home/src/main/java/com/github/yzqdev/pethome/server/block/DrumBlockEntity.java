@@ -10,6 +10,10 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.UUID;
 
+/**
+ * 指挥鼓方块实体：仅持久化放置者 UUID（DrumBlock.issueCommand 据此确定"主人"，
+ * 向 32 格内其 IComandableMob 宠物广播三态指令）。
+ */
 public class DrumBlockEntity extends BlockEntity {
 
     private UUID placerUUID;

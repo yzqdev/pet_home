@@ -8,6 +8,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
+/**
+ * 玩家攻击横扫判定重定向：{@code isPetOf} 的宠物（含友军链）不触发横扫特效，
+ * 避免玩家挥击自家宠物旁的空气时误伤/触发保护提示。
+ */
 @Mixin(Player.class)
 public class PlayerMixin {
 

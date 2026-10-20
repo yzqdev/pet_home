@@ -17,6 +17,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 钓钩逻辑复用给羽毛钓竿（FeatherEntity extends FishingHook）：
+ * tick 内流体状态判空（羽毛不入水），shouldStopFishing 按手持羽毛钓竿与 32 格距离
+ * 决定是否存活，否则丢弃投射物。
+ */
 @Mixin(FishingHook.class)
 public abstract class FishingHookMixin extends Projectile {
 

@@ -14,9 +14,9 @@ public class OwnerHurtTarget2Goal extends TargetGoal {
     private LivingEntity ownerLastHurt;
     private int timestamp;
 
-    public OwnerHurtTarget2Goal(Animal p_26114_) {
-        super(p_26114_, false);
-        this.tameAnimal = p_26114_;
+    public OwnerHurtTarget2Goal(Animal tameAnimal) {
+        super(tameAnimal, false);
+        this.tameAnimal = tameAnimal;
         this.setFlags(EnumSet.of(Goal.Flag.TARGET));
     }
 

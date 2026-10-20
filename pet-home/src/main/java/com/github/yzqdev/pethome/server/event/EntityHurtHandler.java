@@ -19,6 +19,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -38,8 +39,15 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+/**
+ * 伤害管线（服务端）：免疫帧检查（当前空实现）→ LivingIncomingDamageEvent(HIGH) 依次跑
+ * 友好保护拦截、宠物防御附魔（烈焰保护/生命虹吸/全面召回）、宠物攻击附魔
+ * （链锁闪电/吸血/泡泡/霜冻/传送咬/光环冲能）→ LivingDamageEvent.Pre（violent 随机增伤表）
+ * → LivingDamageEvent.Post（混乱/平摊/麻痹与友好保护兜底）。
+ */
 @EventBusSubscriber(modid = PetHomeMod.MODID)
 public class EntityHurtHandler {
+    /** 免疫帧检查：主体逻辑已注释停用，保留订阅位（勿在此加昂贵逻辑，每此受伤必经） */
     @SubscribeEvent
     public static void onTameHurt(EntityInvulnerabilityCheckEvent event) {
 //        if (event.getEntity() instanceof LivingEntity livingEntity) {
@@ -57,6 +65,10 @@ public class EntityHurtHandler {
 //        }
 
     }
+    /**
+     * 伤害管线主干：友好保护命中即整段结束；随后宠物受击走防御附魔，
+     * 返回的 flag 表示已拦截（本源事件被取消），攻击方附魔段据此跳过部分逻辑。
+     */
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onLivingDamage(LivingIncomingDamageEvent event) {
         var level = event.getEntity().level();
@@ -106,7 +118,18 @@ public class EntityHurtHandler {
 
         boolean flag = false;
 
-        // BLAZING_PROTECTION: 烈焰保护
+        // 免疫屏障（IMMUNITY_FRAME）：首击启动 (1+等级) 秒免疫窗口，窗口内的后续伤害直接取消
+        if (TameableUtils.hasEnchant(victim, ModEnchantments.IMMUNITY_FRAME)) {
+            int level = TameableUtils.getEnchantLevel(victim, ModEnchantments.IMMUNITY_FRAME);
+            if (TameableUtils.getImmuneTime(victim) <= 0) {
+                TameableUtils.setImmuneTime(victim, 20 + level * 20);
+            } else {
+                event.setCanceled(true);
+                flag = true;
+            }
+        }
+
+        // 烈焰保护（BLAZING_PROTECTION）
         if (TameableUtils.hasEnchant(victim, ModEnchantments.BLAZING_PROTECTION)) {
             int bars = TameableUtils.getBlazingProtectionBars(victim);
             if (bars > 0) {
@@ -125,18 +148,23 @@ public class EntityHurtHandler {
             }
         }
 
-        // HEALTH_SIPHON: 生命虹吸 (将伤害转移给主人)
+        // 生命虹吸（HEALTH_SIPHON）：把宠物受到的部分伤害转移给主人
         if (!flag && TameableUtils.hasEnchant(victim, ModEnchantments.HEALTH_SIPHON)) {
             Entity owner = TameableUtils.getOwnerOf(victim);
             if (owner != null && owner.isAlive() && owner.distanceTo(victim) < 100 && owner != victim) {
                 owner.hurt(event.getSource(), event.getAmount());
                 event.setCanceled(true);
                 flag = true;
+                // 取消原始伤害会让原版跳过 setLastHurtByMob（仇恨记录），宠物失去反击目标；
+                // 此处手动补记，与未附魔时行为一致（复刻原版的 NO_ANGER 过滤）
+                if (attacker != null && !event.getSource().is(DamageTypeTags.NO_ANGER)) {
+                    victim.setLastHurtByMob(attacker);
+                }
                 victim.hurt(PHDamageTypes.causeSiphonDamage(owner.level().registryAccess()), 0.0F);
             }
         }
 
-        // TOTAL_RECALL: 紧急收回
+        // 紧急收回（TOTAL_RECALL）
         if (!flag && TameableUtils.hasEnchant(victim, ModEnchantments.TOTAL_RECALL) && victim.getHealth() - event.getAmount() <= 2.0D) {
             UUID ownerUUID = TameableUtils.getOwnerUUIDOf(victim);
             if (ownerUUID != null) {
@@ -252,6 +280,7 @@ public class EntityHurtHandler {
         }
     }
 
+    /** violent 攻击附魔：按随机数分段命中处决(1%)/中毒/麻痹/增伤/点燃/斩杀(血量>30 时 1/3)/醉酒/减速负面表 */
     @SubscribeEvent
     public static void onEntityHurtPre(LivingDamageEvent.Pre event) {
         var maid = event.getSource().getEntity();
@@ -295,6 +324,7 @@ public class EntityHurtHandler {
         }
     }
 
+    /** 伤害落定后：chaos 给攻击者上醉酒、share 平摊 30% 给 20 格内敌方、paralysis 麻痹；最后友好保护兜底清仇恨 */
     @SubscribeEvent
     public static void onEntityHurt(LivingDamageEvent.Post event) {
         var hurtEntity = event.getEntity();

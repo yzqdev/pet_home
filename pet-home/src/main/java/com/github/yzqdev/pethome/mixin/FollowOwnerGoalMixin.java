@@ -21,6 +21,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 原版跟随主人 Goal 接入三态指令与两栖：三态开启时仅跟随态(2)可用/可延续（HEAD 取消）；
+ * tick 注入让两栖宠物在水里直接直线导航到 12 格内的主人（绕开原版陆地寻路卡水）。
+ */
 @Mixin(FollowOwnerGoal.class)
 public abstract class FollowOwnerGoalMixin extends Goal {
 

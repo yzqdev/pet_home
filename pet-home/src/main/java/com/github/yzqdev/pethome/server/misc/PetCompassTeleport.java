@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 宠物罗盘的两个独立传送功能（compass.md 第十二~十五节，配置独立控制、服务端验证）：
+ * 宠物罗盘的两个独立传送功能（配置独立控制、服务端验证）：
  * - teleportPlayerToPet：玩家 → 宠物（跨维度；未加载用最后已知位置并提示）
  * - teleportPetToPlayer：宠物 → 玩家（真移动实体；跨维度复用现有 teleportingPets 队列；
  *   未加载走一次性临时强载的召回队列；死亡待复活按宠物床生命周期处理，绝不凭空造实体）
@@ -79,6 +79,11 @@ public class PetCompassTeleport {
 
     // ==================== 功能 A：传送玩家到宠物 ====================
 
+    /**
+     * 玩家 → 宠物：宠物在线用实时位置，否则用档案「最后已知位置」并提示可能不准；
+     * 落点经 {@link #findSafeSpot} 窒息上探后 {@code ServerPlayer.teleportTo} 跨维度直传。
+     * 死亡待复活的宠物只提示、不传送。
+     */
     private static void teleportPlayerToPet(ServerPlayer player, PetRecord record) {
         if (!record.alive) {
             player.sendSystemMessage(Component.translatable(LangDefinition.message("pet_compass.dead_wait_respawn")));
@@ -92,7 +97,7 @@ public class PetCompassTeleport {
         double x = record.x + 0.5;
         double y = record.y;
         double z = record.z + 0.5;
-        // 实体在线 → 用实时位置；否则按最后已知位置（compass.md 第十三节允许，需提示）
+        // 实体在线 → 用实时位置；否则按档案中的最后已知位置传送（需给玩家提示）
         Entity pet = findEntity(player, record.entityUuid);
         if (pet != null && pet.isAlive()) {
             loaded = true;
@@ -110,6 +115,10 @@ public class PetCompassTeleport {
 
     // ==================== 功能 B：召回宠物到玩家 ====================
 
+    /**
+     * 宠物 → 玩家：在线实体走 {@link #movePetToPlayer}（同维直传/跨维进 teleportingPets 队列）；
+     * 未加载入 {@link #enqueueRecall} 召回队列临时强载后再传；死亡待复活只按宠物床生命周期提示。
+     */
     private static void teleportPetToPlayer(ServerPlayer player, PetRecord record) {
         if (!record.alive) {
             // 死亡等待宠物床复活：按现有宠物床生命周期处理，不凭空创建实体
@@ -118,13 +127,14 @@ public class PetCompassTeleport {
         }
         Entity pet = findEntity(player, record.entityUuid);
         if (pet == null) {
-            // 未加载：入一次性临时强载召回队列（避免永久强载区块，compass.md 第八节）
+            // 未加载：入一次性临时强载召回队列（用后即释放票据，避免区块永久强载）
             enqueueRecall(player, record);
             return;
         }
         movePetToPlayer(player, pet);
     }
 
+    /** 实体移动到玩家身边：同维度找安全点直传并清 fallDistance；跨维度交给 ServerEvent 每 10 tick 的 teleportingPets 重建处理 */
     private static void movePetToPlayer(ServerPlayer player, Entity pet) {
         ServerLevel playerLevel = player.level() instanceof ServerLevel sl ? sl : null;
         if (playerLevel == null) {
@@ -142,6 +152,7 @@ public class PetCompassTeleport {
         player.sendSystemMessage(Component.translatable(LangDefinition.message("pet_compass.recalled"), pet.getName()));
     }
 
+    /** 入召回队列（同一 petId 去重）；200 tick 截止时间，由 processRecallQueue 轮询执行 */
     private static void enqueueRecall(ServerPlayer player, PetRecord record) {
         for (RecallRequest request : RECALL_QUEUE) {
             if (request.petId().equals(record.petId)) {

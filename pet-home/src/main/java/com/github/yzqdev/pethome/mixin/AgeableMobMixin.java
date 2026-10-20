@@ -12,6 +12,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 幼体诅咒（immaturity_curse）注入：isBaby 对已驯服带该附魔的个体恒真，
+ * 使宠物永久保持幼年模型/体型（onUpdateEnchants 另会同步姿态）。
+ */
 @Mixin(AgeableMob.class)
 public class AgeableMobMixin extends PathfinderMob {
 

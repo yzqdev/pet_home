@@ -15,6 +15,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * TamableAnimal 注入：同主人宠物互判友军（isAlliedTo，AI 索敌/保护依赖）；
+ * 两栖附魔放宽跟随传送落点允许入水（canTeleportTo，1.21/26.1 中该方法位于 TamableAnimal）。
+ */
 @Mixin(TamableAnimal.class)
 public abstract class TameableAnimalMixin extends Animal {
 

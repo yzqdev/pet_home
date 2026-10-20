@@ -20,8 +20,8 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.animal.Rabbit;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.animal.horse.Horse;
-import net.minecraft.world.entity.animal.horse.SkeletonHorse;
 import net.minecraft.world.entity.animal.horse.ZombieHorse;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -38,8 +38,15 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 import java.util.Map;
 
+/**
+ * 实体右键交互总入口（{@code EntityInteract}，HIGHEST 优先级）。
+ * 分发顺序与取消语义：捕网抓捕 → 自家宠物的贪婪喂食/项圈/契约 →
+ * （isPetOf 门外的）兔子干草块驯服与三态指令 → 实体转换（烂苹果马/阴森胡萝卜兔/僵尸马）。
+ * 各分支处理成功后取消事件并设 SUCCESS/CONSUME，避免原版继续走进食等预测。
+ */
 @EventBusSubscriber(modid = PetHomeMod.MODID)
 public class PlayerInteractEntityHandler {
+    /** 交互分发主入口；服务端分支各自 setCanceled，客户端只做挥手/预测反馈 */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onInteractWithEntity(PlayerInteractEvent.EntityInteract event) {
         Player player = event.getEntity();
@@ -136,6 +143,10 @@ public class PlayerInteractEntityHandler {
     /**
      * 处理项圈标签的应用与替换逻辑
      */
+    /**
+     * 项圈戴上：带自定义名则改名；已戴项圈时旧附魔落回新项圈物品掉落，
+     * 再清空宠物附魔并写入新项圈上的附魔；触发 5 tick 防抖后取消事件（双端）。
+     */
     private static boolean handleCollarTag(PlayerInteractEvent.EntityInteract event, LivingEntity living, ItemStack itemstack) {
         if (itemstack.is(PHItemRegistry.COLLAR_TAG.get())) {
             if (!event.getEntity().level().isClientSide && living.isAlive()) {
@@ -215,7 +226,7 @@ public class PlayerInteractEntityHandler {
                 if (clientSide) {
                     player.swing(hand);
                 } else {
-                    convertHorseToZombie(player, hand, (Horse) living, itemstack);
+                    convertHorse(player, hand, (Horse) living, itemstack, EntityType.ZOMBIE_HORSE);
                 }
                 event.setCanceled(true);
                 event.setCancellationResult(clientSide ? InteractionResult.CONSUME : InteractionResult.SUCCESS);
@@ -240,7 +251,7 @@ public class PlayerInteractEntityHandler {
                 if (clientSide) {
                     player.swing(hand);
                 } else {
-                    convertZombieToSkeletonHorse(player, hand, (ZombieHorse) living, itemstack);
+                    convertHorse(player, hand, (ZombieHorse) living, itemstack, EntityType.SKELETON_HORSE);
                 }
                 event.setCanceled(true);
                 event.setCancellationResult(clientSide ? InteractionResult.CONSUME : InteractionResult.SUCCESS);
@@ -248,8 +259,12 @@ public class PlayerInteractEntityHandler {
         }
     }
 
-    private static void convertHorseToZombie(Player player, InteractionHand hand, Horse horse, ItemStack itemstack) {
-        player.swing(hand);
+    /**
+     * 马类转换共用流程（烂苹果马→僵尸马 / 阴森胡萝卜僵尸马→骷髅马）：掉落马铠（仅普通马有）、
+     * 复制 NBT（含名字/AI/幼年/缰绳）重建目标实体，触发 onLivingConvert 事件后 discard 原马，非创造扣物品。
+     * 仅服务端调用。
+     */
+    private static void convertHorse(Player player, InteractionHand hand, AbstractHorse horse, ItemStack itemstack, EntityType<? extends AbstractHorse> resultType) {
         horse.playSound(SoundEvents.HORSE_DEATH, 0.8F, horse.getVoicePitch());
         horse.playSound(SoundEvents.ZOMBIE_INFECT, 0.8F, horse.getVoicePitch());
 
@@ -261,12 +276,12 @@ public class PlayerInteractEntityHandler {
         horse.addAdditionalSaveData(horseExtras);
         spawnSneezeParticles(horse);
 
-        ZombieHorse zombie = EntityType.ZOMBIE_HORSE.create(horse.level());
+        AbstractHorse result = resultType.create(horse.level());
 
-        if (zombie != null) {
-            transferBasicData(horse, zombie, horseExtras);
-            EventHooks.onLivingConvert(horse, zombie);
-            player.level().addFreshEntity(zombie);
+        if (result != null) {
+            transferBasicData(horse, result, horseExtras);
+            EventHooks.onLivingConvert(horse, result);
+            player.level().addFreshEntity(result);
             horse.discard();
             consumeItem(player, itemstack);
         }
@@ -282,26 +297,10 @@ public class PlayerInteractEntityHandler {
         }
     }
 
-    private static void convertZombieToSkeletonHorse(Player player, InteractionHand hand, ZombieHorse horse, ItemStack itemstack) {
-        player.swing(hand);
-        horse.playSound(SoundEvents.HORSE_DEATH, 0.8F, horse.getVoicePitch());
-        horse.playSound(SoundEvents.ZOMBIE_INFECT, 0.8F, horse.getVoicePitch());
-
-        CompoundTag horseExtras = new CompoundTag();
-        horse.addAdditionalSaveData(horseExtras);
-        spawnSneezeParticles(horse);
-
-        SkeletonHorse skeleton = EntityType.SKELETON_HORSE.create(horse.level());
-        if (skeleton != null) {
-            transferBasicData(horse, skeleton, horseExtras);
-            EventHooks.onLivingConvert(horse, skeleton);
-            player.level().addFreshEntity(skeleton);
-            horse.discard();
-            consumeItem(player, itemstack);
-        }
-    }
-
-    // 辅助方法：处理数据继承
+    /**
+     * 实体转换时的数据继承：拴绳/位置/AI/幼年/自定义名外，
+     * 还把旧实体<b>附加存档 NBT（不含 UUID，来自 addAdditionalSaveData）</b>readAdditionalSaveData 进新实体并设持久化。
+     */
     private static void transferBasicData(Mob oldMob, Mob newMob, CompoundTag extras) {
         if (oldMob.isLeashed()) {
             newMob.setLeashedTo(oldMob.getLeashHolder(), true);
@@ -334,6 +333,10 @@ public class PlayerInteractEntityHandler {
     }
     /**
      * 兔子驯服/治疗：干草块驯服兔子（自 1.20 移植）
+     */
+    /**
+     * 干草块驯服兔子：已驯服个体治疗 3 点；野兔 50% 概率驯服成功（随机烟雾=失败），
+     * 成功后写入主人并置三态指令为停留(1)。必须位于 isPetOf 门外（野兔无主人）。
      */
     private static boolean handleRabbitHayBlock(PlayerInteractEvent.EntityInteract event, Player player, Rabbit rabbit, ItemStack stack) {
         if (stack.getItem() == Items.HAY_BLOCK) {

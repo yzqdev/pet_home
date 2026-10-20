@@ -27,7 +27,7 @@ public class ModConfigScreen extends ConfigurationScreen.ConfigurationSectionScr
         return new Element(getTranslationComponent(key), getTooltipComponent(key, null),
                 new OptionInstance<>(getTranslationKey(key), getTooltip(key, null), (caption, displayvalue) -> Component.translatable(PetHomeMod.MODID + ".configuration." + key + "." + displayvalue.name().toLowerCase()),
                         new Custom<>(list), source.get(), newValue -> {
-                    // regarding change detection: new value always is different (cycle button)
+                    // 变更检测：循环按钮每次点击都产生新值，直接视为已修改
                     undoManager.add(v -> {
                         target.accept(v);
                         onChanged(key);

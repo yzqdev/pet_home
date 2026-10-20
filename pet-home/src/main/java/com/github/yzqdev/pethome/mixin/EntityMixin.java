@@ -11,6 +11,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * Entity 热路径注入（附魔全局行为）：防火（fireproof）、不吃流体推力/可水下骑行
+ * （amphibious）、同主人宠物互为友军（isAlliedTo，配合 AI 与保护判定）、
+ * 念力墙同队豁免碰撞（canCollideWith，与 PsychicWallEntity 协作）。
+ * 均为 HEAD 可取消注入，判定走 TameableUtils。
+ */
 @Mixin(Entity.class)
 public class EntityMixin {
 
