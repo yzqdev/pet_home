@@ -2,6 +2,8 @@ package com.github.yzqdev.pethome.server.block;
 
 import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
 import com.mojang.serialization.MapCodec;
+import java.util.List;
+import java.util.stream.Stream;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -36,86 +38,128 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-import java.util.stream.Stream;
-
+/**
+ * 迷途灯笼（发光提灯形状，可含水）：把卸载丢失的跟随态宠物收回身边的功能方块。 方块本身无玩家交互，收容/召回逻辑全部在 {@link WaywardLanternBlockEntity} 的
+ * tick 里自动执行。
+ */
 public class WaywardLanternBlock extends BaseEntityBlock {
 
-    private static final VoxelShape SHAPE = Stream.of(
-            Block.box(6.5, 15.5, 6.5, 9.5, 19.5, 9.5),
-            Block.box(6, 5, 6, 10, 6, 10),
-            Block.box(6, 14.5, 6, 10, 15.5, 10),
-            Block.box(2, 13.5, 2, 14, 14.5, 14),
-            Block.box(4, 7, 4, 12, 14, 12),
-            Block.box(7, 0, 7, 9, 10, 9)
-    ).reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR)).get();
+  private static final VoxelShape SHAPE =
+      Stream.of(
+              Block.box(6.5, 15.5, 6.5, 9.5, 19.5, 9.5),
+              Block.box(6, 5, 6, 10, 6, 10),
+              Block.box(6, 14.5, 6, 10, 15.5, 10),
+              Block.box(2, 13.5, 2, 14, 14.5, 14),
+              Block.box(4, 7, 4, 12, 14, 12),
+              Block.box(7, 0, 7, 9, 10, 9))
+          .reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR))
+          .get();
 
-    public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
+  public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
-    public WaywardLanternBlock() {
-        super(Properties.of().mapColor(MapColor.COLOR_BLACK).pushReaction(PushReaction.BLOCK).sound(SoundType.LANTERN).strength(0.9F).lightLevel((i) -> 13).noOcclusion());
-        this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, Boolean.valueOf(false)));
+  public WaywardLanternBlock() {
+    super(
+        Properties.of()
+            .mapColor(MapColor.COLOR_BLACK)
+            .pushReaction(PushReaction.BLOCK)
+            .sound(SoundType.LANTERN)
+            .strength(0.9F)
+            .lightLevel((i) -> 13)
+            .noOcclusion());
+    this.registerDefaultState(
+        this.stateDefinition.any().setValue(WATERLOGGED, Boolean.valueOf(false)));
+  }
+
+  public VoxelShape getShape(
+      BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+    return SHAPE;
+  }
+
+  @Override
+  public void appendHoverText(
+      ItemStack stack,
+      Item.TooltipContext context,
+      List<Component> tooltipComponents,
+      TooltipFlag tooltipFlag) {
+    tooltipComponents.add(
+        Component.translatable("tooltips.pet_home.wayward_lantern.desc")
+            .withStyle(ChatFormatting.GREEN));
+  }
+
+  /** 仅客户端：飘萤粒子与火焰装饰。 */
+  public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+    if (random.nextInt(4) == 0) {
+      level.addParticle(
+          PHParticleRegistry.LANTERN_BUGS,
+          (double) pos.getX() + 0.5D + random.nextGaussian() * 1,
+          (double) pos.getY() + 0.5D + random.nextGaussian() * 1,
+          (double) pos.getZ() + 0.5D + random.nextGaussian() * 1,
+          (double) pos.getX() + 0.5D,
+          (double) pos.getY() + 0.5D,
+          (double) pos.getZ() + 0.5D);
+    }
+    if (random.nextInt(2) == 0) {
+      level.addParticle(
+          ParticleTypes.FLAME,
+          (double) pos.getX() + 0.5D,
+          (double) pos.getY() + 0.65D,
+          (double) pos.getZ() + 0.5D,
+          0,
+          0,
+          0);
+    }
+  }
+
+  public BlockState getStateForPlacement(BlockPlaceContext context) {
+    FluidState fluidstate = context.getLevel().getFluidState(context.getClickedPos());
+    boolean flag = fluidstate.getType() == Fluids.WATER;
+    return this.defaultBlockState().setValue(WATERLOGGED, Boolean.valueOf(flag));
+  }
+
+  public BlockState updateShape(
+      BlockState state,
+      Direction direction,
+      BlockState state2,
+      LevelAccessor accessor,
+      BlockPos pos,
+      BlockPos pos2) {
+    if (state.getValue(WATERLOGGED)) {
+      accessor.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(accessor));
     }
 
-    public VoxelShape getShape(BlockState p_49038_, BlockGetter p_49039_, BlockPos p_49040_, CollisionContext p_49041_) {
-        return SHAPE;
-    }
+    return super.updateShape(state, direction, state2, accessor, pos, pos2);
+  }
 
-    @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.translatable("tooltips.pet_home.wayward_lantern.desc").withStyle(ChatFormatting.GREEN));
-    }
+  public FluidState getFluidState(BlockState state) {
+    return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
+  }
 
-    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-        if (random.nextInt(4) == 0) {
-            level.addParticle(PHParticleRegistry.LANTERN_BUGS, (double) pos.getX() + 0.5D + random.nextGaussian() * 1, (double) pos.getY() + 0.5D + random.nextGaussian() * 1, (double) pos.getZ() + 0.5D + random.nextGaussian() * 1, (double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D, (double) pos.getZ() + 0.5D);
-        }
-        if (random.nextInt(2) == 0) {
-            level.addParticle(ParticleTypes.FLAME, (double) pos.getX() + 0.5D, (double) pos.getY() + 0.65D, (double) pos.getZ() + 0.5D, 0, 0, 0);
-        }
-    }
+  protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> context) {
+    context.add(WATERLOGGED);
+  }
 
-    public BlockState getStateForPlacement(BlockPlaceContext context) {
-        FluidState fluidstate = context.getLevel().getFluidState(context.getClickedPos());
-        boolean flag = fluidstate.getType() == Fluids.WATER;
-        return this.defaultBlockState().setValue(WATERLOGGED, Boolean.valueOf(flag));
-    }
+  @Override
+  protected MapCodec<? extends BaseEntityBlock> codec() {
+    return null;
+  }
 
-    public BlockState updateShape(BlockState state, Direction direction, BlockState state2, LevelAccessor accessor, BlockPos pos, BlockPos pos2) {
-        if (state.getValue(WATERLOGGED)) {
-            accessor.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(accessor));
-        }
+  public RenderShape getRenderShape(BlockState state) {
+    return RenderShape.MODEL;
+  }
 
-        return super.updateShape(state, direction, state2, accessor, pos, pos2);
-    }
+  @Nullable
+  @Override
+  public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+    return new WaywardLanternBlockEntity(pos, state);
+  }
 
-    public FluidState getFluidState(BlockState state) {
-        return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
-    }
-
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> context) {
-        context.add(WATERLOGGED);
-    }
-
-    @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        return null;
-    }
-
-    public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.MODEL;
-    }
-
-    @Nullable
-    @Override
-    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new WaywardLanternBlockEntity(pos, state);
-    }
-
-    @javax.annotation.Nullable
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level p_152180_, BlockState p_152181_, BlockEntityType<T> p_152182_) {
-        return p_152180_.isClientSide ? null : createTickerHelper(p_152182_, PHTileEntityRegistry.WAYWARD_LANTERN, WaywardLanternBlockEntity::tick);
-    }
-
-
+  /** 仅服务端挂 {@link WaywardLanternBlockEntity#tick}（收容流驱动器）。 */
+  @javax.annotation.Nullable
+  public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
+      Level level, BlockState state, BlockEntityType<T> type) {
+    return level.isClientSide
+        ? null
+        : createTickerHelper(
+            type, PHTileEntityRegistry.WAYWARD_LANTERN, WaywardLanternBlockEntity::tick);
+  }
 }

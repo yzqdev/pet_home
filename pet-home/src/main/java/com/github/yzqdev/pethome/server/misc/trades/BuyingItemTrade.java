@@ -10,26 +10,32 @@ import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.level.ItemLike;
 
+/** 驯兽师收购类交易：村民按固定数量收购物品换绿宝石（胡萝卜/木棍等）。 */
 public class BuyingItemTrade implements VillagerTrades.ItemListing {
-    private final Item tradeItem;
-    private final int itemCount;
-    private final int emeralds;
-    private final int maxUses;
-    private final int xpValue;
-    private final float priceMultiplier;
+  private final Item tradeItem;
+  private final int itemCount;
+  private final int emeralds;
+  private final int maxUses;
+  private final int xpValue;
+  private final float priceMultiplier;
 
-    public BuyingItemTrade(ItemLike item, int itemCount, int emeralds, int maxUses, int xp) {
-        this.tradeItem = item.asItem();
-        this.itemCount = itemCount;
-        this.emeralds = emeralds;
-        this.maxUses = maxUses;
-        this.xpValue = xp;
-        this.priceMultiplier = 0.05F;
-    }
+  public BuyingItemTrade(ItemLike item, int itemCount, int emeralds, int maxUses, int xp) {
+    this.tradeItem = item.asItem();
+    this.itemCount = itemCount;
+    this.emeralds = emeralds;
+    this.maxUses = maxUses;
+    this.xpValue = xp;
+    this.priceMultiplier = 0.05F;
+  }
 
-    @Override
-    public MerchantOffer getOffer(Entity entity, RandomSource rng) {
+  @Override
+  public MerchantOffer getOffer(Entity entity, RandomSource rng) {
 
-        return new MerchantOffer(new ItemCost(this.tradeItem, this.itemCount), new ItemStack(Items.EMERALD, this.emeralds), this.maxUses, this.xpValue, this.priceMultiplier);
-    }
+    return new MerchantOffer(
+        new ItemCost(this.tradeItem, this.itemCount),
+        new ItemStack(Items.EMERALD, this.emeralds),
+        this.maxUses,
+        this.xpValue,
+        this.priceMultiplier);
+  }
 }

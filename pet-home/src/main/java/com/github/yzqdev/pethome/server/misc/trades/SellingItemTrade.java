@@ -10,41 +10,56 @@ import net.minecraft.world.item.trading.ItemCost;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.level.block.Block;
 
+/** 驯兽师出售类交易：绿宝石换固定物品（骨头/蛋/烂苹果/项圈标签/牛奶桶等），多构造重载适配 Block/Item/ItemStack。 */
 public class SellingItemTrade implements VillagerTrades.ItemListing {
-    private final ItemStack sellingItem;
-    private final int emeraldCount;
-    private final int sellingItemCount;
-    private final int maxUses;
-    private final int xpValue;
-    private final float priceMultiplier;
+  private final ItemStack sellingItem;
+  private final int emeraldCount;
+  private final int sellingItemCount;
+  private final int maxUses;
+  private final int xpValue;
+  private final float priceMultiplier;
 
-    public SellingItemTrade(Block sellingItem, int emeraldCount, int sellingItemCount, int maxUses, int xpValue) {
-        this(new ItemStack(sellingItem), emeraldCount, sellingItemCount, maxUses, xpValue);
-    }
+  public SellingItemTrade(
+      Block sellingItem, int emeraldCount, int sellingItemCount, int maxUses, int xpValue) {
+    this(new ItemStack(sellingItem), emeraldCount, sellingItemCount, maxUses, xpValue);
+  }
 
-    public SellingItemTrade(Item sellingItem, int emeraldCount, int sellingItemCount, int xpValue) {
-        this(new ItemStack(sellingItem), emeraldCount, sellingItemCount, 12, xpValue);
-    }
+  public SellingItemTrade(Item sellingItem, int emeraldCount, int sellingItemCount, int xpValue) {
+    this(new ItemStack(sellingItem), emeraldCount, sellingItemCount, 12, xpValue);
+  }
 
-    public SellingItemTrade(Item sellingItem, int emeraldCount, int sellingItemCount, int maxUses, int xpValue) {
-        this(new ItemStack(sellingItem), emeraldCount, sellingItemCount, maxUses, xpValue);
-    }
+  public SellingItemTrade(
+      Item sellingItem, int emeraldCount, int sellingItemCount, int maxUses, int xpValue) {
+    this(new ItemStack(sellingItem), emeraldCount, sellingItemCount, maxUses, xpValue);
+  }
 
-    public SellingItemTrade(ItemStack sellingItem, int emeraldCount, int sellingItemCount, int maxUses, int xpValue) {
-        this(sellingItem, emeraldCount, sellingItemCount, maxUses, xpValue, 0.05F);
-    }
+  public SellingItemTrade(
+      ItemStack sellingItem, int emeraldCount, int sellingItemCount, int maxUses, int xpValue) {
+    this(sellingItem, emeraldCount, sellingItemCount, maxUses, xpValue, 0.05F);
+  }
 
-    public SellingItemTrade(ItemStack sellingItem, int emeraldCount, int sellingItemCount, int maxUses, int xpValue, float priceMultiplier) {
-        this.sellingItem = sellingItem;
-        this.emeraldCount = emeraldCount;
-        this.sellingItemCount = sellingItemCount;
-        this.maxUses = maxUses;
-        this.xpValue = xpValue;
-        this.priceMultiplier = priceMultiplier;
-    }
+  public SellingItemTrade(
+      ItemStack sellingItem,
+      int emeraldCount,
+      int sellingItemCount,
+      int maxUses,
+      int xpValue,
+      float priceMultiplier) {
+    this.sellingItem = sellingItem;
+    this.emeraldCount = emeraldCount;
+    this.sellingItemCount = sellingItemCount;
+    this.maxUses = maxUses;
+    this.xpValue = xpValue;
+    this.priceMultiplier = priceMultiplier;
+  }
 
-    @Override
-    public MerchantOffer getOffer(Entity trader, RandomSource rand) {
-        return new MerchantOffer(new ItemCost(Items.EMERALD, this.emeraldCount), new ItemStack(this.sellingItem.getItem(), this.sellingItemCount), this.maxUses, this.xpValue, this.priceMultiplier);
-    }
+  @Override
+  public MerchantOffer getOffer(Entity trader, RandomSource rand) {
+    return new MerchantOffer(
+        new ItemCost(Items.EMERALD, this.emeraldCount),
+        new ItemStack(this.sellingItem.getItem(), this.sellingItemCount),
+        this.maxUses,
+        this.xpValue,
+        this.priceMultiplier);
+  }
 }

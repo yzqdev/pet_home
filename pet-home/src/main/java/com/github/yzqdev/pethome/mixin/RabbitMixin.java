@@ -1,13 +1,15 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.server.NbtKeys;
-
-import com.github.yzqdev.pethome.util.IComandableMob;
 import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
-import com.github.yzqdev.pethome.util.TameableUtils;
+import com.github.yzqdev.pethome.server.NbtKeys;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.ai.*;
+import com.github.yzqdev.pethome.util.IComandableMob;
+import com.github.yzqdev.pethome.util.TameableUtils;
+import java.util.Optional;
+import java.util.UUID;
+import javax.annotation.Nullable;
 import net.minecraft.Util;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -18,6 +20,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.players.OldUsersConverter;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.AvoidEntityGoal;
 import net.minecraft.world.entity.ai.goal.TemptGoal;
@@ -37,189 +40,242 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import javax.annotation.Nullable;
-import java.util.Optional;
-import java.util.UUID;
-
+/**
+ * Mixin 注入：兔子的完整驯服改造——{@link ModifiedToBeTameable} + {@link IComandableMob} 双接口适配。
+ * 兔子与狼/猫不同，没有原版驯服字段，这里自建 TAMED / OWNER_UUID 同步数据并自行持久化。
+ *
+ * <p>注入点：{@code registerGoals} TAIL（补充停留/跟随/主人受击反击目标，驯服个体移除逃跑类目标）、 {@code defineSynchedData} 与 NBT
+ * 读写（驯服状态、主人、指令持久化，含旧版玩家名转换）、 {@code setVariant} 全量接管（见 {@link #di_setRabbitType}）。
+ * 攻击目标规则：仅杀手兔（EVIL 变体）可攻击，且驯服后不攻击同主人生物。
+ */
 @Mixin(Rabbit.class)
-public abstract class RabbitMixin extends Animal implements ModifedToBeTameable, IComandableMob {
+public abstract class RabbitMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 
-    @Shadow @Final private static EntityDataAccessor<Integer> DATA_TYPE_ID;
+  /** 原版兔子变体（含杀手兔 EVIL），{@code setVariant} 接管后仍由此字段承载。 */
+  @Shadow @Final private static EntityDataAccessor<Integer> DATA_TYPE_ID;
 
-    @Shadow public abstract Rabbit.Variant getVariant();
+  @Shadow
+  public abstract Rabbit.Variant getVariant();
 
-    private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(Rabbit.class, EntityDataSerializers.OPTIONAL_UUID);
-    private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(Rabbit.class, EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Boolean> TAMED = SynchedEntityData.defineId(Rabbit.class, EntityDataSerializers.BOOLEAN);
+  /** 驯服主人 UUID（自建字段，兔子无原版驯服数据；读取受 {@code PetHomeConfig.tameableRabbit} 门控）。 */
+  private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID =
+      SynchedEntityData.defineId(Rabbit.class, EntityDataSerializers.OPTIONAL_UUID);
 
-    protected RabbitMixin(EntityType<? extends Animal> type, Level level) {
-        super(type, level);
+  /** 当前三态指令（0=游走 / 1=停留 / 2=跟随）。 */
+  private static final EntityDataAccessor<Integer> COMMAND =
+      SynchedEntityData.defineId(Rabbit.class, EntityDataSerializers.INT);
+
+  /** 是否已驯服（自建字段）。 */
+  private static final EntityDataAccessor<Boolean> TAMED =
+      SynchedEntityData.defineId(Rabbit.class, EntityDataSerializers.BOOLEAN);
+
+  protected RabbitMixin(EntityType<? extends Animal> type, Level level) {
+    super(type, level);
+  }
+
+  @Inject(
+      at = {@At("TAIL")},
+      remap = true,
+      method = {"registerGoals()V"})
+  private void di_registerGoals(CallbackInfo ci) {
+    this.goalSelector.addGoal(1, new Sit2Goal(this));
+    this.goalSelector.addGoal(2, new FollowOwner2Goal(this, 2.0D, 10.0F, 3.0F, false));
+    this.targetSelector.addGoal(2, new OwnerHurtTarget2Goal(this));
+    this.targetSelector.addGoal(3, new OwnerHurtByTarget2Goal(this));
+    this.goalSelector.addGoal(3, new TemptGoal(this, 1.0D, Ingredient.of(Items.HAY_BLOCK), false));
+    if (isTame()) {
+      removeUntamedGoals();
+    }
+  }
+
+  @Inject(
+      at = {@At("TAIL")},
+      remap = true,
+      method = {"defineSynchedData(Lnet/minecraft/network/syncher/SynchedEntityData$Builder;)V"})
+  private void di_registerData(SynchedEntityData.Builder builder, CallbackInfo ci) {
+    builder.define(OWNER_UUID, Optional.empty());
+    builder.define(COMMAND, 0);
+    builder.define(TAMED, false);
+  }
+
+  @Inject(
+      at = {@At("TAIL")},
+      remap = true,
+      method = {"addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"})
+  private void di_writeAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
+    compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
+    compoundNBT.putBoolean(NbtKeys.TAMED, this.isTame());
+    if (this.getTameOwnerUUID() != null) {
+      compoundNBT.putUUID(NbtKeys.OWNER, this.getTameOwnerUUID());
+    }
+  }
+
+  @Inject(
+      at = {@At("TAIL")},
+      remap = true,
+      method = {"readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"})
+  private void di_readAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
+    this.setCommand(compoundNBT.getInt(NbtKeys.DI_COMMAND));
+    this.setTame(compoundNBT.getBoolean(NbtKeys.TAMED));
+    UUID uuid;
+    if (compoundNBT.hasUUID(NbtKeys.OWNER)) {
+      uuid = compoundNBT.getUUID(NbtKeys.OWNER);
+    } else {
+      String s = compoundNBT.getString(NbtKeys.OWNER);
+      uuid = OldUsersConverter.convertMobOwnerIfNecessary(this.getServer(), s);
     }
 
-    @Inject(
-            at = {@At("TAIL")},
-            remap = true,
-            method = {"registerGoals()V"}
-    )
-    private void di_registerGoals(CallbackInfo ci) {
-        this.goalSelector.addGoal(1, new Sit2Goal(this));
-        this.goalSelector.addGoal(2, new FollowOwner2Goal(this, 2.0D, 10.0F, 3.0F, false));
+    if (uuid != null) {
+      try {
+        this.setTameOwnerUUID(uuid);
+        this.setTame(true);
+      } catch (Throwable throwable) {
+        this.setTame(false);
+      }
+    }
+  }
+
+  public int getCommand() {
+    return this.entityData.get(COMMAND);
+  }
+
+  public void setCommand(int i) {
+    this.entityData.set(COMMAND, i);
+  }
+
+  public boolean isTame() {
+    return this.entityData.get(TAMED);
+  }
+
+  public void setTame(boolean b) {
+    this.entityData.set(TAMED, b);
+    if (b) {
+      removeUntamedGoals();
+    }
+  }
+
+  @Nullable
+  public UUID getTameOwnerUUID() {
+    return PetHomeConfig.tameableRabbit
+        ? this.entityData.get(OWNER_UUID).orElse((UUID) null)
+        : null;
+  }
+
+  public void setTameOwnerUUID(@Nullable UUID uuid) {
+    this.entityData.set(OWNER_UUID, Optional.ofNullable(uuid));
+  }
+
+  @Nullable
+  public LivingEntity getTameOwner() {
+    try {
+      UUID uuid = this.getTameOwnerUUID();
+      return uuid == null ? null : this.level().getPlayerByUUID(uuid);
+    } catch (IllegalArgumentException illegalargumentexception) {
+      return null;
+    }
+  }
+
+  public boolean isFollowingOwner() {
+    return this.getCommand() == 2 && PetHomeConfig.trinaryCommandSystem;
+  }
+
+  public boolean isStayingStill() {
+    return this.getCommand() == 1 && PetHomeConfig.trinaryCommandSystem;
+  }
+
+  public boolean isValidAttackTarget(LivingEntity target) {
+    return this.getVariant() == Rabbit.Variant.EVIL
+        && (!this.isTame() || !TameableUtils.hasSameOwnerAs(this, target));
+  }
+
+  /** 移除“未驯服专属”目标：停掉并删除所有 {@code AvoidEntityGoal}（怕狼逃跑），删除最近攻击目标。 驯服瞬间与读档后调用，保证宠物不再无脑逃窜/主动索敌。 */
+  public void removeUntamedGoals() {
+    try {
+      this.goalSelector.getAvailableGoals().stream()
+          .filter(
+              (wrapped) -> {
+                return wrapped.getGoal() instanceof AvoidEntityGoal;
+              })
+          .filter(WrappedGoal::isRunning)
+          .forEach(WrappedGoal::stop);
+      this.goalSelector
+          .getAvailableGoals()
+          .removeIf(
+              (wrapped) -> {
+                return wrapped.getGoal() instanceof AvoidEntityGoal;
+              });
+      this.targetSelector
+          .getAvailableGoals()
+          .removeIf(
+              (wrapped) -> {
+                return wrapped.getGoal() instanceof NearestAttackableTargetGoal;
+              });
+    } catch (Exception e) {
+      PetHomeMod.LOGGER.warn("encountered error modifying rabbit AI");
+    }
+  }
+
+  /**
+   * 接管 {@code setVariant}：杀手兔（EVIL）需要额外属性（30 血 / 8 甲）与 AI（近战、受击警群、
+   * 驯服与否决定索敌玩家/狼还是护卫主人），原版实现不含这些分支，故整体取消重写；普通变体仅写回数据。
+   */
+  @Inject(
+      at = {@At("HEAD")},
+      remap = true,
+      method = {"setVariant(Lnet/minecraft/world/entity/animal/Rabbit$Variant;)V"},
+      cancellable = true)
+  private void di_setRabbitType(Rabbit.Variant type, CallbackInfo ci) {
+    ci.cancel();
+    if (type == Rabbit.Variant.EVIL) {
+      this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(30.0D);
+      this.getAttribute(Attributes.ARMOR).setBaseValue(8.0D);
+      // 不在此处回血：原版 readAdditionalSaveData 会经 setVariant 走到这里，加载期
+      // （worldgen 线程、实体未入 level）发 LivingHealEvent 会让第三方监听器在离线实体上运行；
+      // 且每次 NBT 加载叠加回血等于无限回血。满血由 di_finalizeSpawn 在 spawn 场景补足。
+      this.goalSelector.addGoal(4, new RabbitMeleeGoal(this));
+      this.targetSelector.addGoal(1, (new HurtByTargetGoal(this)).setAlertOthers());
+      if (!this.isTame()) {
+        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Wolf.class, true));
+      } else {
         this.targetSelector.addGoal(2, new OwnerHurtTarget2Goal(this));
         this.targetSelector.addGoal(3, new OwnerHurtByTarget2Goal(this));
-        this.goalSelector.addGoal(3, new TemptGoal(this, 1.0D, Ingredient.of(Items.HAY_BLOCK), false));
-        if(isTame()){
-            removeUntamedGoals();
-        }
+        removeUntamedGoals();
+      }
+      if (!this.hasCustomName()) {
+        this.setCustomName(
+            Component.translatable(
+                Util.makeDescriptionId(
+                    "entity", ResourceLocation.withDefaultNamespace("killer_bunny"))));
+      }
     }
+    this.entityData.set(DATA_TYPE_ID, type.id());
+  }
 
-    @Inject(
-            at = {@At("TAIL")},
-            remap = true,
-            method = {"defineSynchedData(Lnet/minecraft/network/syncher/SynchedEntityData$Builder;)V"}
-    )
-    private void di_registerData(SynchedEntityData.Builder builder, CallbackInfo ci) {
-        builder.define(OWNER_UUID, Optional.empty());
-        builder.define(COMMAND, 0);
-        builder.define(TAMED, false);
+  /**
+   * 注入目标：{@code Rabbit#finalizeSpawn} RETURN。
+   *
+   * <p>spawn 场景（自然生成/刷怪蛋/summon 无 NBT/结构模板放置）补满血：实体构造时血量按普通兔 3 点，
+   * {@code setVariant(EVIL)} 把 MAX_HEALTH 提到 30 后需要覆盖为满血。直接 {@code setHealth} 不发
+   * LivingHealEvent；NBT 加载路径不走 finalizeSpawn，存档血量得以保留。
+   */
+  @Inject(
+      at = {@At("RETURN")},
+      remap = true,
+      method = {
+        "finalizeSpawn(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/world/DifficultyInstance;Lnet/minecraft/world/entity/MobSpawnType;Lnet/minecraft/world/entity/SpawnGroupData;)Lnet/minecraft/world/entity/SpawnGroupData;"
+      })
+  private void di_finalizeSpawn(CallbackInfoReturnable<SpawnGroupData> cir) {
+    if (this.getVariant() == Rabbit.Variant.EVIL) {
+      this.setHealth(this.getMaxHealth());
     }
+  }
 
-    @Inject(
-            at = {@At("TAIL")},
-            remap = true,
-            method = {"addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
-    )
-    private void di_writeAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
-        compoundNBT.putBoolean(NbtKeys.TAMED, this.isTame());
-        if (this.getTameOwnerUUID() != null) {
-            compoundNBT.putUUID(NbtKeys.OWNER, this.getTameOwnerUUID());
-        }
-    }
-
-    @Inject(
-            at = {@At("TAIL")},
-            remap = true,
-            method = {"readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
-    )
-    private void di_readAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        this.setCommand(compoundNBT.getInt(NbtKeys.DI_COMMAND));
-        this.setTame(compoundNBT.getBoolean(NbtKeys.TAMED));
-        UUID uuid;
-        if (compoundNBT.hasUUID(NbtKeys.OWNER)) {
-            uuid = compoundNBT.getUUID(NbtKeys.OWNER);
-        } else {
-            String s = compoundNBT.getString(NbtKeys.OWNER);
-            uuid = OldUsersConverter.convertMobOwnerIfNecessary(this.getServer(), s);
-        }
-
-        if (uuid != null) {
-            try {
-                this.setTameOwnerUUID(uuid);
-                this.setTame(true);
-            } catch (Throwable throwable) {
-                this.setTame(false);
-            }
-        }
-    }
-
-    public int getCommand(){
-        return this.entityData.get(COMMAND);
-    }
-
-    public void setCommand(int i){
-        this.entityData.set(COMMAND, i);
-    }
-
-    public boolean isTame(){
-        return this.entityData.get(TAMED);
-    }
-
-    public void setTame(boolean b){
-        this.entityData.set(TAMED, b);
-        if(b){
-            removeUntamedGoals();
-        }
-    }
-
-    @Nullable
-    public UUID getTameOwnerUUID() {
-        return PetHomeConfig.tameableRabbit ? this.entityData.get(OWNER_UUID).orElse((UUID)null) : null;
-    }
-
-    public void setTameOwnerUUID(@Nullable UUID uuid) {
-        this.entityData.set(OWNER_UUID, Optional.ofNullable(uuid));
-    }
-
-    @Nullable
-    public LivingEntity getTameOwner() {
-        try {
-            UUID uuid = this.getTameOwnerUUID();
-            return uuid == null ? null : this.level().getPlayerByUUID(uuid);
-        } catch (IllegalArgumentException illegalargumentexception) {
-            return null;
-        }
-    }
-
-    public boolean isFollowingOwner(){
-        return this.getCommand() == 2 && PetHomeConfig.trinaryCommandSystem;
-    }
-
-    public boolean isStayingStill(){
-        return this.getCommand() == 1 && PetHomeConfig.trinaryCommandSystem;
-    }
-
-    public boolean isValidAttackTarget(LivingEntity target) {
-        return this.getVariant() == Rabbit.Variant.EVIL && (!this.isTame() || !TameableUtils.hasSameOwnerAs(this, target));
-    }
-
-    public void removeUntamedGoals(){
-        try {
-            this.goalSelector.getAvailableGoals().stream().filter((wrapped) -> {
-                return wrapped.getGoal() instanceof AvoidEntityGoal;
-            }).filter(WrappedGoal::isRunning).forEach(WrappedGoal::stop);
-            this.goalSelector.getAvailableGoals().removeIf((wrapped) -> {
-                return wrapped.getGoal() instanceof AvoidEntityGoal;
-            });
-            this.targetSelector.getAvailableGoals().removeIf((wrapped) -> {
-                return wrapped.getGoal() instanceof NearestAttackableTargetGoal;
-            });
-        } catch (Exception e){
-            PetHomeMod.LOGGER.warn("encountered error modifying rabbit AI");
-        }
-    }
-
-    @Inject(
-            at = {@At("HEAD")},
-            remap = true,
-            method = {"setVariant(Lnet/minecraft/world/entity/animal/Rabbit$Variant;)V"},
-            cancellable = true
-    )
-    private void di_setRabbitType(Rabbit.Variant type, CallbackInfo ci) {
-        ci.cancel();
-        if(type == Rabbit.Variant.EVIL){
-            this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(30.0D);
-            this.getAttribute(Attributes.ARMOR).setBaseValue(8.0D);
-            this.heal(22.0F);
-            this.goalSelector.addGoal(4, new RabbitMeleeGoal(this));
-            this.targetSelector.addGoal(1, (new HurtByTargetGoal(this)).setAlertOthers());
-            if(!this.isTame()){
-                this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
-                this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Wolf.class, true));
-            }else{
-                this.targetSelector.addGoal(2, new OwnerHurtTarget2Goal(this));
-                this.targetSelector.addGoal(3, new OwnerHurtByTarget2Goal(this));
-                removeUntamedGoals();
-            }
-            if (!this.hasCustomName()) {
-                this.setCustomName(Component.translatable(Util.makeDescriptionId("entity", ResourceLocation.withDefaultNamespace("killer_bunny"))));
-            }
-        }
-        this.entityData.set(DATA_TYPE_ID, type.id());
-    }
-
-    @Override
-    public void sendCommandMessage(Player owner, int command, Component name) {
-        owner.displayClientMessage(Component.translatable("message.pet_home.command_" + command, name), true);
-    }
+  @Override
+  public void sendCommandMessage(Player owner, int command, Component name) {
+    owner.displayClientMessage(
+        Component.translatable("message.pet_home.command_" + command, name), true);
+  }
 }

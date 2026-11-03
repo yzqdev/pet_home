@@ -1,46 +1,61 @@
 package com.github.yzqdev.pethome.client.particle;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.*;
 import net.minecraft.core.particles.SimpleParticleType;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 
+/** “?” 疑问粒子：动物 AI 状态提示（如指令未被理解/驯服失败时头顶冒问号）。 */
 public class ParticleQuestionMark extends SimpleAnimatedParticle {
-    protected ParticleQuestionMark(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet sprites) {
-        super(world, x, y, z, sprites, 0.0F);
-        this.lifetime = 100;
+  protected ParticleQuestionMark(
+      ClientLevel world,
+      double x,
+      double y,
+      double z,
+      double motionX,
+      double motionY,
+      double motionZ,
+      SpriteSet sprites) {
+    super(world, x, y, z, sprites, 0.0F);
+    this.lifetime = 100;
 
-        this.quadSize = 0.1F + this.random.nextFloat() * 0.1F;
-        this.lifetime = 1 + this.random.nextInt(2);
-        this.gravity = 0;
-        this.pickSprite(sprites);
+    this.quadSize = 0.1F + this.random.nextFloat() * 0.1F;
+    this.lifetime = 1 + this.random.nextInt(2);
+    this.gravity = 0;
+    this.pickSprite(sprites);
 
-        this.hasPhysics = true;
+    this.hasPhysics = true;
+  }
+
+  public int getLightColor(float f) {
+    return 240;
+  }
+
+  @Override
+  public ParticleRenderType getRenderType() {
+    return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+  }
+
+  @Environment(EnvType.CLIENT)
+  public static class Factory implements ParticleProvider<SimpleParticleType> {
+    private final SpriteSet spriteSet;
+
+    public Factory(SpriteSet spriteSet) {
+      this.spriteSet = spriteSet;
     }
 
-    public int getLightColor(float f) {
-        return 240;
+    public Particle createParticle(
+        SimpleParticleType typeIn,
+        ClientLevel worldIn,
+        double x,
+        double y,
+        double z,
+        double xSpeed,
+        double ySpeed,
+        double zSpeed) {
+      var p = new ParticleQuestionMark(worldIn, x, y, z, xSpeed, ySpeed, zSpeed, spriteSet);
+      return p;
     }
-
-
-    @Override
-    public ParticleRenderType getRenderType() {
-        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
-    }
-
-
-    @Environment(EnvType.CLIENT)
-    public static class Factory implements ParticleProvider<SimpleParticleType> {
-        private final SpriteSet spriteSet;
-
-        public Factory(SpriteSet spriteSet) {
-            this.spriteSet = spriteSet;
-        }
-
-        public Particle createParticle(SimpleParticleType typeIn, ClientLevel worldIn, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
-            var p = new ParticleQuestionMark(worldIn, x, y, z, xSpeed, ySpeed, zSpeed, spriteSet);
-            return p;
-        }
-    }
+  }
 }

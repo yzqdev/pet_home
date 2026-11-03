@@ -7,7 +7,8 @@
     "pet_home:health_boost",
     "pet_home:vampire",
     "pet_home:gluttonous",
-    "pet_home:healing_aura"
+    "pet_home:healing_aura",
+    "pet_home:share"
   ],
   "max_cost": {
     "base": 25,

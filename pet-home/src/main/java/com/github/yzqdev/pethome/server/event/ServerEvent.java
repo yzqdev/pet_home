@@ -2,20 +2,24 @@ package com.github.yzqdev.pethome.server.event;
 
 import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
-import com.github.yzqdev.pethome.platform.ServerRef;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.platform.Triple;
 import com.github.yzqdev.pethome.server.block.PetBedBlockEntity;
 import com.github.yzqdev.pethome.server.entity.PHVillagerRegistry;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 import com.github.yzqdev.pethome.server.misc.CollarTickTracker;
+import com.github.yzqdev.pethome.server.misc.LanternRequest;
+import com.github.yzqdev.pethome.server.misc.PHWorldData;
 import com.github.yzqdev.pethome.server.misc.PetCompassTeleport;
 import com.github.yzqdev.pethome.server.misc.PetCompassTracker;
-import com.github.yzqdev.pethome.server.misc.PHWorldData;
-import com.github.yzqdev.pethome.server.misc.LanternRequest;
 import com.github.yzqdev.pethome.server.misc.RespawnRequest;
 import com.github.yzqdev.pethome.util.TameableUtils;
+import com.github.yzqdev.pethome.worldgen.PetshopStructurePoolElement;
 import com.github.yzqdev.pethome.worldgen.VillageHouseManager;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
@@ -55,443 +59,633 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.fabricmc.loader.api.FabricLoader;
-
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
- * @author yzqde
- * @date time 2025/1/9 9:47
- * @modified By:
+ * 服务器事件处理中心：大部分方法对应一个 Fabric 回调或 Mixin 注入点，由 {@code PetHomeMod.onInitialize()} 接线（死亡/实体进出世界/世界
+ * tick/村民交易）， 其余由 {@code EntityTeleportMixin}（玩家传送）、{@code ExplosionMixin}（爆炸开始）、 {@code
+ * ItemEntityMixin}（物品腐烂与捕网掉落物）、{@code ProjectileImpactMixin}（投掷物命中）、 {@code
+ * ServerPlayerMixin}（跨维度）调入，tooltip 由客户端 {@code ClientModEvents} 调入。 决策逻辑集中在本类，Mixin 只做转发。
  */
-
 public class ServerEvent {
-    public static void onLivingDrops(LivingEntity entity) {
-        // handled by LivingEntityDropMixin, kept for reference
-    }
+  /** 空实现占位：绑定宠物床的宠物死亡不掉落由 {@code LivingEntityDropMixin} 直接处理，方法仅为对齐 NeoForge 结构保留。 */
+  public static void onLivingDrops(LivingEntity entity) {
+    // handled by LivingEntityDropMixin, kept for reference
+  }
 
-    public static void serverStart(MinecraftServer server) {
-        RegistryAccess registryAccess = server.registryAccess();
-        VillageHouseManager.addAllHouses(registryAccess);
-    }
+  /**
+   * 服务器启动时把宠物商店结构池元素注入各生物群系村庄（见 {@code VillageHouseManager.addAllHouses}），并在主线程预热宠物店刷怪列表（worldgen
+   * worker 线程会读）。
+   */
+  public static void serverStart(MinecraftServer server) {
+    RegistryAccess registryAccess = server.registryAccess();
+    VillageHouseManager.addAllHouses(registryAccess);
+    PetshopStructurePoolElement.preloadMobLists();
+  }
 
+  /** 跨维度携带宠物的待传送队列（宠物实体、目标维度、主人 UUID）；由 {@code onServerTick} 消费后清空，PetCompassTeleport 与传送携带共用。 */
+  public static List<Triple<Entity, ServerLevel, UUID>> teleportingPets = new ArrayList<>();
 
-    public static List<Triple<Entity, ServerLevel, UUID>> teleportingPets = new ArrayList<>();
+  /**
+   * XP_Transfer（连锁背包·经验）附魔的逐玩家处理：10 格内带该附魔、未停留且无攻击目标的宠物 会吸附并导航走向 10 格内的经验球，进 2 格范围把经验直接交给主人。每 10
+   * tick 由 {@link #onServerTick} 驱动。
+   */
+  public static void onWorldTick(ServerPlayer serverPlayer, ServerLevel world) {
 
-    public static void onWorldTick(ServerPlayer serverPlayer, ServerLevel world) {
+    AABB playerArea = serverPlayer.getBoundingBox().inflate(10.0);
+    List<net.minecraft.world.entity.TamableAnimal> pets =
+        world.getEntitiesOfClass(
+            net.minecraft.world.entity.TamableAnimal.class,
+            playerArea,
+            pet ->
+                pet.isTame()
+                    && !pet.isOrderedToSit()
+                    && pet.getTarget() == null
+                    && TameableUtils.hasEnchant(pet, PHEnchantments.XP_Transfer));
 
-        AABB playerArea = serverPlayer.getBoundingBox().inflate(10.0);
-        List<net.minecraft.world.entity.TamableAnimal> pets = world.getEntitiesOfClass(net.minecraft.world.entity.TamableAnimal.class, playerArea,
-                pet -> pet.isTame() && !pet.isOrderedToSit()&&pet.getTarget()==null && TameableUtils.hasEnchant(pet, ModEnchantments.XP_Transfer));
+    for (net.minecraft.world.entity.TamableAnimal pet : pets) {
 
-        for (net.minecraft.world.entity.TamableAnimal pet : pets) {
+      AABB searchBox = pet.getBoundingBox().inflate(10.0);
+      List<net.minecraft.world.entity.ExperienceOrb> orbs =
+          world.getEntitiesOfClass(net.minecraft.world.entity.ExperienceOrb.class, searchBox);
 
-            AABB searchBox = pet.getBoundingBox().inflate(10.0);
-            List<net.minecraft.world.entity.ExperienceOrb> orbs = world.getEntitiesOfClass(net.minecraft.world.entity.ExperienceOrb.class, searchBox);
+      if (orbs.isEmpty()) {
+        continue;
+      }
 
-            if (orbs.isEmpty()) {
-                continue;
-            }
+      if (!(pet.getOwner() instanceof Player player)) {
+        continue;
+      }
 
+      for (net.minecraft.world.entity.ExperienceOrb orb : orbs) {
 
-            if (!(pet.getOwner() instanceof Player player)) {
-                continue;
-            }
+        Vec3 targetPos =
+            new Vec3(pet.getX(), pet.getY() + (double) pet.getEyeHeight() / 2.0D, pet.getZ());
+        Vec3 vec3 = targetPos.subtract(orb.position());
+        double distSqr = vec3.lengthSqr();
 
-
-            for (net.minecraft.world.entity.ExperienceOrb orb : orbs) {
-
-                Vec3 targetPos = new Vec3(pet.getX(), pet.getY() + (double) pet.getEyeHeight() / 2.0D, pet.getZ());
-                Vec3 vec3 = targetPos.subtract(orb.position());
-                double distSqr = vec3.lengthSqr();
-
-
-                if (distSqr < 2.0D) {
-                    player.giveExperiencePoints(orb.getValue());
-                    orb.discard();
-                    continue;
-                }
-
-
-                if (distSqr < 64.0D) {
-                    double d1 = 1.0D - Math.sqrt(distSqr) / 8.0D;
-                    // 给经验球施加向宠物的加速度
-                    orb.setDeltaMovement(orb.getDeltaMovement().add(vec3.normalize().scale(d1 * d1 * 0.5D)));
-                }
-            }
-
-
-            net.minecraft.world.entity.ExperienceOrb closestOrb = orbs.getFirst();
-            pet.getLookControl().setLookAt(closestOrb, 30.0F, 30.0F);
-            pet.getNavigation().moveTo(closestOrb, 1.2D);
+        if (distSqr < 2.0D) {
+          player.giveExperiencePoints(orb.getValue());
+          orb.discard();
+          continue;
         }
+
+        if (distSqr < 64.0D) {
+          double d1 = 1.0D - Math.sqrt(distSqr) / 8.0D;
+          // 给经验球施加向宠物的加速度
+          orb.setDeltaMovement(orb.getDeltaMovement().add(vec3.normalize().scale(d1 * d1 * 0.5D)));
+        }
+      }
+
+      net.minecraft.world.entity.ExperienceOrb closestOrb = orbs.getFirst();
+      pet.getLookControl().setLookAt(closestOrb, 30.0F, 30.0F);
+      pet.getNavigation().moveTo(closestOrb, 1.2D);
     }
+  }
 
-    private static final Map<Level, CollarTickTracker> COLLAR_TICK_TRACKER_MAP = new HashMap<>();
+  /** 项圈 tick 抑制器：按维度持有，记录哪些实体在换装冷却中（见 {@link #blockCollarTick}）。 */
+  private static final Map<Level, CollarTickTracker> COLLAR_TICK_TRACKER_MAP = new HashMap<>();
 
-    /** 项圈刚被取下/装备后短时间内不再 tick（自 1.20 移植） */
-    public static boolean canTickCollar(Entity entity) {
-        if (entity.level().isClientSide()) {
+  /** 项圈刚被取下/装备后短时间内不再 tick（自 1.20 移植） */
+  public static boolean canTickCollar(Entity entity) {
+    if (entity.level().isClientSide()) {
+      return true;
+    }
+    CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.get(entity.level());
+    return tracker == null || !tracker.isEntityBlocked(entity);
+  }
+
+  /** 项圈换装后抑制实体 tick 5 tick（防刚写完的附魔被当 tick 重复消费）；换项圈/附魔书写入路径调用。 */
+  public static void blockCollarTick(Entity entity) {
+    if (!entity.level().isClientSide()) {
+      CollarTickTracker tracker =
+          COLLAR_TICK_TRACKER_MAP.computeIfAbsent(entity.level(), k -> new CollarTickTracker());
+      tracker.addBlockedEntityTick(entity.getUUID(), 5);
+    }
+  }
+
+  /**
+   * 每个维度的 END_WORLD_TICK 回调：推进项圈换装冷却；主世界每 20 tick 处理罗盘召回队列 （{@code
+   * PetCompassTeleport.processRecallQueue}，全局队列只在此驱动）；每 10 tick 逐玩家跑 {@link #onWorldTick} 的经验吸附，并把
+   * {@link #teleportingPets} 队列里的宠物经 {@code restoreFrom + addFreshEntity} 在目标维度重建（1.21
+   * 实体不能直接换维度），落点自下而上找无碰撞位。
+   */
+  public static void onServerTick(Level level) {
+    if (!level.isClientSide()) {
+      CollarTickTracker tracker =
+          COLLAR_TICK_TRACKER_MAP.computeIfAbsent(level, k -> new CollarTickTracker());
+      tracker.tick();
+    }
+    // 宠物罗盘召回队列：全局队列只在主世界 tick 上处理（每 20 tick 一轮）
+    if (!level.isClientSide()
+        && level.dimension() == Level.OVERWORLD
+        && level.getGameTime() % 20 == 0) {
+      PetCompassTeleport.processRecallQueue(level.getServer(), level.getGameTime());
+    }
+    if (level.getGameTime() % 10 != 0) return;
+    if (!level.isClientSide() && level instanceof ServerLevel) {
+      for (var player : level.players()) {
+        if (player instanceof ServerPlayer serverPlayer) {
+          onWorldTick(serverPlayer, (ServerLevel) level);
+        }
+      }
+      for (final var triple : teleportingPets) {
+        Entity entity = triple.a;
+        ServerLevel endpointWorld = triple.b;
+        UUID ownerUUID = triple.c;
+        entity.unRide();
+        entity.setLevel(endpointWorld);
+        Entity player = endpointWorld.getPlayerByUUID(ownerUUID);
+        if (player != null) {
+          // 1.21 实体不能直接换维度：在目标维度新建同类型实体并转移全部状态
+          Entity teleportedEntity = entity.getType().create(endpointWorld);
+          if (teleportedEntity != null) {
+            teleportedEntity.restoreFrom(entity);
+            Vec3 toPos = player.position();
+            EntityDimensions dimensions = entity.getDimensions(entity.getPose());
+            AABB suffocationBox =
+                new AABB(
+                    -dimensions.width() / 2.0F,
+                    0,
+                    -dimensions.width() / 2.0F,
+                    dimensions.width() / 2.0F,
+                    dimensions.height(),
+                    dimensions.width() / 2.0F);
+            // 主人头顶落点若被卡住则逐格上移（上限 y=300）
+            while (!endpointWorld.noCollision(
+                    entity, suffocationBox.move(toPos.x, toPos.y, toPos.z))
+                && toPos.y < 300) {
+              toPos = toPos.add(0, 1, 0);
+            }
+            teleportedEntity.moveTo(toPos.x, toPos.y, toPos.z, entity.getYRot(), entity.getXRot());
+            teleportedEntity.setYHeadRot(entity.getYHeadRot());
+            teleportedEntity.fallDistance = 0.0F;
+            teleportedEntity.setPortalCooldown();
+            endpointWorld.addFreshEntity(teleportedEntity);
+          }
+          entity.remove(Entity.RemovalReason.DISCARDED);
+        }
+      }
+      teleportingPets.clear();
+    }
+  }
+
+  /**
+   * 玩家跨维度时携带 20 格内带 TETHERED_TELEPORT 且处于跟随状态的宠物进 {@link #teleportingPets} 队列（ServerPlayerMixin
+   * 调入）。
+   */
+  public static void onEntityTravelToDimension(Player player, Level toLevel) {
+    if (player.level() instanceof ServerLevel serverLevel) {
+      teleportNearbyPets(player, player.position(), player.position(), player.level(), toLevel);
+    }
+  }
+
+  /** 玩家同维度传送时携带 20 格内的系绳宠物直接 {@code teleportTo} 过去（EntityTeleportMixin 调入）。 */
+  public static void onEntityTeleport(Player player, Vec3 toPos) {
+    teleportNearbyPets(player, player.position(), toPos, player.level(), player.level());
+  }
+
+  /** 系绳传送实现：同维度直接传送并加 POST_TELEPORT 区块 ticket；跨维度丢进 {@link #teleportingPets} 队列等待目标维度就绪。 */
+  private static void teleportNearbyPets(
+      Player owner, Vec3 fromPos, Vec3 toPos, Level fromLevel, Level toLevel) {
+    double dist = 20;
+    boolean removeAndReadd = fromLevel.dimension() != toLevel.dimension();
+    Predicate<Entity> enchantedPet =
+        (animal) ->
+            animal instanceof net.minecraft.world.entity.Mob
+                && TameableUtils.isPetOf(owner, animal)
+                && TameableUtils.isValidTeleporter(owner, (net.minecraft.world.entity.Mob) animal);
+    for (net.minecraft.world.entity.Mob entity :
+        fromLevel.getEntitiesOfClass(
+            net.minecraft.world.entity.Mob.class,
+            new AABB(
+                fromPos.x - dist,
+                fromPos.y - dist,
+                fromPos.z - dist,
+                fromPos.x + dist,
+                fromPos.y + dist,
+                fromPos.z + dist),
+            EntitySelector.NO_SPECTATORS.and(enchantedPet))) {
+      if (removeAndReadd) {
+        teleportingPets.add(new Triple(entity, (ServerLevel) toLevel, owner.getUUID()));
+      } else {
+        EntityDimensions dimensions = entity.getDimensions(entity.getPose());
+        AABB suffocationBox =
+            new AABB(
+                -dimensions.width() / 2.0F,
+                0,
+                -dimensions.width() / 2.0F,
+                dimensions.width() / 2.0F,
+                dimensions.height(),
+                dimensions.width() / 2.0F);
+        while (!toLevel.noCollision(entity, suffocationBox.move(toPos.x, toPos.y, toPos.z))
+            && toPos.y < 300) {
+          toPos = toPos.add(0, 1, 0);
+        }
+        entity.fallDistance = 0.0F;
+        ChunkPos chunkpos = new ChunkPos(BlockPos.containing(toPos.x, toPos.y, toPos.z));
+        ((ServerLevel) entity.level())
+            .getChunkSource()
+            .addRegionTicket(TicketType.POST_TELEPORT, chunkpos, 0, entity.getId());
+        entity.level().getChunk(chunkpos.x, chunkpos.z);
+        entity.teleportTo(toPos.x, toPos.y, toPos.z);
+        entity.setPortalCooldown();
+      }
+    }
+  }
+
+  /**
+   * ProjectileImpactEvent 的替代，由 ProjectileImpactMixin 调用。
+   *
+   * @return true 取消本次命中（弹射物按原逻辑继续飞行）
+   */
+  public static boolean onProjectileImpactEvent(
+      net.minecraft.world.entity.projectile.Projectile projectile, HitResult rayTraceResult) {
+    if (rayTraceResult instanceof EntityHitResult) {
+      Entity hit = ((EntityHitResult) rayTraceResult).getEntity();
+      if (projectile.getOwner() instanceof Player player) {
+        if (TameableUtils.isPetOf(player, hit)) {
+          return true;
+        }
+      }
+      if (TameableUtils.isTamed(hit) && hit instanceof LivingEntity livingHit) {
+        if (projectile instanceof AbstractArrow arrow) {
+          // fixes soft crash with vanilla
+          if (arrow.getPierceLevel() > 0) {
+            arrow.setPierceLevel((byte) 0);
+            arrow.remove(Entity.RemovalReason.DISCARDED);
             return true;
+          }
         }
-        CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.get(entity.level());
-        return tracker == null || !tracker.isEntityBlocked(entity);
+        if (TameableUtils.hasEnchant(livingHit, PHEnchantments.DEFLECTION)) {
+          float xRot = projectile.getXRot();
+          float yRot = projectile.yRotO;
+          Vec3 vec3 =
+              projectile
+                  .position()
+                  .subtract(hit.position())
+                  .normalize()
+                  .scale(hit.getBbWidth() + 0.5F);
+          Vec3 vec32 = hit.position().add(vec3);
+          hit.level()
+              .addParticle(
+                  com.github.yzqdev.pethome.server.misc.PHParticleRegistry.DEFLECTION_SHIELD,
+                  vec32.x,
+                  vec32.y,
+                  vec32.z,
+                  xRot,
+                  yRot,
+                  0.0F);
+          projectile.setDeltaMovement(projectile.getDeltaMovement().scale(-0.2D));
+          projectile.setYRot(yRot + 180);
+          projectile.setXRot(xRot + 180);
+          return true;
+        }
+      }
     }
+    return false;
+  }
 
-    public static void blockCollarTick(Entity entity) {
-        if (!entity.level().isClientSide()) {
-            CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.computeIfAbsent(entity.level(), k -> new CollarTickTracker());
-            tracker.addBlockedEntityTick(entity.getUUID(), 5);
-        }
+  public static void onEntityMount(Entity entityBeingMounted, boolean isDismounting) {
+    // handled by EntityRemoveVehicleMixin; kept for reference
+  }
+
+  /**
+   * 实体进入世界（区块加载/维度到达/复活重建）时：罗盘档案更新（复活实体带原 PetId 重新绑定）、 HEALTH_BOOST
+   * 宠物恢复卸载前记录的安全血量、已在世的宠物撤销其待处理的灯笼收容请求。
+   */
+  public static void onEntityJoinWorldEvent(Entity entity) {
+    // 宠物罗盘：档案更新（区块加载/维度切换/宠物床复活回到世界——复活实体带着原 PetId，重新绑定 Entity UUID）
+    if (entity instanceof LivingEntity living
+        && !living.level().isClientSide()
+        && TameableUtils.isTamed(living)) {
+      PetCompassTracker.updateRecord(living);
     }
+    if (entity instanceof LivingEntity living && TameableUtils.couldBeTamed(living)) {
+      if (TameableUtils.hasEnchant(living, PHEnchantments.HEALTH_BOOST)) {
+        living.setHealth(
+            (float) Math.max(living.getHealth(), TameableUtils.getSafePetHealth(living)));
+      }
+      if (living.isAlive() && TameableUtils.isTamed(living)) {
+        PHWorldData data = PHWorldData.get(living.level());
+        if (data != null) {
+          data.removeMatchingLanternRequests(living.getUUID());
+        }
+      }
+    }
+  }
 
-    public static void onServerTick(Level level) {
-        if (!level.isClientSide()) {
-            CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.computeIfAbsent(level, k -> new CollarTickTracker());
-            tracker.tick();
+  /**
+   * 实体随区块卸载离开世界时：符合 {@code shouldUnloadToLantern}（跟随态）的存活宠物写入 {@code
+   * LanternRequest}（待往生灯笼收容），HEALTH_BOOST 宠物先记下当前血量作为"安全血量"。
+   */
+  public static void onEntityLeaveWorld(Entity entity) {
+    if (entity instanceof LivingEntity living) {
+      if (!living.level().isClientSide()
+          && living.isAlive()
+          && TameableUtils.isTamed(living)
+          && TameableUtils.shouldUnloadToLantern(living)) {
+        UUID ownerUUID = TameableUtils.getOwnerUUIDOf(entity);
+        String saveName = entity.hasCustomName() ? entity.getCustomName().getString() : "";
+        PHWorldData data = PHWorldData.get(living.level());
+        if (data != null) {
+          LanternRequest request =
+              new LanternRequest(
+                  living.getUUID(),
+                  BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString(),
+                  ownerUUID,
+                  living.blockPosition(),
+                  entity.level().dayTime(),
+                  saveName);
+          data.addLanternRequest(request);
         }
-        // 宠物罗盘召回队列：全局队列只在主世界 tick 上处理（每 20 tick 一轮）
-        if (!level.isClientSide() && level.dimension() == Level.OVERWORLD && level.getGameTime() % 20 == 0) {
-            PetCompassTeleport.processRecallQueue(level.getServer(), level.getGameTime());
+      }
+      if (TameableUtils.couldBeTamed(living)
+          && TameableUtils.hasEnchant(living, PHEnchantments.HEALTH_BOOST)) {
+        TameableUtils.setSafePetHealth(living, living.getHealth());
+      }
+    }
+  }
+
+  /**
+   * 宠物死亡（AFTER_DEATH 回调）：绑定了宠物床的宠物把完整实体 NBT 存为 {@code RespawnRequest} （次日清晨由宠物床复活）；非 {@code
+   * TamableAnimal} 的扩展宠物向主人补发死亡消息； 罗盘档案只标记待复活不删档。
+   */
+  public static void onLivingDie(Entity entity) {
+    LivingEntity dead = (LivingEntity) entity;
+    if (TameableUtils.isTamed(dead)) {
+
+      BlockPos bedPos = TameableUtils.getPetBedPos(dead);
+      if (bedPos != null) {
+        CompoundTag data = new CompoundTag();
+        dead.addAdditionalSaveData(data);
+        String saveName = dead.hasCustomName() ? dead.getCustomName().getString() : "";
+        RespawnRequest request =
+            new RespawnRequest(
+                BuiltInRegistries.ENTITY_TYPE.getKey(dead.getType()).toString(),
+                TameableUtils.getPetBedDimension(dead),
+                data,
+                bedPos,
+                dead.level().dayTime(),
+                saveName);
+        PHWorldData worldData = PHWorldData.get(dead.level());
+        if (worldData != null) {
+          worldData.addRespawnRequest(request);
         }
-        if (level.getGameTime() % 10 != 0) return;
-        if (!level.isClientSide() && level instanceof ServerLevel) {
-            for (var player : level.players()) {
-               if (player instanceof ServerPlayer serverPlayer){
-                   onWorldTick(serverPlayer,(ServerLevel) level);
-               }
-            }
-            for (final var triple : teleportingPets) {
-                Entity entity = triple.a;
-                ServerLevel endpointWorld = triple.b;
-                UUID ownerUUID = triple.c;
-                entity.unRide();
-                entity.setLevel(endpointWorld);
-                Entity player = endpointWorld.getPlayerByUUID(ownerUUID);
-                if (player != null) {
-                    Entity teleportedEntity = entity.getType().create(endpointWorld);
-                    if (teleportedEntity != null) {
-                        teleportedEntity.restoreFrom(entity);
-                        Vec3 toPos = player.position();
-                        EntityDimensions dimensions = entity.getDimensions(entity.getPose());
-                        AABB suffocationBox = new AABB(-dimensions.width() / 2.0F, 0, -dimensions.width() / 2.0F, dimensions.width() / 2.0F, dimensions.height(), dimensions.width() / 2.0F);
-                        while (!endpointWorld.noCollision(entity, suffocationBox.move(toPos.x, toPos.y, toPos.z)) && toPos.y < 300) {
-                            toPos = toPos.add(0, 1, 0);
-                        }
-                        teleportedEntity.moveTo(toPos.x, toPos.y, toPos.z, entity.getYRot(), entity.getXRot());
-                        teleportedEntity.setYHeadRot(entity.getYHeadRot());
-                        teleportedEntity.fallDistance = 0.0F;
-                        teleportedEntity.setPortalCooldown();
-                        endpointWorld.addFreshEntity(teleportedEntity);
+      }
+      if (!(dead instanceof net.minecraft.world.entity.TamableAnimal)) {
+        Entity owner = TameableUtils.getOwnerOf(dead);
+        if (!dead.level().isClientSide
+            && dead.level().getGameRules().getBoolean(GameRules.RULE_SHOWDEATHMESSAGES)
+            && owner instanceof ServerPlayer) {
+          owner.sendSystemMessage(dead.getCombatTracker().getDeathMessage());
+        }
+      }
+
+      // 宠物罗盘：死亡档案保留，仅标记待宠物床复活（ 不因 Entity UUID 消失而删档）
+      PetCompassTracker.onPetDeath(dead);
+    }
+  }
+
+  /**
+   * 爆炸开始时（ExplosionMixin 调入）：30 格内有 DEFUSAL 附魔宠物且爆炸中心在其 {@code 10*等级} 格内则取消整场爆炸，播灭火音效与云粒子。返回 {@code
+   * true} 表示已取消。
+   */
+  public static boolean onExplosionStart(net.minecraft.world.level.Explosion explosion) {
+    float dist = 30;
+    Vec3 center = explosion.center();
+    Vec3 bottom = center.add(-dist, -dist, -dist);
+    Vec3 top = center.add(dist, dist, dist);
+    Predicate<Entity> defusal =
+        (animal) ->
+            TameableUtils.isTamed(animal)
+                && TameableUtils.hasEnchant((LivingEntity) animal, PHEnchantments.DEFUSAL);
+    boolean flag = false;
+    for (LivingEntity defuser :
+        explosion.level.getEntitiesOfClass(
+            LivingEntity.class, new AABB(bottom, top), EntitySelector.NO_SPECTATORS.and(defusal))) {
+      float level = 10 * TameableUtils.getEnchantLevel(defuser, PHEnchantments.DEFUSAL);
+      if (defuser.distanceToSqr(center) <= level * level) {
+        flag = true;
+        break;
+      }
+    }
+    if (flag) {
+      float pitch = 1.5F + new Random().nextFloat();
+      explosion.level.playSound(
+          null,
+          center.x,
+          center.y,
+          center.z,
+          SoundEvents.FIRE_EXTINGUISH,
+          SoundSource.BLOCKS,
+          1,
+          pitch);
+      if (explosion.level instanceof ServerLevel serverLevel) {
+        for (int i = 0; i < 5; i++) {
+          serverLevel.sendParticles(
+              ParticleTypes.CLOUD, center.x, center.y + 1.0F, center.z, 5, 0, 0F, 0, 0.2F);
+        }
+      }
+    }
+    return flag;
+  }
+
+  /** 破坏方块后清空该宠物床的复活请求并重置附近宠物的床绑定（当前与 {@code PetHomeMod} 内联逻辑重复，属兼容保留入口）。 */
+  public static void onBlockBreak(Level level, Player player, BlockPos pos) {
+    if (level.getBlockEntity(pos) instanceof PetBedBlockEntity petBedBlockEntity) {
+      petBedBlockEntity.removeAllRequestsFor(player);
+      petBedBlockEntity.resetBedsForNearbyPets();
+    }
+  }
+
+  /**
+   * 苹果即将消失时（ItemEntityMixin 调入，配置 {@code rotten_apple} 开启）：按 10%×数量 概率把 1 个苹果换成烂苹果并把消失计时重置 10
+   * tick；返回 {@code true} 表示已处理。
+   */
+  public static boolean onItemDespawnEvent(ItemEntity itemEntity) {
+    if (itemEntity.getItem().getItem() == Items.APPLE && PetHomeConfig.rottenApple) {
+      if (new Random().nextFloat() < 0.1F * itemEntity.getItem().getCount()) {
+        itemEntity.getItem().shrink(1);
+        // extraLife(10) 的等效实现
+        itemEntity.age = 6000 - 10;
+        ItemEntity rotten =
+            new ItemEntity(
+                itemEntity.level(),
+                itemEntity.getX(),
+                itemEntity.getY(),
+                itemEntity.getZ(),
+                new ItemStack(PHItemRegistry.ROTTEN_APPLE));
+        itemEntity.level().addFreshEntity(rotten);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** 带实体的捕网掉落物每 tick：发光、无敌，掉出世界下限时贴底悬停并关闭重力（防连宠物一起丢失）；ItemEntityMixin 调入。 */
+  public static void onNetItemEntityTick(ItemEntity itemEntity) {
+    if (itemEntity.getItem().getItem() instanceof com.github.yzqdev.pethome.server.item.NetItem
+        && com.github.yzqdev.pethome.server.item.NetItem.containsEntity(itemEntity.getItem())) {
+      if (!itemEntity.isCurrentlyGlowing()) {
+        itemEntity.setGlowingTag(true);
+      }
+      if (!itemEntity.isInvulnerable()) {
+        itemEntity.setInvulnerable(true);
+      }
+      Vec3 position = itemEntity.position();
+      int minY = itemEntity.level().getMinBuildHeight();
+      if (position.y < minY) {
+        itemEntity.setNoGravity(true);
+        itemEntity.setDeltaMovement(Vec3.ZERO);
+        itemEntity.setPos(position.x, minY, position.z);
+      }
+    }
+  }
+
+  /** 交易注册回调的函数式接口：屏蔽 Fabric {@code TradeOfferHelper} 与 NeoForge 事件在签名上的差异。 */
+  @FunctionalInterface
+  public interface TradeRegistrar {
+    void register(
+        VillagerProfession profession,
+        int level,
+        Consumer<List<VillagerTrades.ItemListing>> factories);
+  }
+
+  /**
+   * 注册 Animal Tamer（驯兽师）1~5 级全部交易（骨头/蛋/鳕鱼/热带鱼桶/胡萝卜/苹果/烂苹果/项圈标签/ 随机附魔书/高等级附魔项圈标签等），通过 {@code
+   * TradeRegistrar} 适配 Fabric {@code TradeOfferHelper.registerVillagerOffers}，由 {@code
+   * PetHomeMod.onInitialize} 调用。
+   */
+  public static void registerVillagerTrades(TradeRegistrar registrar) {
+
+    List<VillagerTrades.ItemListing> level1 = new ArrayList<>();
+    List<VillagerTrades.ItemListing> level2 = new ArrayList<>();
+    List<VillagerTrades.ItemListing> level3 = new ArrayList<>();
+    List<VillagerTrades.ItemListing> level4 = new ArrayList<>();
+    List<VillagerTrades.ItemListing> level5 = new ArrayList<>();
+    level1.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.BONE, 3, 6, 6, 1));
+    level1.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.EGG, 3, 6, 6, 1));
+    level1.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.COD, 2, 6, 1));
+    level1.add(new com.github.yzqdev.pethome.server.misc.trades.SellingRandomEnchantedBook(1));
+    level2.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(
+            Items.TROPICAL_FISH_BUCKET, 2, 1, 6, 7));
+    level2.add(
+        new com.github.yzqdev.pethome.server.misc.trades.BuyingItemTrade(
+            Items.CARROT, 5, 1, 12, 7));
+    level2.add(
+        new com.github.yzqdev.pethome.server.misc.trades.BuyingItemTrade(
+            Items.STICK, 20, 1, 12, 6));
+    level2.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(
+            Items.APPLE, 4, 12, 3, 7));
+    level2.add(new com.github.yzqdev.pethome.server.misc.trades.SellingRandomEnchantedBook(5));
+    level3.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(
+            PHItemRegistry.ROTTEN_APPLE, 4, 1, 1, 10));
+    level3.add(new com.github.yzqdev.pethome.server.misc.trades.SellingRandomEnchantedBook(10));
+    level3.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(
+            Items.TADPOLE_BUCKET, 6, 1, 4, 13));
+    level3.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(
+            PHItemRegistry.COLLAR_TAG, 4, 1, 6, 6));
+    level3.add(
+        new com.github.yzqdev.pethome.server.misc.trades.EnchantItemTrade(
+            PHItemRegistry.COLLAR_TAG, 20, 2, 8, 3, 10));
+    level4.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(
+            Items.AXOLOTL_BUCKET, 11, 1, 2, 15));
+    level4.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(
+            Items.TURTLE_EGG, 26, 1, 2, 15));
+    level4.add(new com.github.yzqdev.pethome.server.misc.trades.SellingRandomEnchantedBook(15));
+    level4.add(
+        new com.github.yzqdev.pethome.server.misc.trades.EnchantItemTrade(
+            PHItemRegistry.COLLAR_TAG, 40, 3, 18, 3, 15));
+    level5.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(
+            Items.GOLDEN_CARROT, 6, 1, 6, 10));
+    level5.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(
+            Items.GOLDEN_APPLE, 10, 1, 6, 10));
+    level5.add(
+        new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(
+            PHItemRegistry.COLLAR_TAG, 6, 1, 6, 10));
+    level5.add(
+        new com.github.yzqdev.pethome.server.misc.trades.EnchantItemTrade(
+            PHItemRegistry.COLLAR_TAG, 50, 4, 38, 3, 20));
+    level5.add(new com.github.yzqdev.pethome.server.misc.trades.SellingRandomEnchantedBook(15));
+    VillagerProfession animalTamer = PHVillagerRegistry.ANIMAL_TAMER;
+    registrar.register(animalTamer, 1, list -> list.addAll(level1));
+    registrar.register(animalTamer, 2, list -> list.addAll(level2));
+    registrar.register(animalTamer, 3, list -> list.addAll(level3));
+    registrar.register(animalTamer, 4, list -> list.addAll(level4));
+    registrar.register(animalTamer, 5, list -> list.addAll(level5));
+  }
+
+  private static final String[] KEY_TYPES = {"desc", "description", "info"};
+
+  private static MutableComponent getDescription(String baseKey, int level) {
+    for (String keyType : KEY_TYPES) {
+      String key = baseKey + keyType;
+      if (I18n.exists(key)) {
+        return Component.translatable(key).withStyle(ChatFormatting.DARK_GRAY);
+      }
+      key = key + "." + level;
+      if (I18n.exists(key)) {
+        return Component.translatable(key).withStyle(ChatFormatting.DARK_GRAY);
+      }
+    }
+    return null;
+  }
+
+  private static MutableComponent getDescription(
+      Holder<Enchantment> enchantment, ResourceLocation id, int level) {
+    MutableComponent description =
+        getDescription("enchantment." + id.getNamespace() + "." + id.getPath() + ".", level);
+    if (description == null
+        && enchantment.value().description().getContents()
+            instanceof TranslatableContents translatable) {
+      description = getDescription(translatable.getKey() + ".", level);
+    }
+    return description;
+  }
+
+  /**
+   * 给 pet_home 附魔书的 tooltip 追加本模组附魔的描述行（查 {@code enchantment.<id>.desc[i]} 等键， 按最大等级取 {@code .等级}
+   * 变体）；装了 enchdesc 模组时跳过避免重复。仅客户端 tooltip 回调调用。
+   */
+  public static void onItemTooltip(ItemStack stack, List<Component> tooltip) {
+    if (!FabricLoader.getInstance().isModLoaded("enchdesc")
+        && !stack.isEmpty()
+        && stack.getItem() instanceof EnchantedBookItem) {
+      var enchantments = stack.get(DataComponents.STORED_ENCHANTMENTS);
+      if (enchantments != null && !enchantments.isEmpty()) {
+        for (Holder<Enchantment> enchantmentHolder : enchantments.keySet()) {
+          enchantmentHolder
+              .unwrapKey()
+              .ifPresent(
+                  enchantmentResourceKey -> {
+                    if (enchantmentResourceKey
+                        .location()
+                        .getNamespace()
+                        .contains(PetHomeMod.MODID)) {
+                      final MutableComponent description =
+                          getDescription(
+                              enchantmentHolder,
+                              enchantmentHolder.unwrapKey().orElseThrow().location(),
+                              enchantmentHolder.value().getMaxLevel());
+                      if (description != null) {
+                        tooltip.add(description);
+                      }
                     }
-                    entity.remove(Entity.RemovalReason.DISCARDED);
-                }
-            }
-            teleportingPets.clear();
+                  });
         }
+      }
     }
-
-    public static void onEntityTravelToDimension(Player player, Level toLevel) {
-        if (player.level() instanceof ServerLevel serverLevel) {
-            teleportNearbyPets(player, player.position(), player.position(), player.level(), toLevel);
-        }
-    }
-
-    public static void onEntityTeleport(Player player, Vec3 toPos) {
-        teleportNearbyPets(player, player.position(), toPos, player.level(), player.level());
-    }
-
-    private static void teleportNearbyPets(Player owner, Vec3 fromPos, Vec3 toPos, Level fromLevel, Level toLevel) {
-        double dist = 20;
-        boolean removeAndReadd = fromLevel.dimension() != toLevel.dimension();
-        Predicate<Entity> enchantedPet = (animal) -> animal instanceof net.minecraft.world.entity.Mob && TameableUtils.isPetOf(owner, animal) && TameableUtils.isValidTeleporter(owner, (net.minecraft.world.entity.Mob) animal);
-        for (net.minecraft.world.entity.Mob entity : fromLevel.getEntitiesOfClass(net.minecraft.world.entity.Mob.class, new AABB(fromPos.x - dist, fromPos.y - dist, fromPos.z - dist, fromPos.x + dist, fromPos.y + dist, fromPos.z + dist), EntitySelector.NO_SPECTATORS.and(enchantedPet))) {
-            if (removeAndReadd) {
-                teleportingPets.add(new Triple(entity, (ServerLevel) toLevel, owner.getUUID()));
-            } else {
-                EntityDimensions dimensions = entity.getDimensions(entity.getPose());
-                AABB suffocationBox = new AABB(-dimensions.width() / 2.0F, 0, -dimensions.width() / 2.0F, dimensions.width() / 2.0F, dimensions.height(), dimensions.width() / 2.0F);
-                while (!toLevel.noCollision(entity, suffocationBox.move(toPos.x, toPos.y, toPos.z)) && toPos.y < 300) {
-                    toPos = toPos.add(0, 1, 0);
-                }
-                entity.fallDistance = 0.0F;
-                ChunkPos chunkpos = new ChunkPos(BlockPos.containing(toPos.x, toPos.y, toPos.z));
-                ((ServerLevel) entity.level()).getChunkSource().addRegionTicket(TicketType.POST_TELEPORT, chunkpos, 0, entity.getId());
-                entity.level().getChunk(chunkpos.x, chunkpos.z);
-                entity.teleportTo(toPos.x, toPos.y, toPos.z);
-                entity.setPortalCooldown();
-            }
-        }
-    }
-
-    /**
-     * ProjectileImpactEvent 的替代，由 ProjectileImpactMixin 调用。
-     *
-     * @return true 取消本次命中（弹射物按原逻辑继续飞行）
-     */
-    public static boolean onProjectileImpactEvent(net.minecraft.world.entity.projectile.Projectile projectile, HitResult rayTraceResult) {
-        if (rayTraceResult instanceof EntityHitResult) {
-            Entity hit = ((EntityHitResult) rayTraceResult).getEntity();
-            if (projectile.getOwner() instanceof Player player) {
-                if (TameableUtils.isPetOf(player, hit)) {
-                    return true;
-                }
-            }
-            if (TameableUtils.isTamed(hit) && hit instanceof LivingEntity livingHit) {
-                if (projectile instanceof AbstractArrow arrow) {
-                    //fixes soft crash with vanilla
-                    if (arrow.getPierceLevel() > 0) {
-                        arrow.setPierceLevel((byte) 0);
-                        arrow.remove(Entity.RemovalReason.DISCARDED);
-                        return true;
-                    }
-                }
-                if (TameableUtils.hasEnchant(livingHit, ModEnchantments.DEFLECTION)) {
-                    float xRot = projectile.getXRot();
-                    float yRot = projectile.yRotO;
-                    Vec3 vec3 = projectile.position().subtract(hit.position()).normalize().scale(hit.getBbWidth() + 0.5F);
-                    Vec3 vec32 = hit.position().add(vec3);
-                    hit.level().addParticle(com.github.yzqdev.pethome.server.misc.PHParticleRegistry.DEFLECTION_SHIELD, vec32.x, vec32.y, vec32.z, xRot, yRot, 0.0F);
-                    projectile.setDeltaMovement(projectile.getDeltaMovement().scale(-0.2D));
-                    projectile.setYRot(yRot + 180);
-                    projectile.setXRot(xRot + 180);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    public static void onEntityMount(Entity entityBeingMounted, boolean isDismounting) {
-        // handled by EntityRemoveVehicleMixin; kept for reference
-    }
-
-    public static void onEntityJoinWorldEvent(Entity entity) {
-        // 宠物罗盘：档案更新（区块加载/维度切换/宠物床复活回到世界——复活实体带着原 PetId，重新绑定 Entity UUID）
-        if (entity instanceof LivingEntity living && !living.level().isClientSide() && TameableUtils.isTamed(living)) {
-            PetCompassTracker.updateRecord(living);
-        }
-        if (entity instanceof LivingEntity living && TameableUtils.couldBeTamed(living)) {
-            if (TameableUtils.hasEnchant(living, ModEnchantments.HEALTH_BOOST)) {
-                living.setHealth((float) Math.max(living.getHealth(), TameableUtils.getSafePetHealth(living)));
-            }
-            if (living.isAlive() && TameableUtils.isTamed(living)) {
-                PHWorldData data = PHWorldData.get(living.level());
-                if (data != null) {
-                    data.removeMatchingLanternRequests(living.getUUID());
-                }
-            }
-        }
-    }
-
-    public static void onEntityLeaveWorld(Entity entity) {
-        if (entity instanceof LivingEntity living) {
-            if (!living.level().isClientSide() && living.isAlive() && TameableUtils.isTamed(living) && TameableUtils.shouldUnloadToLantern(living)) {
-                UUID ownerUUID = TameableUtils.getOwnerUUIDOf(entity);
-                String saveName = entity.hasCustomName() ? entity.getCustomName().getString() : "";
-                PHWorldData data = PHWorldData.get(living.level());
-                if (data != null) {
-                    LanternRequest request = new LanternRequest(living.getUUID(), BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString(), ownerUUID, living.blockPosition(), entity.level().dayTime(), saveName);
-                    data.addLanternRequest(request);
-                }
-            }
-            if (TameableUtils.couldBeTamed(living) && TameableUtils.hasEnchant(living, ModEnchantments.HEALTH_BOOST)) {
-                TameableUtils.setSafePetHealth(living, living.getHealth());
-            }
-
-        }
-    }
-
-    public static void onLivingDie(Entity entity) {
-        LivingEntity dead = (LivingEntity) entity;
-        if (TameableUtils.isTamed(dead)) {
-
-            BlockPos bedPos = TameableUtils.getPetBedPos(dead);
-            if (bedPos != null) {
-                CompoundTag data = new CompoundTag();
-                dead.addAdditionalSaveData(data);
-                String saveName = dead.hasCustomName() ? dead.getCustomName().getString() : "";
-                RespawnRequest request = new RespawnRequest(BuiltInRegistries.ENTITY_TYPE.getKey(dead.getType()).toString(), TameableUtils.getPetBedDimension(dead), data, bedPos, dead.level().dayTime(), saveName);
-                PHWorldData worldData = PHWorldData.get(dead.level());
-                if (worldData != null) {
-                    worldData.addRespawnRequest(request);
-                }
-            }
-            if (!(dead instanceof net.minecraft.world.entity.TamableAnimal)) {
-                Entity owner = TameableUtils.getOwnerOf(dead);
-                if (!dead.level().isClientSide && dead.level().getGameRules().getBoolean(GameRules.RULE_SHOWDEATHMESSAGES) && owner instanceof ServerPlayer) {
-                    owner.sendSystemMessage(dead.getCombatTracker().getDeathMessage());
-                }
-            }
-
-            // 宠物罗盘：死亡档案保留，仅标记待宠物床复活（ 不因 Entity UUID 消失而删档）
-            PetCompassTracker.onPetDeath(dead);
-
-        }
-    }
-
-
-    public static boolean onExplosionStart(net.minecraft.world.level.Explosion explosion) {
-        float dist = 30;
-        Vec3 center = explosion.center();
-        Vec3 bottom = center.add(-dist, -dist, -dist);
-        Vec3 top = center.add(dist, dist, dist);
-        Predicate<Entity> defusal = (animal) -> TameableUtils.isTamed(animal) && TameableUtils.hasEnchant((LivingEntity) animal, ModEnchantments.DEFUSAL);
-        boolean flag = false;
-        for (LivingEntity defuser : explosion.level.getEntitiesOfClass(LivingEntity.class, new AABB(bottom, top), EntitySelector.NO_SPECTATORS.and(defusal))) {
-            float level = 10 * TameableUtils.getEnchantLevel(defuser, ModEnchantments.DEFUSAL);
-            if (defuser.distanceToSqr(center) <= level * level) {
-                flag = true;
-                break;
-            }
-        }
-        if (flag) {
-            float pitch = 1.5F + new Random().nextFloat();
-            explosion.level.playSound(null, center.x, center.y, center.z, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 1, pitch);
-            if (explosion.level instanceof ServerLevel serverLevel) {
-                for (int i = 0; i < 5; i++) {
-                    serverLevel.sendParticles(ParticleTypes.CLOUD, center.x, center.y + 1.0F, center.z, 5, 0, 0F, 0, 0.2F);
-                }
-            }
-        }
-        return flag;
-    }
-
-    public static void onBlockBreak(Level level, Player player, BlockPos pos) {
-        if (level.getBlockEntity(pos) instanceof PetBedBlockEntity petBedBlockEntity) {
-            petBedBlockEntity.removeAllRequestsFor(player);
-            petBedBlockEntity.resetBedsForNearbyPets();
-        }
-    }
-
-
-    public static boolean onItemDespawnEvent(ItemEntity itemEntity) {
-        if (itemEntity.getItem().getItem() == Items.APPLE && PetHomeConfig.rottenApple) {
-            if (new Random().nextFloat() < 0.1F * itemEntity.getItem().getCount()) {
-                itemEntity.getItem().shrink(1);
-                // extraLife(10) 的等效实现
-                itemEntity.age = 6000 - 10;
-                ItemEntity rotten = new ItemEntity(itemEntity.level(), itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(), new ItemStack(PHItemRegistry.ROTTEN_APPLE));
-                itemEntity.level().addFreshEntity(rotten);
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    /**
-     * 带实体的捕网落地后发光、
-     * 无敌且不会掉出世界
-     */
-    public static void onNetItemEntityTick(ItemEntity itemEntity) {
-        if (itemEntity.getItem().getItem() instanceof com.github.yzqdev.pethome.server.item.NetItem
-                && com.github.yzqdev.pethome.server.item.NetItem.containsEntity(itemEntity.getItem())) {
-            if (!itemEntity.isCurrentlyGlowing()) {
-                itemEntity.setGlowingTag(true);
-            }
-            if (!itemEntity.isInvulnerable()) {
-                itemEntity.setInvulnerable(true);
-            }
-            Vec3 position = itemEntity.position();
-            int minY = itemEntity.level().getMinBuildHeight();
-            if (position.y < minY) {
-                itemEntity.setNoGravity(true);
-                itemEntity.setDeltaMovement(Vec3.ZERO);
-                itemEntity.setPos(position.x, minY, position.z);
-            }
-        }
-    }
-
-    @FunctionalInterface
-    public interface TradeRegistrar {
-        void register(VillagerProfession profession, int level, Consumer<List<VillagerTrades.ItemListing>> factories);
-    }
-
-    public static void registerVillagerTrades(TradeRegistrar registrar) {
-
-        List<VillagerTrades.ItemListing> level1 = new ArrayList<>();
-        List<VillagerTrades.ItemListing> level2 = new ArrayList<>();
-        List<VillagerTrades.ItemListing> level3 = new ArrayList<>();
-        List<VillagerTrades.ItemListing> level4 = new ArrayList<>();
-        List<VillagerTrades.ItemListing> level5 = new ArrayList<>();
-        level1.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.BONE, 3, 6, 6, 1));
-        level1.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.EGG, 3, 6, 6, 1));
-        level1.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.COD, 2, 6, 1));
-        level1.add(new com.github.yzqdev.pethome.server.misc.trades.SellingRandomEnchantedBook(1));
-        level2.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.TROPICAL_FISH_BUCKET, 2, 1, 6, 7));
-        level2.add(new com.github.yzqdev.pethome.server.misc.trades.BuyingItemTrade(Items.CARROT, 5, 1, 12, 7));
-        level2.add(new com.github.yzqdev.pethome.server.misc.trades.BuyingItemTrade(Items.STICK, 20, 1, 12, 6));
-        level2.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.APPLE, 4, 12, 3, 7));
-        level2.add(new com.github.yzqdev.pethome.server.misc.trades.SellingRandomEnchantedBook(5));
-        level3.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(PHItemRegistry.ROTTEN_APPLE, 4, 1, 1, 10));
-        level3.add(new com.github.yzqdev.pethome.server.misc.trades.SellingRandomEnchantedBook(10));
-        level3.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.TADPOLE_BUCKET, 6, 1, 4, 13));
-        level3.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(PHItemRegistry.COLLAR_TAG, 4, 1, 6, 6));
-        level3.add(new com.github.yzqdev.pethome.server.misc.trades.EnchantItemTrade(PHItemRegistry.COLLAR_TAG, 20, 2, 8, 3, 10));
-        level4.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.AXOLOTL_BUCKET, 11, 1, 2, 15));
-        level4.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.TURTLE_EGG, 26, 1, 2, 15));
-        level4.add(new com.github.yzqdev.pethome.server.misc.trades.SellingRandomEnchantedBook(15));
-        level4.add(new com.github.yzqdev.pethome.server.misc.trades.EnchantItemTrade(PHItemRegistry.COLLAR_TAG, 40, 3, 18, 3, 15));
-        level5.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.GOLDEN_CARROT, 6, 1, 6, 10));
-        level5.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(Items.GOLDEN_APPLE, 10, 1, 6, 10));
-        level5.add(new com.github.yzqdev.pethome.server.misc.trades.SellingItemTrade(PHItemRegistry.COLLAR_TAG, 6, 1, 6, 10));
-        level5.add(new com.github.yzqdev.pethome.server.misc.trades.EnchantItemTrade(PHItemRegistry.COLLAR_TAG, 50, 4, 38, 3, 20));
-        level5.add(new com.github.yzqdev.pethome.server.misc.trades.SellingRandomEnchantedBook(15));
-        VillagerProfession animalTamer = PHVillagerRegistry.ANIMAL_TAMER;
-        registrar.register(animalTamer, 1, list -> list.addAll(level1));
-        registrar.register(animalTamer, 2, list -> list.addAll(level2));
-        registrar.register(animalTamer, 3, list -> list.addAll(level3));
-        registrar.register(animalTamer, 4, list -> list.addAll(level4));
-        registrar.register(animalTamer, 5, list -> list.addAll(level5));
-    }
-
-    private static final String[] KEY_TYPES = {"desc", "description", "info"};
-
-    private static MutableComponent getDescription(String baseKey, int level) {
-        for (String keyType : KEY_TYPES) {
-            String key = baseKey + keyType;
-            if (I18n.exists(key)) {
-                return Component.translatable(key).withStyle(ChatFormatting.DARK_GRAY);
-            }
-            key = key + "." + level;
-            if (I18n.exists(key)) {
-                return Component.translatable(key).withStyle(ChatFormatting.DARK_GRAY);
-            }
-        }
-        return null;
-    }
-
-    private static MutableComponent getDescription(Holder<Enchantment> enchantment, ResourceLocation id, int level) {
-        MutableComponent description = getDescription("enchantment." + id.getNamespace() + "." + id.getPath() + ".", level);
-        if (description == null && enchantment.value().description().getContents() instanceof TranslatableContents translatable) {
-            description = getDescription(translatable.getKey() + ".", level);
-        }
-        return description;
-    }
-
-    /**
-     * 显示附魔描述
-     */
-    public static void onItemTooltip(ItemStack stack, List<Component> tooltip) {
-        if (!FabricLoader.getInstance().isModLoaded("enchdesc") && !stack.isEmpty() && stack.getItem() instanceof EnchantedBookItem) {
-            var enchantments = stack.get(DataComponents.STORED_ENCHANTMENTS);
-            if (enchantments != null && !enchantments.isEmpty()) {
-                for (Holder<Enchantment> enchantmentHolder : enchantments.keySet()) {
-                    enchantmentHolder.unwrapKey().ifPresent(enchantmentResourceKey -> {
-                        if (enchantmentResourceKey.location().getNamespace().contains(PetHomeMod.MODID)) {
-                            final MutableComponent description = getDescription(enchantmentHolder, enchantmentHolder.unwrapKey().orElseThrow().location(), enchantmentHolder.value().getMaxLevel());
-                            if (description != null) {
-                                tooltip.add(description);
-                            }
-                        }
-                    });
-                }
-            }
-
-        }
-    }
+  }
 }

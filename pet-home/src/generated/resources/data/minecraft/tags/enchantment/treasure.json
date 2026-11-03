@@ -27,6 +27,10 @@
     {
       "id": "pet_home:paralysis",
       "required": false
+    },
+    {
+      "id": "pet_home:muffled",
+      "required": false
     }
   ]
 }

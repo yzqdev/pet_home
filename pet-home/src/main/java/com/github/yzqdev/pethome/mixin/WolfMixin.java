@@ -1,10 +1,8 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.server.NbtKeys;
-
-
-import com.github.yzqdev.pethome.util.IComandableMob;
 import com.github.yzqdev.pethome.PetHomeConfig;
+import com.github.yzqdev.pethome.server.NbtKeys;
+import com.github.yzqdev.pethome.util.IComandableMob;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -25,82 +23,94 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * Mixin 注入：把狼接入三态指令系统——实现 {@link IComandableMob}，注入点包括 {@code defineSynchedData} （注册指令同步字段）、{@code
+ * addAdditionalSaveData} / {@code readAdditionalSaveData}（指令持久化）、 {@code mobInteract} 的 {@code
+ * setOrderedToSit} 调用点（可取消，把原版“右键切换坐下”替换为“右键循环切换 三态指令”）以及 {@code
+ * getTailAngle}（可取消，尾巴角度按血量计算，替代原版按愤怒值）。
+ */
 @Mixin(Wolf.class)
 public abstract class WolfMixin extends TamableAnimal implements IComandableMob {
-    private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(Wolf.class, EntityDataSerializers.INT);
+  /** 当前三态指令（0=游走 / 1=停留 / 2=跟随），同步字段，客户端渲染状态栏用。 */
+  private static final EntityDataAccessor<Integer> COMMAND =
+      SynchedEntityData.defineId(Wolf.class, EntityDataSerializers.INT);
 
-    protected WolfMixin(EntityType<? extends TamableAnimal> type, Level level) {
-        super(type, level);
-    }
+  protected WolfMixin(EntityType<? extends TamableAnimal> type, Level level) {
+    super(type, level);
+  }
 
-    @Inject(
-            at = {@At("TAIL")},
-            remap = true,
-            method = {"defineSynchedData(Lnet/minecraft/network/syncher/SynchedEntityData$Builder;)V"}
-    )
-    private void di_registerData(SynchedEntityData.Builder builder, CallbackInfo ci) {
-        builder.define(COMMAND, 0);
-    }
+  @Inject(
+      at = {@At("TAIL")},
+      remap = true,
+      method = {"defineSynchedData(Lnet/minecraft/network/syncher/SynchedEntityData$Builder;)V"})
+  private void di_registerData(SynchedEntityData.Builder builder, CallbackInfo ci) {
+    builder.define(COMMAND, 0);
+  }
 
-    @Inject(
-            at = {@At("TAIL")},
-            remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/Wolf;addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
-    )
-    private void di_writeAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
-    }
+  @Inject(
+      at = {@At("TAIL")},
+      remap = true,
+      method = {
+        "Lnet/minecraft/world/entity/animal/Wolf;addAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"
+      })
+  private void di_writeAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
+    compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
+  }
 
-    @Inject(
-            at = {@At("TAIL")},
-            remap = true,
-            method = {"Lnet/minecraft/world/entity/animal/Wolf;readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"}
-    )
-    private void di_readAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        this.setCommand(compoundNBT.getInt(NbtKeys.DI_COMMAND));
-    }
+  @Inject(
+      at = {@At("TAIL")},
+      remap = true,
+      method = {
+        "Lnet/minecraft/world/entity/animal/Wolf;readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V"
+      })
+  private void di_readAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
+    this.setCommand(compoundNBT.getInt(NbtKeys.DI_COMMAND));
+  }
 
-    @Inject(
-            method = {"mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"},
-            remap = true,
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/entity/animal/Wolf;setOrderedToSit(Z)V"
-            ),
-            cancellable = true
-    )
-    private void di_onInteract(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
-        if(PetHomeConfig.trinaryCommandSystem){
-            this.jumping = false;
-            this.navigation.stop();
-            this.setTarget((LivingEntity)null);
-            player.swing(hand, true);
-            cir.setReturnValue(this.playerSetCommand(player, this));
-        }
+  @Inject(
+      method = {
+        "mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"
+      },
+      remap = true,
+      at =
+          @At(
+              value = "INVOKE",
+              target = "Lnet/minecraft/world/entity/animal/Wolf;setOrderedToSit(Z)V"),
+      cancellable = true)
+  private void di_onInteract(
+      Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
+    if (PetHomeConfig.trinaryCommandSystem) {
+      this.jumping = false;
+      this.navigation.stop();
+      this.setTarget((LivingEntity) null);
+      player.swing(hand, true);
+      cir.setReturnValue(this.playerSetCommand(player, this));
     }
+  }
 
-    public int getCommand(){
-        return this.entityData.get(COMMAND);
-    }
+  public int getCommand() {
+    return this.entityData.get(COMMAND);
+  }
 
-    public void setCommand(int i){
-        this.entityData.set(COMMAND, i);
-    }
+  public void setCommand(int i) {
+    this.entityData.set(COMMAND, i);
+  }
 
-    @Inject(
-            at = {@At("HEAD")},
-            remap = true,
-            method = {"getTailAngle()F"},
-            cancellable = true)
-    private void di_getTailAngle(CallbackInfoReturnable<Float> cir) {
-        if(!((NeutralMob)this).isAngry() && this.isTame()){
-            float f = (this.getMaxHealth() - this.getHealth()) / this.getMaxHealth() * 20F;
-            cir.setReturnValue((0.55F - Math.max(f * 0.02F, 0F)) * (float)Math.PI);
-        }
+  @Inject(
+      at = {@At("HEAD")},
+      remap = true,
+      method = {"getTailAngle()F"},
+      cancellable = true)
+  private void di_getTailAngle(CallbackInfoReturnable<Float> cir) {
+    if (!((NeutralMob) this).isAngry() && this.isTame()) {
+      float f = (this.getMaxHealth() - this.getHealth()) / this.getMaxHealth() * 20F;
+      cir.setReturnValue((0.55F - Math.max(f * 0.02F, 0F)) * (float) Math.PI);
     }
+  }
 
-    @Override
-    public void sendCommandMessage(Player owner, int command, Component name) {
-        owner.displayClientMessage(Component.translatable("message.pet_home.command_" + command, name), true);
-    }
+  @Override
+  public void sendCommandMessage(Player owner, int command, Component name) {
+    owner.displayClientMessage(
+        Component.translatable("message.pet_home.command_" + command, name), true);
+  }
 }

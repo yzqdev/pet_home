@@ -15,54 +15,59 @@ import net.minecraft.world.level.Level;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
+/**
+ * 捕网物品 tooltip 的客户端渲染：从 NBT 重建实体并用 {@code InventoryScreen.renderEntityInInventory}
+ * 在提示框内画一个自动旋转的实体预览（剪刀裁剪，高 75px）。仅客户端。
+ */
 public class ClientMobTooltip implements ClientTooltipComponent {
-    private final Component name;
-    private final CompoundTag entityTag;
-    private final String id;
+  private final Component name;
+  private final CompoundTag entityTag;
+  private final String id;
 
-    public ClientMobTooltip(ItemMobTooltip itemMobTooltip) {
+  public ClientMobTooltip(ItemMobTooltip itemMobTooltip) {
 
-        var tag = itemMobTooltip.compoundTag();
-        String id = tag.getString("id");
-        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(id));
-        this.id = id;
-        this.name = type.getDescription();
-        this.entityTag = tag;
+    var tag = itemMobTooltip.compoundTag();
+    String id = tag.getString("id");
+    EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(id));
+    this.id = id;
+    this.name = type.getDescription();
+    this.entityTag = tag;
+  }
+
+  @Override
+  public int getHeight() {
+
+    return 75;
+  }
+
+  @Override
+  public int getWidth(Font font) {
+    return Math.max(font.width(this.name), 50);
+  }
+
+  @Override
+  public void renderImage(Font font, int pX, int pY, GuiGraphics guiGraphics) {
+    int width = this.getWidth(font);
+    int posX = pX + width / 2;
+    int posY = pY + 64;
+    double rot = ((System.currentTimeMillis() / 25.0) % 360);
+    Quaternionf pose = (new Quaternionf()).rotateZ((float) Math.PI);
+    Quaternionf rotation = (new Quaternionf()).rotateY((float) Math.toRadians(rot));
+    pose.mul(rotation);
+    guiGraphics.enableScissor(pX, posY - 60, pX + width, posY);
+    Level world = Minecraft.getInstance().level;
+    if (world == null) {
+      return;
     }
-
-    @Override
-    public int getHeight() {
-
-        return 75;
+    String id = this.entityTag.getString("id");
+    EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(id));
+    LivingEntity livingEntity = (LivingEntity) type.create(world);
+    if (livingEntity != null) {
+      livingEntity.setOnGround(true);
+      livingEntity.load(this.entityTag);
+      InventoryScreen.renderEntityInInventory(
+          guiGraphics, posX, posY, (int) (25 * 1), new Vector3f(), pose, null, livingEntity);
+      guiGraphics.disableScissor();
     }
-
-    @Override
-    public int getWidth(Font font) {
-        return Math.max(font.width(this.name), 50);
-    }
-
-    @Override
-    public void renderImage(Font font, int pX, int pY, GuiGraphics guiGraphics) {
-        int width = this.getWidth(font);
-        int posX = pX + width / 2;
-        int posY = pY + 64;
-        double rot = ((System.currentTimeMillis() / 25.0) % 360);
-        Quaternionf pose = (new Quaternionf()).rotateZ((float) Math.PI);
-        Quaternionf rotation = (new Quaternionf()).rotateY((float) Math.toRadians(rot));
-        pose.mul(rotation);
-        guiGraphics.enableScissor(pX, posY - 60, pX + width, posY);
-        Level world = Minecraft.getInstance().level;
-        if (world == null) {
-            return;
-        }
-        String id = this.entityTag.getString("id");
-        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(id));
-        LivingEntity livingEntity = (LivingEntity) type.create(world);
-        if (livingEntity != null) {
-            livingEntity.setOnGround(true);
-            livingEntity.load(this.entityTag);
-            InventoryScreen.renderEntityInInventory(guiGraphics, posX, posY, (int) (25 * 1), new Vector3f(), pose, null, livingEntity);
-            guiGraphics.disableScissor();
-        }
-    }
+  }
 }

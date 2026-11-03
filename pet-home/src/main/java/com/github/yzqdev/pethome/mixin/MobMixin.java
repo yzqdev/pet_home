@@ -1,7 +1,6 @@
 package com.github.yzqdev.pethome.mixin;
 
-
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -15,33 +14,33 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Mixin 注入：{@code Mob#pickUpItem} 的 HEAD（可取消）。带连锁背包（LINKED_INVENTORY）附魔的宠物拾取地面物品时
+ * 跳过原版“叼在嘴里”逻辑，直接把物品送进主人背包；主人背包满则把物品挪到主人身边地上（不消失）。
+ */
 @Mixin(Mob.class)
 public abstract class MobMixin extends LivingEntity {
 
-    protected MobMixin(EntityType<? extends LivingEntity> type, Level level) {
-        super(type, level);
-    }
+  protected MobMixin(EntityType<? extends LivingEntity> type, Level level) {
+    super(type, level);
+  }
 
-    @Inject(
-            method = {"pickUpItem(Lnet/minecraft/world/entity/item/ItemEntity;)V"},
-
-            at = @At(value = "HEAD"),
-            cancellable = true
-    )
-    private void di_pickUpItem(ItemEntity item, CallbackInfo ci) {
-        if (TameableUtils.isTamed(this) && TameableUtils.hasEnchant(this, ModEnchantments.LINKED_INVENTORY)) {
-            Entity owner = TameableUtils.getOwnerOf(this);
-            if (owner instanceof Player player) {
-                ci.cancel();
-                if (player.addItem(item.getItem())) {
-                    item.discard();
-                } else {
-                    item.copyPosition(player);
-                }
-            }
-
+  @Inject(
+      method = {"pickUpItem(Lnet/minecraft/world/entity/item/ItemEntity;)V"},
+      at = @At(value = "HEAD"),
+      cancellable = true)
+  private void di_pickUpItem(ItemEntity item, CallbackInfo ci) {
+    if (TameableUtils.isTamed(this)
+        && TameableUtils.hasEnchant(this, PHEnchantments.LINKED_INVENTORY)) {
+      Entity owner = TameableUtils.getOwnerOf(this);
+      if (owner instanceof Player player) {
+        ci.cancel();
+        if (player.addItem(item.getItem())) {
+          item.discard();
+        } else {
+          item.copyPosition(player);
         }
+      }
     }
-
-
+  }
 }

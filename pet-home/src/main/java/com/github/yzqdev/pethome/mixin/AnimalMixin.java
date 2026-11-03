@@ -1,10 +1,9 @@
 package com.github.yzqdev.pethome.mixin;
 
-
 import com.github.yzqdev.pethome.PetHomeConfig;
-import com.github.yzqdev.pethome.util.IComandableMob;
 import com.github.yzqdev.pethome.server.entity.IFrog;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
+import com.github.yzqdev.pethome.util.IComandableMob;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.AgeableMob;
@@ -19,30 +18,47 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * Mixin 注入：{@code Animal#mobInteract} 内对 {@code AgeableMob#mobInteract} 的调用点（INVOKE，可取消）。
+ * 在进入原版育幼/繁殖交互前插入两类自定义右键：
+ *
+ * <ul>
+ *   <li>青蛙：转发 {@link IFrog#onFrogInteract}，处理青蛙的驯服物品交互；
+ *   <li>可驯服狐狸（{@code PetHomeConfig.tameableFox}）：主人空手右键循环切换三态指令。
+ * </ul>
+ */
 @Mixin(Animal.class)
 public abstract class AnimalMixin extends AgeableMob {
 
+  protected AnimalMixin(EntityType<? extends AgeableMob> type, Level lvl) {
+    super(type, lvl);
+  }
 
-    protected AnimalMixin(EntityType<? extends AgeableMob> type, Level lvl) {
-        super(type, lvl);
+  @Inject(
+      method = {
+        "mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"
+      },
+      remap = true,
+      at =
+          @At(
+              value = "INVOKE",
+              target =
+                  "Lnet/minecraft/world/entity/AgeableMob;mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"),
+      cancellable = true)
+  private void di_onInteract(
+      Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
+    if ((Mob) this instanceof IFrog && ((IFrog) this).onFrogInteract(player, hand)) {
+      cir.setReturnValue(InteractionResult.SUCCESS);
     }
-
-    @Inject(
-            method = {"mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"},
-            remap = true,
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/entity/AgeableMob;mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"
-            ),
-            cancellable = true
-    )
-    private void di_onInteract(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
-        if((Mob)this instanceof IFrog && ((IFrog)this).onFrogInteract(player, hand)){
-            cir.setReturnValue(InteractionResult.SUCCESS);
-        }
-        if((Mob)this instanceof Fox && this instanceof IComandableMob && this instanceof ModifedToBeTameable tame && tame.isTame() && tame.getTameOwnerUUID().equals(player.getUUID()) && PetHomeConfig.tameableFox && PetHomeConfig.trinaryCommandSystem){
-            player.swing(hand, true);
-            cir.setReturnValue(((IComandableMob)this).playerSetCommand(player, (Animal)(Mob)this));
-        }
+    if ((Mob) this instanceof Fox
+        && this instanceof IComandableMob
+        && this instanceof ModifiedToBeTameable tame
+        && tame.isTame()
+        && tame.getTameOwnerUUID().equals(player.getUUID())
+        && PetHomeConfig.tameableFox
+        && PetHomeConfig.trinaryCommandSystem) {
+      player.swing(hand, true);
+      cir.setReturnValue(((IComandableMob) this).playerSetCommand(player, (Animal) (Mob) this));
     }
+  }
 }

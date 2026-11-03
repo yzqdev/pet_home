@@ -1,0 +1,35 @@
+plugins {
+    id("idea")
+    id 'me.modmuss50.mod-publish-plugin' version '2.2.1' apply false
+    
+}
+
+
+allprojects {
+    repositories {
+        maven {
+            name = "TerraformersMC"
+            url = "https://maven.terraformersmc.com/releases/"
+        }
+        maven {
+            name = "Ladysnake"
+            url = "https://maven.ladysnake.org/releases/"
+        }
+        maven {
+            name = 'ParchmentMC'
+            url = 'https://maven.parchmentmc.org'
+        }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "Modrinth"
+                    url = "https://api.modrinth.com/maven"
+                }
+            }
+            filter {
+                includeGroup "maven.modrinth"
+            }
+        }
+    }
+
+}

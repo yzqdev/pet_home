@@ -15,35 +15,44 @@ import net.minecraft.util.Mth;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 
+/** 召回球渲染器：按实体 yaw/pitch 定向，动画走 {@link RecallBallModel#animateBall} 的开合进度。 */
 public class RecallBallRender extends EntityRenderer<RecallBallEntity> {
 
-    private RecallBallModel recallBallModel = new RecallBallModel();
-    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "textures/recall_ball.png");
+  private RecallBallModel recallBallModel = new RecallBallModel();
+  private static final ResourceLocation TEXTURE =
+      ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "textures/recall_ball.png");
 
-    public RecallBallRender(EntityRendererProvider.Context renderManagerIn) {
-        super(renderManagerIn);
-    }
+  public RecallBallRender(EntityRendererProvider.Context renderManagerIn) {
+    super(renderManagerIn);
+  }
 
-    @Override
-    public void render(RecallBallEntity entity, float yaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int light) {
-        super.render(entity, yaw, partialTicks, poseStack, buffer, light);
-        poseStack.pushPose();
-        poseStack.mulPose(new Quaternionf().rotateX(180F * ((float) Math.PI / 180F)));
-        poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entity.yRotO, entity.getYRot())));
-        poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(partialTicks, entity.xRotO, entity.getXRot())));
+  @Override
+  public void render(
+      RecallBallEntity entity,
+      float yaw,
+      float partialTicks,
+      PoseStack poseStack,
+      MultiBufferSource buffer,
+      int light) {
+    super.render(entity, yaw, partialTicks, poseStack, buffer, light);
+    poseStack.pushPose();
+    poseStack.mulPose(new Quaternionf().rotateX(180F * ((float) Math.PI / 180F)));
+    poseStack.mulPose(
+        Axis.YP.rotationDegrees(Mth.lerp(partialTicks, entity.yRotO, entity.getYRot())));
+    poseStack.mulPose(
+        Axis.ZP.rotationDegrees(Mth.lerp(partialTicks, entity.xRotO, entity.getXRot())));
 
+    VertexConsumer vertexconsumer =
+        buffer.getBuffer(this.recallBallModel.renderType(this.getTextureLocation(entity)));
+    poseStack.translate(0, -1.65F, 0);
+    this.recallBallModel.animateBall(entity, partialTicks);
+    this.recallBallModel.renderToBuffer(
+        poseStack, vertexconsumer, light, OverlayTexture.NO_OVERLAY, 1);
+    poseStack.popPose();
+  }
 
-        VertexConsumer vertexconsumer = buffer.getBuffer(this.recallBallModel.renderType(this.getTextureLocation(entity)));
-        poseStack.translate(0, -1.65F, 0);
-        this.recallBallModel.animateBall(entity, partialTicks);
-        this.recallBallModel.renderToBuffer(poseStack, vertexconsumer, light, OverlayTexture.NO_OVERLAY, 1);
-        poseStack.popPose();
-
-    }
-
-    @Override
-    public @NotNull ResourceLocation getTextureLocation(RecallBallEntity entity) {
-        return TEXTURE;
-    }
-
+  @Override
+  public @NotNull ResourceLocation getTextureLocation(RecallBallEntity entity) {
+    return TEXTURE;
+  }
 }
