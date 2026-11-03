@@ -13,6 +13,10 @@ import net.minecraft.world.level.block.Block;
 
 import java.util.Random;
 
+/**
+ * 多选一售卖交易：从物品集合中随机挑一种卖给玩家。注意：随机索引用了
+ * {@code size() - 1}，集合最后一个物品永远不会被选中（历史行为，见最终报告）。
+ */
 public class SellingOneOfTheseItemsTrade implements VillagerTrades.ItemListing {
     private final ImmutableSet<ItemLike> sellingItems;
     private final int emeraldCount;

@@ -105,6 +105,12 @@ public interface LangDefinition {
     String ITEM_FEATHER_ON_A_STICK = item("feather_on_a_stick");
     String ITEM_DEED_OF_OWNERSHIP = item("deed_of_ownership");
     String ITEM_DEED_OF_OWNERSHIP_DESC = item("deed_of_ownership.desc");
+    String ITEM_DEED_OF_OWNERSHIP_DESC2 = item("deed_of_ownership.desc2");
+    String ITEM_DEED_OF_OWNERSHIP_BOUND = item("deed_of_ownership.bound");
+    String ITEM_WHISTLE = item("whistle");
+    String TOOLTIP_WHISTLE_DESC = tooltips("whistle.desc");
+    String ITEM_FREEDOM_BELL = item("freedom_bell");
+    String TOOLTIP_FREEDOM_BELL_DESC = tooltips("freedom_bell.desc");
     String ITEM_PET_COMPASS = item("pet_compass");
     String TOOLTIP_PET_COMPASS_DESC = tooltips("pet_compass.desc");
     String ENTITY_CHAIN_LIGHTNING = entity("chain_lightning");
@@ -125,6 +131,9 @@ public interface LangDefinition {
     String MESSAGE_REMOVE_RESPAWN = message("remove_respawn");
     String MESSAGE_RESPAWN = message("respawn");
     String MESSAGE_SET_OWNER = message("set_owner");
+    String MESSAGE_DEED_BOUND = message("deed_bound");
+    String MESSAGE_RELEASE_CONFIRM = message("release_confirm");
+    String MESSAGE_RELEASED = message("released");
     String MESSAGE_WAYWARD_LANTERN_RETURN = message("wayward_lantern_return");
     String MESSAGE_PET_COMPASS_TITLE = message("pet_compass.title");
     String MESSAGE_PET_COMPASS_EMPTY = message("pet_compass.empty");
@@ -137,16 +146,25 @@ public interface LangDefinition {
     String MESSAGE_PET_COMPASS_STATUS_DEAD = message("pet_compass.status_dead");
     String MESSAGE_PET_COMPASS_BUTTON_TP = message("pet_compass.button_tp");
     String MESSAGE_PET_COMPASS_BUTTON_RECALL = message("pet_compass.button_recall");
+    String MESSAGE_PET_COMPASS_BUTTON_FORGET = message("pet_compass.button_forget");
+    String MESSAGE_PET_COMPASS_BUTTON_CONFIRM_FORGET = message("pet_compass.button_confirm_forget");
+    String MESSAGE_PET_COMPASS_STATUS_STALE = message("pet_compass.status_stale");
+    String MESSAGE_PET_COMPASS_FORGOTTEN = message("pet_compass.forgotten");
     String MESSAGE_PET_COMPASS_DISABLED = message("pet_compass.disabled");
+    String MESSAGE_PET_COMPASS_DIM_LABEL = message("pet_compass.dim_label");
+    String MESSAGE_PET_COMPASS_HEALTH = message("pet_compass.health");
+    String MESSAGE_PET_COMPASS_CMD_0 = message("pet_compass.cmd_0");
+    String MESSAGE_PET_COMPASS_CMD_1 = message("pet_compass.cmd_1");
+    String MESSAGE_PET_COMPASS_CMD_2 = message("pet_compass.cmd_2");
     String MESSAGE_PET_COMPASS_NOT_LOADED_CONFIRM = message("pet_compass.not_loaded_confirm");
     String MESSAGE_PET_COMPASS_DEAD_WAIT_RESPAWN = message("pet_compass.dead_wait_respawn");
     String MESSAGE_PET_COMPASS_RECALL_STARTED = message("pet_compass.recall_started");
     String MESSAGE_PET_COMPASS_RECALL_FAILED = message("pet_compass.recall_failed");
+    String MESSAGE_PET_COMPASS_BALL_RECALLED = message("pet_compass.ball_recalled");
+    String MESSAGE_PET_COMPASS_STATUS_IN_BALL = message("pet_compass.status_in_ball");
+    String MESSAGE_PET_COMPASS_STATUS_IN_NET = message("pet_compass.status_in_net");
     String MESSAGE_PET_COMPASS_TELEPORTED = message("pet_compass.teleported");
     String MESSAGE_PET_COMPASS_RECALLED = message("pet_compass.recalled");
-    String MESSAGE_PET_COMPASS_DIM_OVERWORLD = message("pet_compass.dim_overworld");
-    String MESSAGE_PET_COMPASS_DIM_THE_NETHER = message("pet_compass.dim_the_nether");
-    String MESSAGE_PET_COMPASS_DIM_THE_END = message("pet_compass.dim_the_end");
     String NOTIF_FRIENDLY_FIRE_PROTECTED = "notif.friendlyfire.protected";
     String JADE_COLLAR_TAG = "config.jade.plugin_pet_home.collar_tag";
     String EFFECT_DRUNK = effect("drunk");
@@ -157,7 +175,7 @@ public interface LangDefinition {
     String SOUND_SUBTITLE_GIANT_BUBBLE_INFLATE = soundSubtitle("giant_bubble_inflate");
     String SOUND_SUBTITLE_GIANT_BUBBLE_POP = soundSubtitle("giant_bubble_pop");
     String SOUND_SUBTITLE_MAGNET_LOOP = soundSubtitle("magnet_loop");
-    String SOUND_SUBTITLE_PET_BED_USES = soundSubtitle("pet_bed_uses");
+    String SOUND_SUBTITLE_PET_BED_USES = soundSubtitle("pet_bed_use");
     String SOUND_SUBTITLE_PSYCHIC_WALL = soundSubtitle("psychic_wall");
     String SOUND_SUBTITLE_PSYCHIC_WALL_DEFLECT = soundSubtitle("psychic_wall_deflect");
     String TOOLTIPS_SUBSTITUTE_COLLAR_DESC = tooltips("substitute_collar.desc");
@@ -244,8 +262,7 @@ public interface LangDefinition {
     String ENCHANT_TOTAL_RECALL_DESC = enchantment("total_recall.desc");
     String ENCHANT_TOUGH = enchantment("tough");
     String ENCHANT_TOUGH_DESC = enchantment("tough.desc");
-    String ENCHANT_UNDEAD_CURSE = enchantment("undead_curse");
-    String ENCHANT_UNDEAD_CURSE_DESC = enchantment("undead_curse.desc");
+    // undead_curse 已删除（2026-10-24 定案：僵尸宠物机制未同步到其余三侧，四侧对齐后移除）
     String ENCHANT_VAMPIRE = enchantment("vampire");
     String ENCHANT_VAMPIRE_DESC = enchantment("vampire.desc");
     String ENCHANT_VIOLENT = enchantment("violent");
@@ -262,6 +279,8 @@ public interface LangDefinition {
     String GUI_SUBTITLE = conf("gui.subtitle");
     String GUI_ON = conf("gui.on");
     String GUI_OFF = conf("gui.off");
+    String GUI_LIST_ADD = conf("gui.list.add");
+    String GUI_LIST_ELEMENT_INDEX = conf("gui.list.element_index");
     String GUI_RESET = conf("gui.reset");
     String GUI_CAT_FRIENDLY_NAME = conf("gui.category.friendly.name");
     String GUI_CAT_FRIENDLY_DESC = conf("gui.category.friendly.desc");
@@ -327,6 +346,9 @@ public interface LangDefinition {
     String GUI_G_PET_INFO_OVERLAY_REQUIRE_SHIFT_DESC = conf("gui.general.pet_info_overlay_require_shift.desc");
     String GUI_G_PET_INFO_OVERLAY_IGNORE_JADE = conf("gui.general.pet_info_overlay_ignore_jade");
     String GUI_G_PET_INFO_OVERLAY_IGNORE_JADE_DESC = conf("gui.general.pet_info_overlay_ignore_jade.desc");
+    // 调试日志总开关（对应 1.21/26.1/26.3 的 debugMode）
+    String GUI_G_DEBUG_MODE = conf("gui.general.debug_mode");
+    String GUI_G_DEBUG_MODE_DESC = conf("gui.general.debug_mode.desc");
     String GUI_T_AXOLOTL = conf("gui.tameable.axolotl");
     String GUI_T_AXOLOTL_DESC = conf("gui.tameable.axolotl.desc");
     String GUI_T_FOX = conf("gui.tameable.fox");
@@ -350,4 +372,5 @@ public interface LangDefinition {
     String GUI_L_SONIC_BOOM_DESC = conf("gui.loot.sonic_boom.desc");
     String GUI_L_PARALYSIS_DESC = conf("gui.loot.paralysis.desc");
     String GUI_L_TOUGH_DESC = conf("gui.loot.tough.desc");
+    String killer_bunny = "entity.minecraft.killer_bunny";
 }

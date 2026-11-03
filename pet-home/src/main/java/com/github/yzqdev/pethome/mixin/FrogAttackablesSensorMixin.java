@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.sensing.FrogAttackablesSensor;
 import net.minecraft.world.entity.animal.axolotl.Axolotl;
@@ -19,7 +19,7 @@ public class FrogAttackablesSensorMixin {
             cancellable = true
     )
     private void di_isHuntTarget(LivingEntity frog, LivingEntity livingEntity, CallbackInfoReturnable<Boolean> cir) {
-        if(frog instanceof ModifedToBeTameable tamed && tamed.getTameOwner() != null && !tamed.isStayingStill()){
+        if(frog instanceof ModifiedToBeTameable tamed && tamed.getTameOwner() != null && !tamed.isStayingStill()){
             if(tamed.isValidAttackTarget(livingEntity)){
                 cir.setReturnValue(true);
             }else if(tamed instanceof Axolotl){

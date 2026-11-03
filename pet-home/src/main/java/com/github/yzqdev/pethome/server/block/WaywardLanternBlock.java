@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.server.block;
 
-import com.github.yzqdev.pethome.server.misc.DIParticleRegistry;
+import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -51,13 +51,13 @@ public class WaywardLanternBlock extends BaseEntityBlock {
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, Boolean.valueOf(false)));
     }
 
-    public VoxelShape getShape(BlockState p_49038_, BlockGetter p_49039_, BlockPos p_49040_, CollisionContext p_49041_) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         if (random.nextInt(4) == 0) {
-            level.addParticle(DIParticleRegistry.LANTERN_BUGS.get(), (double) pos.getX() + 0.5D + random.nextGaussian() * 1, (double) pos.getY() + 0.5D + random.nextGaussian() * 1, (double) pos.getZ() + 0.5D + random.nextGaussian() * 1, (double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D, (double) pos.getZ() + 0.5D);
+            level.addParticle(PHParticleRegistry.LANTERN_BUGS.get(), (double) pos.getX() + 0.5D + random.nextGaussian() * 1, (double) pos.getY() + 0.5D + random.nextGaussian() * 1, (double) pos.getZ() + 0.5D + random.nextGaussian() * 1, (double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D, (double) pos.getZ() + 0.5D);
         }
         if (random.nextInt(2) == 0) {
             level.addParticle(ParticleTypes.FLAME, (double) pos.getX() + 0.5D, (double) pos.getY() + 0.65D, (double) pos.getZ() + 0.5D, 0, 0, 0);
@@ -96,8 +96,8 @@ public class WaywardLanternBlock extends BaseEntityBlock {
     }
 
     @javax.annotation.Nullable
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level p_152180_, BlockState p_152181_, BlockEntityType<T> p_152182_) {
-        return p_152180_.isClientSide() ? null : createTickerHelper(p_152182_, DITileEntityRegistry.WAYWARD_LANTERN.get(), WaywardLanternBlockEntity::tick);
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
+        return level.isClientSide() ? null : createTickerHelper(blockEntityType, PHTileEntityRegistry.WAYWARD_LANTERN.get(), WaywardLanternBlockEntity::tick);
     }
 
 

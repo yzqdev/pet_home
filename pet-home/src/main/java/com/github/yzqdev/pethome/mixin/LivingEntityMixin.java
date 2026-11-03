@@ -1,8 +1,8 @@
 package com.github.yzqdev.pethome.mixin;
 
 
-import com.github.yzqdev.pethome.ModConstants;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.PHConstants;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.entity.ICitadelDataEntity;
 import com.github.yzqdev.pethome.server.entity.PetSyncDataEntity;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
@@ -25,6 +25,10 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 注入 {@code LivingEntity}：为所有生物实现 {@link ICitadelDataEntity}（项圈/附魔等大块状态的
+ * CompoundTag 同步槽）与 {@link PetSyncDataEntity}（治疗光环/冰冻独立 int 槽 + 实体级附魔缓存），
+ */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin extends Entity  implements ICitadelDataEntity, PetSyncDataEntity {
     // 项圈/附魔数据用 SynchedEntityData 槽位存储（普通字段方案会导致数据在客户端读不到，见 ID 878d6f9e 的排查）
@@ -50,12 +54,14 @@ public abstract class LivingEntityMixin extends Entity  implements ICitadelDataE
             at = @At(value = "TAIL"),
             cancellable = true
     )
+    /** 两栖（amphibious）附魔：水中阻力从原版 0.8 提到 0.98，使水下移动接近陆地（仅驯服个体）。 */
     private void di_getWaterSlowdown(CallbackInfoReturnable<Float> cir) {
         if(TameableUtils.isTamed(this) && isLandAndSea()){
             cir.setReturnValue(0.98F);
         }
     }
     @Inject(at = @At("TAIL"), remap = true, method = "defineSynchedData()V")
+    /** 注册三个同步槽（citadel tag + 两个计时器 int），构造期 define。 */
     private void citadel_registerData(CallbackInfo ci) {
         entityData.define(PET_HOME_SAVED_DATA, new CompoundTag());
         entityData.define(PH_HEALING_AURA_TIME, 0);
@@ -70,14 +76,14 @@ public abstract class LivingEntityMixin extends Entity  implements ICitadelDataE
             CompoundTag toSave = citadelDat.copy();
             toSave.putInt(TameableUtils.HEALING_AURA_TIME_TAG, entityData.get(PH_HEALING_AURA_TIME));
             toSave.putInt(TameableUtils.FROZEN_TIME_TAG, entityData.get(PH_FROZEN_TIME));
-            compoundNBT.put(ModConstants.entitySyncData, toSave);
+            compoundNBT.put(PHConstants.entitySyncData, toSave);
         }
     }
 
     @Inject(at = @At("TAIL"), remap = true, method = "readAdditionalSaveData(Lnet/minecraft/nbt/CompoundTag;)V")
     private void citadel_readAdditional(CompoundTag compoundNBT, CallbackInfo ci) {
-        if (compoundNBT.contains(ModConstants.entitySyncData)) {
-            CompoundTag tag = compoundNBT.getCompound(ModConstants.entitySyncData);
+        if (compoundNBT.contains(PHConstants.entitySyncData)) {
+            CompoundTag tag = compoundNBT.getCompound(PHConstants.entitySyncData);
             if (tag.contains(TameableUtils.HEALING_AURA_TIME_TAG)) {
                 entityData.set(PH_HEALING_AURA_TIME, tag.getInt(TameableUtils.HEALING_AURA_TIME_TAG));
                 tag.remove(TameableUtils.HEALING_AURA_TIME_TAG);
@@ -90,7 +96,7 @@ public abstract class LivingEntityMixin extends Entity  implements ICitadelDataE
         }
     }
     private boolean isLandAndSea(){
-        return TameableUtils.hasEnchant(((LivingEntity) (Entity)this), DIEnchantmentRegistry.AMPHIBIOUS);
+        return TameableUtils.hasEnchant(((LivingEntity) (Entity)this), PHEnchantmentRegistry.AMPHIBIOUS);
     }
     @Override
     public CompoundTag getCitadelEntityData() {

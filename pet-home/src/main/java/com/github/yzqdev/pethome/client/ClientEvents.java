@@ -8,7 +8,7 @@ import com.github.yzqdev.pethome.server.entity.*;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 import com.github.yzqdev.pethome.server.item.DeedOfOwnershipItem;
 import com.github.yzqdev.pethome.server.item.FeatherOnAStickItem;
-import com.github.yzqdev.pethome.server.misc.DIParticleRegistry;
+import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -48,12 +48,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 
-/**
- * 客户端事件与渲染逻辑集合。
- * 由原 ClientProxy 重构而来：去掉了 DistExecutor 代理与继承结构，改为静态事件类。
- * 游戏事件总线（game bus）上的监听由类注解自动注册；
- * mod 事件总线（mod bus）上的监听由 {@link #registerModListeners(IEventBus)} 在客户端入口显式注册。
- */
+
 @OnlyIn(Dist.CLIENT)
 @Mod.EventBusSubscriber(modid = PetHomeMod.MODID, value = Dist.CLIENT)
 public class ClientEvents {
@@ -79,6 +74,7 @@ public class ClientEvents {
                         (minecraft, parent) -> new com.github.yzqdev.pethome.client.gui.PetHomeConfigScreen(parent)));
     }
 
+    /** 名牌纵向偏移：安装了 Neat（自带血量条名牌）时抬高 0.5 格避免遮挡。 */
     public static float getNametagOffset() {
         return ModList.get().isLoaded("neat") ? 0.5F : 0;
     }
@@ -138,14 +134,19 @@ public class ClientEvents {
         ItemProperties.register(PHItemRegistry.DEED_OF_OWNERSHIP.get(), ResourceLocation.withDefaultNamespace("bound"), (stack, lvl, holder, i) -> {
             return DeedOfOwnershipItem.isBound(stack) ? 1 : 0;
         });
+        // 捕网发射器蓄力谓词（模型 overrides 按 pet_home:charge 切换能量核心贴图）
+        ItemProperties.register(PHItemRegistry.NET_LAUNCHER_ITEM.get(), new ResourceLocation(PetHomeMod.MODID, "charge"), (stack, lvl, holder, i) -> {
+            if (holder == null || !holder.isUsingItem() || holder.getUseItem() != stack) {
+                return 0.0F;
+            }
+            return Math.min((stack.getUseDuration() - holder.getUseItemRemainingTicks()) / 20.0F, 1.0F);
+        });
     }
 
-    /** mod 事件总线：客户端初始化（渲染器与模型属性注册） */
     public static void clientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(ClientEvents::clientInit);
     }
 
-    /** mod 事件总线：为可驯服生物挂载额外渲染层 */
     public static void onAddLayers(EntityRenderersEvent.AddLayers event) {
         List<EntityType<? extends LivingEntity>> entityTypes = ImmutableList.copyOf(
                 ForgeRegistries.ENTITY_TYPES.getValues().stream()
@@ -161,18 +162,18 @@ public class ClientEvents {
     /** mod 事件总线：粒子工厂注册 */
     public static void setupParticles(RegisterParticleProvidersEvent event) {
         PetHomeMod.LOGGER.debug("Registered particle factories");
-        event.registerSpecial(DIParticleRegistry.DEFLECTION_SHIELD.get(), new ParticleDeflectionShield.Factory());
-        event.registerSpriteSet(DIParticleRegistry.MAGNET.get(), ParticleMagnet.Factory::new);
-        event.registerSpriteSet(DIParticleRegistry.ZZZ.get(), ParticleZZZ.Factory::new);
-        event.registerSpriteSet(DIParticleRegistry.GIANT_POP.get(), ParticleGiantPop.Factory::new);
-        event.registerSpriteSet(DIParticleRegistry.SIMPLE_BUBBLE.get(), ParticleSimpleBubble.Factory::new);
-        event.registerSpriteSet(DIParticleRegistry.VAMPIRE.get(), ParticleVampire.Factory::new);
-        event.registerSpriteSet(DIParticleRegistry.SNIFF.get(), ParticleSniff.Factory::new);
-        event.registerSpriteSet(DIParticleRegistry.PSYCHIC_WALL.get(), ParticlePsychicWall.Factory::new);
-        event.registerSpecial(DIParticleRegistry.INTIMIDATION.get(), new ParticleIntimidation.Factory());
-        event.registerSpriteSet(DIParticleRegistry.BLIGHT.get(), ParticleBlight.Factory::new);
-        event.registerSpriteSet(DIParticleRegistry.LANTERN_BUGS.get(), ParticleLanternBugs.Factory::new);
-        event.registerSpriteSet(DIParticleRegistry.QUESTION_MARK.get(), ParticleQuestionMark.Factory::new);
+        event.registerSpecial(PHParticleRegistry.DEFLECTION_SHIELD.get(), new ParticleDeflectionShield.Factory());
+        event.registerSpriteSet(PHParticleRegistry.MAGNET.get(), ParticleMagnet.Factory::new);
+        event.registerSpriteSet(PHParticleRegistry.ZZZ.get(), ParticleZZZ.Factory::new);
+        event.registerSpriteSet(PHParticleRegistry.GIANT_POP.get(), ParticleGiantPop.Factory::new);
+        event.registerSpriteSet(PHParticleRegistry.SIMPLE_BUBBLE.get(), ParticleSimpleBubble.Factory::new);
+        event.registerSpriteSet(PHParticleRegistry.VAMPIRE.get(), ParticleVampire.Factory::new);
+        event.registerSpriteSet(PHParticleRegistry.SNIFF.get(), ParticleSniff.Factory::new);
+        event.registerSpriteSet(PHParticleRegistry.PSYCHIC_WALL.get(), ParticlePsychicWall.Factory::new);
+        event.registerSpecial(PHParticleRegistry.INTIMIDATION.get(), new ParticleIntimidation.Factory());
+        event.registerSpriteSet(PHParticleRegistry.BLIGHT.get(), ParticleBlight.Factory::new);
+        event.registerSpriteSet(PHParticleRegistry.LANTERN_BUGS.get(), ParticleLanternBugs.Factory::new);
+        event.registerSpriteSet(PHParticleRegistry.QUESTION_MARK.get(), ParticleQuestionMark.Factory::new);
     }
 
     /** 游戏事件总线：客户端命令注册 */
@@ -203,6 +204,7 @@ public class ClientEvents {
         }
     }
 
+    /** 自绘增强名牌：名字追加血量，上方渲染项圈图标与附魔列表（暗影底 + 高亮描边两遍绘制）。 */
     private static void renderNametagEnchantments(Entity entity, Component nameTag, PoseStack pose, MultiBufferSource buffer, int lightIn) {
         LivingEntity living = (LivingEntity) entity;
             List<Component> list = TameableUtils.getEnchantDescriptions(living);

@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.Nonnull;
 import java.util.List;
 
+
 public class NetLauncherItem extends Item {
 
     public NetLauncherItem(Properties properties) {
@@ -39,9 +40,7 @@ public class NetLauncherItem extends Item {
 
 
 
-    /**
-     * Called when the player stops using an Item (stops holding the right mouse button).
-     */
+    /** 松开右键发射：蓄力换算初速（≥0.1 才射）；抓捕模式射空网，释放模式从背包找 filled net 发射（找不到提示），发射消耗 1 点耐久。 */
     @Override
     public void releaseUsing(ItemStack stack, Level worldIn, LivingEntity entityLiving, int timeLeft) {
         if (entityLiving instanceof Player player) {
@@ -132,9 +131,7 @@ public class NetLauncherItem extends Item {
         return 72000;
     }
 
-    /**
-     * Called when the equipped item is right clicked.
-     */
+    /** 右键：潜行时切换抓捕/释放模式（动作栏提示）；否则进入蓄力。 */
     @Override
     @Nonnull
     public InteractionResultHolder<ItemStack> use(Level worldIn, Player player, @Nonnull InteractionHand hand) {
@@ -171,8 +168,9 @@ public class NetLauncherItem extends Item {
         return base.append(" (").append(isCaptureMode(stack) ? CAPTURE : RELEASE).append(")");
     }
 
-    //helpers
+    // 辅助方法
 
+    /** 在副手→主手→整背包顺序里找第一个装了实体的网。 */
     protected ItemStack findNet(Player player) {
         ItemStack stack = player.getMainHandItem();
 
@@ -202,6 +200,7 @@ public class NetLauncherItem extends Item {
     }
 
 
+    /** 模式标志：NBT 里 RELEASE_MODE 键（true=释放/false=抓捕；1.20 存 ItemStack NBT，26.1 为 DataComponent）。 */
     public static boolean isCaptureMode(ItemStack stack){
         var release=stack.getOrCreateTag().getBoolean(PHDataComponents.RELEASE_MODE);
         return !release;

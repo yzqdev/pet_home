@@ -7,7 +7,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.monster.piglin.AbstractPiglin;
 import net.minecraft.world.phys.AABB;
 
-/** 自 1.21 移植：混乱之脑的怪物目标工具 */
+
 public class LivingUtils {
     public static void setAttackTarget(Monster monster, Monster otherMonster) {
         if (monster != null && otherMonster != null && monster != otherMonster) {

@@ -2,7 +2,7 @@ package com.github.yzqdev.pethome.server.misc.trades;
 
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.datagen.LangDefinition;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.enchantment.PetEnchantment;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -20,6 +20,12 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 售卖随机宠物附魔书（驯兽师高级交易）：反射扫描 {@link PHEnchantmentRegistry}，
+ * 取「允许上书 + 配置启用 + {@code getFromAnimalTamer}」的附魔随机一本；绿宝石价随等级上涨、
+ * treasure-only 翻倍、上限 64。候选集为空时 {@code list.get(...)} 会抛
+ * {@code IndexOutOfBoundsException}（仅在全部附魔被禁用/关闭时可能发生）。
+ */
 public class SellingRandomEnchantedBook implements VillagerTrades.ItemListing {
 
 
@@ -27,7 +33,7 @@ public class SellingRandomEnchantedBook implements VillagerTrades.ItemListing {
     public MerchantOffer getOffer(Entity trader, RandomSource pRandom) {
         List<PetEnchantment> list=new ArrayList<>();
         try {
-            for (Field f : DIEnchantmentRegistry.class.getDeclaredFields()) {
+            for (Field f : PHEnchantmentRegistry.class.getDeclaredFields()) {
                 Object obj = null;
                 obj = f.get(null);
                 if (obj instanceof PetEnchantment enchant) {

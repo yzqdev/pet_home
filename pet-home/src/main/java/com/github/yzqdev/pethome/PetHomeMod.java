@@ -4,17 +4,16 @@ package com.github.yzqdev.pethome;
 
 import com.github.yzqdev.pethome.client.ClientEvents;
 import com.github.yzqdev.pethome.network.Networking;
-import com.github.yzqdev.pethome.network.PropertiesMessage;
 import com.github.yzqdev.pethome.server.ServerEvents;
-import com.github.yzqdev.pethome.server.block.DIBlockRegistry;
+import com.github.yzqdev.pethome.server.block.PHBlockRegistry;
 import com.github.yzqdev.pethome.server.handler.EntityInteractHandler;
 import com.github.yzqdev.pethome.server.handler.LivingHurtHandler;
 import com.github.yzqdev.pethome.server.handler.LivingTickHandler;
-import com.github.yzqdev.pethome.server.block.DITileEntityRegistry;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
-import com.github.yzqdev.pethome.server.entity.DIActivityRegistry;
+import com.github.yzqdev.pethome.server.block.PHTileEntityRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.entity.PHActivityRegistry;
 import com.github.yzqdev.pethome.server.entity.PHEntityRegistry;
-import com.github.yzqdev.pethome.server.entity.DIVillagerRegistry;
+import com.github.yzqdev.pethome.server.entity.PHVillagerRegistry;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 
 
@@ -62,19 +61,19 @@ public class PetHomeMod {
         });
        context.registerConfig(ModConfig.Type.COMMON, CONFIG_SPEC, MODID+".toml");
         PHItemRegistry.DEF_REG.register(context.getModEventBus());
-        DIBlockRegistry.DEF_REG.register(context.getModEventBus());
-        DIEnchantmentRegistry.registerEnchantments(context.getModEventBus());
-        DITileEntityRegistry.DEF_REG.register(context.getModEventBus());
+        PHBlockRegistry.DEF_REG.register(context.getModEventBus());
+        PHEnchantmentRegistry.registerEnchantments(context.getModEventBus());
+        PHTileEntityRegistry.DEF_REG.register(context.getModEventBus());
         PHEntityRegistry.DEF_REG.register(context.getModEventBus());
-        DIPOIRegistry.DEF_REG.register(context.getModEventBus());
-        DIParticleRegistry.DEF_REG.register(context.getModEventBus());
-        DIVillagerRegistry.DEF_REG.register(context.getModEventBus());
-        DISoundRegistry.DEF_REG.register(context.getModEventBus());
-        DIActivityRegistry.DEF_REG.register(context.getModEventBus());
-        DIVillagePieceRegistry.DEF_REG.register(context.getModEventBus());
-        DICreativeTabRegistry.DEF_REG.register(context.getModEventBus());
-        DILootRegistry.DEF_REG.register(context.getModEventBus());
-        ModEffects.EFFECTS.register(context.getModEventBus());
+        PHPOIRegistry.DEF_REG.register(context.getModEventBus());
+        PHParticleRegistry.DEF_REG.register(context.getModEventBus());
+        PHVillagerRegistry.DEF_REG.register(context.getModEventBus());
+        PHSoundRegistry.DEF_REG.register(context.getModEventBus());
+        PHActivityRegistry.DEF_REG.register(context.getModEventBus());
+        PHVillagePieceRegistry.DEF_REG.register(context.getModEventBus());
+        PHCreativeTabRegistry.DEF_REG.register(context.getModEventBus());
+        PHLootRegistry.DEF_REG.register(context.getModEventBus());
+        PHEffects.EFFECTS.register(context.getModEventBus());
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new LivingTickHandler());
         MinecraftForge.EVENT_BUS.register(new LivingHurtHandler());
@@ -98,9 +97,7 @@ public class PetHomeMod {
         }
     }
     private void setup(final FMLCommonSetupEvent event) {
-        int packetsRegistered = 0;
-
-        Networking. NETWORK_WRAPPER.registerMessage(packetsRegistered++, PropertiesMessage.class, PropertiesMessage::write, PropertiesMessage::read, PropertiesMessage.Handler::handle);
+        Networking.register();
         event.enqueueWork(ServerEvents::serverInit);
     }
 

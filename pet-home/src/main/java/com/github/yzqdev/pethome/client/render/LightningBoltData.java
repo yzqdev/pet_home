@@ -6,8 +6,9 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 
-/*
-    Lightning bolt effect code used with permission from aidancbrady
+/**
+ * 闪电链视觉效果的数据生成器（算法经原作者 aidancbrady 许可使用）。
+ * 由起点/终点构建分形主干与随机分支的四边形序列，供 LightningRender 绘制。
  */
 public class LightningBoltData {
 
@@ -98,7 +99,7 @@ public class LightningBoltData {
                     float maxDiff = renderInfo.spreadFactor * segmentDiffScale * totalDistance * renderInfo.randomFunction.getRandom(random);
                     Vec3 randVec = findRandomOrthogonalVector(diff, random);
                     perpendicularDist = renderInfo.segmentSpreader.getSegmentAdd(perpendicularDist, randVec, maxDiff, segmentDiffScale, progress);
-                    // new vector is original + current progress through segments + perpendicular change
+                    // 新端点 = 起点 + 沿主方向推进到当前进度 + 垂直偏移
                     segmentEnd = start.add(diff.scale(progress)).add(perpendicularDist);
                 }
                 float boltSize = size * (0.5F + (1 - progress) * 0.5F);
@@ -106,17 +107,17 @@ public class LightningBoltData {
                 quads.add(quadData.getLeft());
 
                 if (segmentEnd == end) {
-                    break; // break if we've reached the defined end point
+                    break; // 已到达终点
                 } else if (!data.isBranch) {
-                    // continue the bolt if this is the primary (non-branch) segment
+                    // 主干段（非分支）继续向终点推进
                     drawQueue.add(new BoltInstructions(segmentEnd, progress, perpendicularDist, quadData.getRight(), false));
                 } else if (random.nextFloat() < renderInfo.branchContinuationFactor) {
-                    // branch continuation
+                    // 分支按概率继续延伸
                     drawQueue.add(new BoltInstructions(segmentEnd, progress, perpendicularDist, quadData.getRight(), true));
                 }
 
                 while (random.nextFloat() < renderInfo.branchInitiationFactor * (1 - progress)) {
-                    // branch initiation (probability decreases as progress increases)
+                    // 生成新分支（概率随推进进度增大而衰减）
                     drawQueue.add(new BoltInstructions(segmentEnd, progress, perpendicularDist, quadData.getRight(), true));
                 }
             }
@@ -192,11 +193,11 @@ public class LightningBoltData {
 
     public interface SpreadFunction {
 
-        /** A steady linear increase in perpendicular noise. */
+        /** 垂直扰动随进度线性增大。 */
         SpreadFunction LINEAR_ASCENT = (progress) -> progress;
-        /** A steady linear increase in perpendicular noise, followed by a steady decrease after the halfway point. */
+        /** 垂直扰动先随进度线性增大，过半程后线性回落。 */
         SpreadFunction LINEAR_ASCENT_DESCENT = (progress) -> (progress - Math.max(0, 2 * progress - 1)) / 0.5F;
-        /** Represents a unit sine wave from 0 to PI, scaled by progress. */
+        /** 0~π 的单位正弦波（半波），幅度随进度变化。 */
         SpreadFunction SINE = (progress) -> (float) Math.sin(Math.PI * progress);
 
         float getMaxSpread(float progress);
@@ -212,16 +213,16 @@ public class LightningBoltData {
 
     public interface SegmentSpreader {
 
-        /** Don't remember where the last segment left off, just randomly move from the straight-line vector. */
+        /** 无记忆模式：不参考上一段的落点，直接相对主轴随机偏移。 */
         SegmentSpreader NO_MEMORY = (perpendicularDist, randVec, maxDiff, scale, progress) -> randVec.scale(maxDiff);
 
-        /** Move from where the previous segment ended by a certain memory factor. Higher memory will restrict perpendicular movement. */
+        /** 记忆模式：在上一段落点基础上继续偏移；memoryFactor 越大垂直位移越小，闪电越连贯。 */
         static SegmentSpreader memory(float memoryFactor) {
             return (perpendicularDist, randVec, maxDiff, spreadScale, progress) -> {
                 float nextDiff = maxDiff * (1 - memoryFactor);
                 Vec3 cur = randVec.scale(nextDiff);
                 if (progress > 0.5F) {
-                    // begin to come back to the center after we pass halfway mark
+                    // 过半程后向主轴回拉，避免末端过度发散
                     cur = cur.add(perpendicularDist.scale(-1 * (1 - spreadScale)));
                 }
                 return perpendicularDist.add(cur);

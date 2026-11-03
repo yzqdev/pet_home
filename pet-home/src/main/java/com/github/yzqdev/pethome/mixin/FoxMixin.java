@@ -6,7 +6,7 @@ import com.github.yzqdev.pethome.server.NbtKeys;
 
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.ai.FollowOwner2Goal;
 import com.github.yzqdev.pethome.server.entity.ai.OwnerHurtTarget2Goal;
 import com.github.yzqdev.pethome.server.entity.ai.Sit2Goal;
@@ -35,13 +35,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Mixin(Fox.class)
-public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IComandableMob {
+public abstract class FoxMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 
     @Shadow @Final private static EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_0;
     @Shadow @Final private static EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_1;
     @Shadow abstract void addTrustedUUID(UUID uuid);
-    @Shadow public abstract void setSitting(boolean p_28611_);
-    @Shadow abstract void setSleeping(boolean p_28627_);
+    @Shadow public abstract void setSitting(boolean sitting);
+    @Shadow abstract void setSleeping(boolean sleeping);
 
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(Fox.class, EntityDataSerializers.INT);
 

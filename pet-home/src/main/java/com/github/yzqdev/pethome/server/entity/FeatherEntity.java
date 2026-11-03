@@ -21,6 +21,11 @@ import net.minecraftforge.network.PlayMessages;
 
 import javax.annotation.Nullable;
 
+/**
+ * 羽毛钓竿（feather_on_a_stick）投射物：复用原版 FishingHook 的 tick 逻辑（FishingHookMixin
+ * 屏蔽其流体减速），落地后锁定 21 格内发射者的可移动宠物并引导其走向落点，宠物贴脸时收回。
+ * 不与任何实体碰撞。OWNER_ID 数据槽供客户端解析发射者。
+ */
 public class FeatherEntity extends FishingHook {
 
     private static final EntityDataAccessor<Integer> OWNER_ID = SynchedEntityData.defineId(FeatherEntity.class, EntityDataSerializers.INT);
@@ -70,6 +75,7 @@ public class FeatherEntity extends FishingHook {
         this.getEntityData().define(OWNER_ID, 0);
     }
 
+    /** 落地后引导最近宠物：贴脸（≤碰撞箱+1 格）时缓慢拉动并停导航，否则寻路走向羽毛落点。 */
     public void tick() {
         super.tick();
         this.setDeltaMovement(this.getDeltaMovement().multiply(0.8D, 0.8D, 0.8D));
@@ -93,6 +99,7 @@ public class FeatherEntity extends FishingHook {
         prevOnGround = onGround();
     }
 
+    /** 21 格内发射者最近的可移动宠物（已驯服/是本人宠物/未坐下/有视线）。 */
     private LivingEntity findClosestPetOf(Player owner) {
         LivingEntity closestValid = null;
         for (Entity entity : this.level().getEntitiesOfClass(LivingEntity.class, this.getBoundingBox().inflate(21.0D))) {
@@ -141,6 +148,7 @@ public class FeatherEntity extends FishingHook {
         }
     }
 
+    /** 宠物是否处于可被羽毛引导的状态（坐下/待着的不算，三态关闭时仅看原版坐姿）。 */
     public boolean isPetAmbulatory(LivingEntity entity){
         if(entity instanceof TamableAnimal && (((TamableAnimal) entity).isOrderedToSit() || ((TamableAnimal) entity).isInSittingPose())){
             return false;

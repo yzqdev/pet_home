@@ -25,7 +25,7 @@ public class ParticleGiantPop extends SimpleAnimatedParticle {
         super.tick();
         this.quadSize = 1.5F + 0.5F * (age / (float)lifetime);
     }
-    public int getLightColor(float p_107249_) {
+    public int getLightColor(float partialTick) {
         BlockPos blockpos = BlockPos.containing(this.x, this.y, this.z);
         return this.level.hasChunkAt(blockpos) ? LevelRenderer.getLightColor(this.level, blockpos) : 0;
     }

@@ -15,6 +15,7 @@
     "AxolotlMixin",
     "CatMixin",
     "EntityMixin",
+    "EntityInvoker",
     "FishingHookMixin",
     "FloatGoalMixin",
     "FollowOwnerGoalMixin",

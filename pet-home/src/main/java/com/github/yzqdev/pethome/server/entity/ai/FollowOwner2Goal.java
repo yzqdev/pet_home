@@ -3,8 +3,8 @@ package com.github.yzqdev.pethome.server.entity.ai;
 
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 
 import net.minecraft.core.BlockPos;
@@ -45,14 +45,14 @@ public class FollowOwner2Goal extends Goal {
     }
 
     public boolean canUse() {
-        LivingEntity livingentity = ((ModifedToBeTameable) this.tamable).getTameOwner();
+        LivingEntity livingentity = ((ModifiedToBeTameable) this.tamable).getTameOwner();
         if(tamable instanceof IComandableMob commandableMob && commandableMob.getCommand() != 2 && PetHomeMod.CONFIG.trinaryCommandSystem.get()) {
             return false;
         }else if (livingentity == null) {
             return false;
         } else if (livingentity.isSpectator()) {
             return false;
-        } else if (((ModifedToBeTameable) this.tamable).isStayingStill()) {
+        } else if (((ModifiedToBeTameable) this.tamable).isStayingStill()) {
             return false;
         } else if (this.tamable.distanceToSqr(livingentity) < (double) (this.startDistance * this.startDistance)) {
             return false;
@@ -67,7 +67,7 @@ public class FollowOwner2Goal extends Goal {
             return false;
         }else if (this.navigation.isDone()) {
             return false;
-        } else if (((ModifedToBeTameable) this.tamable).isStayingStill()) {
+        } else if (((ModifiedToBeTameable) this.tamable).isStayingStill()) {
             return false;
         } else {
             return !(this.tamable.distanceToSqr(this.owner) <= (double) (this.stopDistance * this.stopDistance));
@@ -87,7 +87,7 @@ public class FollowOwner2Goal extends Goal {
     }
 
     public void tick() {
-        if (TameableUtils.hasEnchant(tamable, DIEnchantmentRegistry.AMPHIBIOUS) && tamable.isInWaterOrBubble() && this.tamable.distanceToSqr(this.owner) < 144.0D) {
+        if (TameableUtils.hasEnchant(tamable, PHEnchantmentRegistry.AMPHIBIOUS) && tamable.isInWaterOrBubble() && this.tamable.distanceToSqr(this.owner) < 144.0D) {
             tamable.getNavigation().moveTo(owner, speedModifier);
         }
         this.tamable.getLookControl().setLookAt(this.owner, 10.0F, (float) this.tamable.getMaxHeadXRot());
@@ -119,13 +119,13 @@ public class FollowOwner2Goal extends Goal {
 
     }
 
-    private boolean maybeTeleportTo(int p_25304_, int p_25305_, int p_25306_) {
-        if (Math.abs((double) p_25304_ - this.owner.getX()) < 2.0D && Math.abs((double) p_25306_ - this.owner.getZ()) < 2.0D) {
+    private boolean maybeTeleportTo(int x, int y, int z) {
+        if (Math.abs((double) x - this.owner.getX()) < 2.0D && Math.abs((double) z - this.owner.getZ()) < 2.0D) {
             return false;
-        } else if (!this.canTeleportTo(new BlockPos(p_25304_, p_25305_, p_25306_))) {
+        } else if (!this.canTeleportTo(new BlockPos(x, y, z))) {
             return false;
         } else {
-            this.tamable.moveTo((double) p_25304_ + 0.5D, p_25305_, (double) p_25306_ + 0.5D, this.tamable.getYRot(), this.tamable.getXRot());
+            this.tamable.moveTo((double) x + 0.5D, y, (double) z + 0.5D, this.tamable.getYRot(), this.tamable.getXRot());
             this.navigation.stop();
             return true;
         }
@@ -133,7 +133,7 @@ public class FollowOwner2Goal extends Goal {
 
     private boolean canTeleportTo(BlockPos pos) {
         BlockPathTypes blockpathtypes = WalkNodeEvaluator.getBlockPathTypeStatic(this.level, pos.mutable());
-        if (TameableUtils.hasEnchant(tamable, DIEnchantmentRegistry.AMPHIBIOUS) && level.isWaterAt(pos)) {
+        if (TameableUtils.hasEnchant(tamable, PHEnchantmentRegistry.AMPHIBIOUS) && level.isWaterAt(pos)) {
             return true;
         }
         if (blockpathtypes != BlockPathTypes.WALKABLE) {
@@ -149,7 +149,7 @@ public class FollowOwner2Goal extends Goal {
         }
     }
 
-    private int randomIntInclusive(int p_25301_, int p_25302_) {
-        return this.tamable.getRandom().nextInt(p_25302_ - p_25301_ + 1) + p_25301_;
+    private int randomIntInclusive(int min, int max) {
+        return this.tamable.getRandom().nextInt(max - min + 1) + min;
     }
 }

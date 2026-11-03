@@ -11,6 +11,9 @@ import net.minecraft.world.level.block.Block;
 
 import java.util.Random;
 
+/**
+ * 售卖交易：绿宝石换固定物品（数量/价格/次数由构造参数指定），报价无随机成分。
+ */
 public class SellingItemTrade implements VillagerTrades.ItemListing {
     private final ItemStack sellingItem;
     private final int emeraldCount;

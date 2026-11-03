@@ -10,6 +10,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 import java.util.UUID;
 
 
+/**
+ * 迷途灯笼召回请求：跟随状态的宠物随区块卸载且主人附近有灯笼时，由 ServerEvents#onEntityLeaveWorld
+ * 写入 {@link PHWorldData}；灯笼方块实体轮询此请求强载区块找回宠物。
+ */
 public class LanternRequest {
     private String entityType;
     private long timestamp;
@@ -53,6 +57,7 @@ public class LanternRequest {
         return this.nametag;
     }
 
+    /** 宠物卸载时的最后已知位置（历史命名沿用 chunkPosition，实际是方块坐标而非区块坐标）。 */
     public BlockPos getChunkPosition() {
         return chunkPosition;
     }

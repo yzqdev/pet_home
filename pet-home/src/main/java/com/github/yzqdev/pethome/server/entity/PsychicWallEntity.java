@@ -2,8 +2,8 @@ package com.github.yzqdev.pethome.server.entity;
 
 import com.github.yzqdev.pethome.server.NbtKeys;
 
-import com.github.yzqdev.pethome.server.misc.DIParticleRegistry;
-import com.github.yzqdev.pethome.server.misc.DISoundRegistry;
+import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
+import com.github.yzqdev.pethome.server.misc.PHSoundRegistry;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -26,6 +26,10 @@ import net.minecraftforge.network.PlayMessages;
 import javax.annotation.Nullable;
 import java.util.*;
 
+/**
+ * psychic_wall（念力墙）附魔实体：一面随朝向展开的墙，把靠近的非同队实体/投射物沿墙面推回。
+ * 朝向/宽度/寿命/创建者走 SynchedEntityData 同步；服务端 tick 里若创建者死亡则把寿命压到 20 tick。
+ */
 public class PsychicWallEntity extends Entity {
 
     protected static final EntityDataAccessor<Direction> DIRECTION = SynchedEntityData.defineId(PsychicWallEntity.class, EntityDataSerializers.DIRECTION);
@@ -45,13 +49,19 @@ public class PsychicWallEntity extends Entity {
         this(PHEntityRegistry.PSYCHIC_WALL.get(), world);
     }
 
+    /**
+     * 每 tick：前 10 tick 与寿命最后 10 tick 按生长系数重建碰撞箱（展开/收起动画）；期间每 15 tick 循环播放嗡鸣。
+     * 服务端持续回写创建者实体 ID 并在创建者死亡后压缩寿命；随后对碰撞箱内的非同队实体施加墙面方向的推力，
+     * 反向投射物（非友军发射）直接转向反弹，同一实体 15 tick 内只反弹一次（{@code deflectedEntities} 计时表）。
+     * 寿命归零 discard。
+     */
     public void tick() {
         super.tick();
         if (this.tickCount <= 10 || this.getLifespan() <= 10) {
             this.setBoundingBox(this.makeBoundingBox());
         } else {
             if (soundLoop % 15 == 0) {
-                this.playSound(DISoundRegistry.PSYCHIC_WALL.get(), 1, random.nextFloat() * 0.3F + 0.9F);
+                this.playSound(PHSoundRegistry.PSYCHIC_WALL.get(), 1, random.nextFloat() * 0.3F + 0.9F);
             }
             soundLoop++;
         }
@@ -99,8 +109,8 @@ public class PsychicWallEntity extends Entity {
                             } else {
                                 vec32 = entityhitresult.getLocation();
                             }
-                            level().addParticle(DIParticleRegistry.PSYCHIC_WALL.get(), vec32.x, vec32.y, vec32.z, this.getWallDirection().get3DDataValue(), 0, 0);
-                            this.playSound(DISoundRegistry.PSYCHIC_WALL_DEFLECT.get(), 1, random.nextFloat() * 0.3F + 0.9F);
+                            level().addParticle(PHParticleRegistry.PSYCHIC_WALL.get(), vec32.x, vec32.y, vec32.z, this.getWallDirection().get3DDataValue(), 0, 0);
+                            this.playSound(PHSoundRegistry.PSYCHIC_WALL_DEFLECT.get(), 1, random.nextFloat() * 0.3F + 0.9F);
                         }
                     }
                 }
@@ -206,6 +216,7 @@ public class PsychicWallEntity extends Entity {
     }
 
 
+    /** 解析创建者：服务端按 UUID 查世界，客户端用同步过来的实体 ID（玩家实体 ID 客户端可得）。 */
     public Entity getCreator() {
         if (!level().isClientSide()) {
             UUID id = getCreatorId();
@@ -224,6 +235,7 @@ public class PsychicWallEntity extends Entity {
         return !this.isSameTeam(entity);
     }
 
+    /** 按墙面法线方向把宽度铺到对应轴上；宽度乘以 min(10, 寿命, tickCount)/10 的生长系数，实现出生展开与到期收起。 */
     protected AABB makeBoundingBox() {
         Direction direction2 = this.getWallDirection().getOpposite();
         float scale = Math.min(10, Math.min(this.getLifespan(), this.tickCount)) / 10F;
@@ -260,8 +272,8 @@ public class PsychicWallEntity extends Entity {
         return new AABB(this.getX() + minX, this.getY() + minY, this.getZ() + minZ, this.getX() + maxX, this.getY() + maxY, this.getZ() + maxZ);
     }
 
-    public void setPos(double p_20210_, double p_20211_, double p_20212_) {
-        this.setPosRaw(p_20210_, p_20211_, p_20212_);
+    public void setPos(double x, double y, double z) {
+        this.setPosRaw(x, y, z);
         this.setBoundingBox(this.makeBoundingBox());
     }
 
@@ -277,6 +289,7 @@ public class PsychicWallEntity extends Entity {
         return (Packet<ClientGamePacketListener>) NetworkHooks.getEntitySpawningPacket(this);
     }
 
+    /** 与创建者同主（宠物体系）或同队的实体不受墙影响（canCollideWith 的反条件）。 */
     public boolean isSameTeam(Entity entity) {
         Entity owner = this.getCreator();
         return owner instanceof LivingEntity && (TameableUtils.hasSameOwnerAs((LivingEntity)owner, entity) || owner.isAlliedTo(entity));

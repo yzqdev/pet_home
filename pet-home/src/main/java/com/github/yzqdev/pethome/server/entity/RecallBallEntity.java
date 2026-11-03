@@ -30,6 +30,12 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * total_recall（全面召回）附魔的召回宝珠：宠物受致命一击时其完整 NBT 被封入本实体
+ * （owner/类型/NBT/开合状态全走 SynchedEntityData 槽位，双端可读）。悬浮发光、免疫伤害
+ * （创造玩家除外）；仅主人右键开启，开盖动画走完后按 NBT 重建宠物实体（复用原 UUID，
+ * 血量恢复至 25%、下限 2 点），随后自动消失。未开封时随存档保留（{@code shouldBeSaved}）。
+ */
 public class RecallBallEntity extends Entity {
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(RecallBallEntity.class, EntityDataSerializers.OPTIONAL_UUID);
@@ -71,6 +77,7 @@ public class RecallBallEntity extends Entity {
         return !this.isFinished();
     }
 
+    /** 右键：无主宝珠直接消失；仅主人可开启（置 OPENED，播放末影箱音效），开盖后不再响应。 */
     public InteractionResult interact(Player player, InteractionHand hand) {
         if(!this.isFinished()){
             if(this.getOwnerUUID() == null){
@@ -84,6 +91,7 @@ public class RecallBallEntity extends Entity {
         return InteractionResult.PASS;
     }
 
+    /** 主 tick：自转、开盖进度插值、水上浮起/防坠虚空、传送门粒子；服务端在完全打开后重建宠物实体并标记 FINISHED，收盖后 discard。 */
     public void tick(){
         super.tick();
         this.setYRot(this.getYRot() + 1);

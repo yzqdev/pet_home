@@ -16,6 +16,10 @@ import net.minecraft.world.item.trading.MerchantOffer;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 售卖随机非宠物附魔书：从全注册表中过滤 {@code isTradeable} 且排除本模组 {@link PetEnchantment}，
+ * 兜底保证驯兽师总有可用交易（原版 EnchantBookForEmeralds 的排除版）。
+ */
 public   class EnchantBookForEmeraldsWithoutPet implements VillagerTrades.ItemListing {
         private final int villagerXp;
 

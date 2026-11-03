@@ -11,6 +11,9 @@ import net.minecraft.world.level.ItemLike;
 
 import java.util.Random;
 
+/**
+ * 收购交易：村民按固定数量收购指定物品，付绿宝石（驯兽师收购类交易的基础实现）。
+ */
 public class BuyingItemTrade implements VillagerTrades.ItemListing {
     private final Item tradeItem;
     private final int itemCount;
@@ -28,8 +31,9 @@ public class BuyingItemTrade implements VillagerTrades.ItemListing {
         this.priceMultiplier = 0.05F;
     }
 
+    /** 每次调用生成固定报价（无随机成分）。 */
     public MerchantOffer getOffer(Entity entity, RandomSource rng) {
-        ItemStack lvt_3_1_ = new ItemStack(this.tradeItem, this.itemCount);
-        return new MerchantOffer(lvt_3_1_, new ItemStack(Items.EMERALD, this.emeralds), this.maxUses, this.xpValue, this.priceMultiplier);
+        ItemStack buyingItem = new ItemStack(this.tradeItem, this.itemCount);
+        return new MerchantOffer(buyingItem, new ItemStack(Items.EMERALD, this.emeralds), this.maxUses, this.xpValue, this.priceMultiplier);
     }
 }

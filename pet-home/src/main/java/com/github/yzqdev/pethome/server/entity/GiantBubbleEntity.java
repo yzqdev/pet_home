@@ -2,8 +2,8 @@ package com.github.yzqdev.pethome.server.entity;
 
 import com.github.yzqdev.pethome.server.NbtKeys;
 
-import com.github.yzqdev.pethome.server.misc.DIParticleRegistry;
-import com.github.yzqdev.pethome.server.misc.DISoundRegistry;
+import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
+import com.github.yzqdev.pethome.server.misc.PHSoundRegistry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -22,6 +22,10 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.network.PlayMessages;
 
+/**
+ * bubbling（泡泡）附魔的巨泡：困住目标生物的骑乘载体（目标 startRiding 进泡），缓慢上浮、
+ * 计时破裂（POPS_IN 槽位）、被投射物或坠出世界直接打爆。玩家主动下车被 ServerEvents#onEntityMount 拦截。
+ */
 public class GiantBubbleEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> POPS_IN = SynchedEntityData.defineId(GiantBubbleEntity.class, EntityDataSerializers.INT);
@@ -34,6 +38,7 @@ public class GiantBubbleEntity extends Entity {
         this(PHEntityRegistry.GIANT_BUBBLE.get(), world);
     }
 
+    /** 每 tick 上浮（水中更快）并倒计时，归零 {@link #pop}。 */
     public void tick(){
         super.tick();
         double d = this.isInWater() ? 0.2D : 0.08D;
@@ -42,7 +47,7 @@ public class GiantBubbleEntity extends Entity {
             pop();
         }else{
             this.setpopsIn(this.getPopsIn() - 1);
-            this.level().addParticle(DIParticleRegistry.SIMPLE_BUBBLE.get(), this.getRandomX(1.4F), this.getRandomY(), this.getRandomZ(1.4F), (random.nextFloat() - 0.5F) * 0.3F, -0.1F, (random.nextFloat() - 0.5F) * 0.3F);
+            this.level().addParticle(PHParticleRegistry.SIMPLE_BUBBLE.get(), this.getRandomX(1.4F), this.getRandomY(), this.getRandomZ(1.4F), (random.nextFloat() - 0.5F) * 0.3F, -0.1F, (random.nextFloat() - 0.5F) * 0.3F);
         }
     }
 
@@ -58,10 +63,11 @@ public class GiantBubbleEntity extends Entity {
         return false;
     }
 
+    /** 破裂：音效 + 服务端粒子，弹出乘客并 discard。 */
     private void pop() {
-        this.playSound(DISoundRegistry.GIANT_BUBBLE_POP.get(), 1.0F, 1.5F);
+        this.playSound(PHSoundRegistry.GIANT_BUBBLE_POP.get(), 1.0F, 1.5F);
         if(!level().isClientSide()){
-            ((ServerLevel)this.level()).sendParticles(DIParticleRegistry.GIANT_POP.get(), this.getX(), this.getY() + this.getBbHeight() * 0.5F, this.getZ(), 1, 0, 0, 0, 0);
+            ((ServerLevel)this.level()).sendParticles(PHParticleRegistry.GIANT_POP.get(), this.getX(), this.getY() + this.getBbHeight() * 0.5F, this.getZ(), 1, 0, 0, 0, 0);
         }
         this.ejectPassengers();
         this.discard();

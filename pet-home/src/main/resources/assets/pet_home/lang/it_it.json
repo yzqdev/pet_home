@@ -110,7 +110,8 @@
   "pet_home.sound.subtitle.chain_lightning": "Fulmine",
   "pet_home.sound.subtitle.giant_bubble_inflate": "Bolla gigante si gonfia",
   "pet_home.sound.subtitle.giant_bubble_pop": "Bolla gigante esplode",
-  "pet_home.sound.subtitle.pet_bed_uses": "Letto per animali aggiustato",
+  "pet_home.sound.subtitle.pet_bed_use": "Letto per animali aggiustato",
   "pet_home.sound.subtitle.drum": "Il tamburo dei comandi batte",
   "pet_home.sound.subtitle.psychic_wall": "Muro psichico ronza",
   "pet_home.sound.subtitle.psychic_wall_deflect": "Muro psichico deflette"
+}

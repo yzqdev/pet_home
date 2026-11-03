@@ -4,6 +4,7 @@ import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.datagen.LangDefinition;
 import com.github.yzqdev.pethome.server.PHDataComponents;
 import com.github.yzqdev.pethome.server.entity.NetEntity;
+import com.github.yzqdev.pethome.server.misc.PetCompassTracker;
 import com.github.yzqdev.pethome.util.ItemMobTooltip;
 import com.mojang.logging.LogUtils;
 import net.minecraft.ChatFormatting;
@@ -57,6 +58,7 @@ public class NetItem extends Item {
         return type;
     }
 
+    /** 放出实体：仅服务端处理有内容的网——按 NBT 重建实体放到点击方块上方，清空网 NBT、消耗物品（创造返还空网）。 */
     @Override
     @Nonnull
     public InteractionResult useOn(UseOnContext context) {
@@ -85,6 +87,7 @@ public class NetItem extends Item {
         return InteractionResult.SUCCESS;
     }
 
+    /** 空网抓捕：canCatchMob 校验后把目标完整 NBT 存入新网的 ENTITY_HOLDER、discard 原实体、装进背包（放不下则掉落），5 tick 冷却。 */
     @Override
     public @NotNull InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
         if (target.getCommandSenderWorld().isClientSide() || target instanceof Player || !target.isAlive() || containsEntity(stack)) {
@@ -106,6 +109,10 @@ public class NetItem extends Item {
             if (!player.addItem(newerStack)) {
                 ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), newerStack);
                 player.level().addFreshEntity(itemEntity);
+                // 背包满→掉落物：罗盘按掉落物定位；直接进背包时退化为玩家位置
+                PetCompassTracker.onPetCapturedByNet(target, itemEntity);
+            } else {
+                PetCompassTracker.onPetCapturedByNet(target, player);
             }
             target.discard();
             player.getCooldowns().addCooldown(this, 5);
@@ -116,6 +123,7 @@ public class NetItem extends Item {
 
     static Set<String> warned = new HashSet<>();
 
+    /** 装网掉落物每 tick：常亮+无敌防损坏，坠入虚空时悬停在最低层防丢实体。 */
     @Override
     public boolean onEntityItemUpdate(ItemStack stack, ItemEntity entity) {
         if (!entity.isCurrentlyGlowing()) {
@@ -152,6 +160,7 @@ public class NetItem extends Item {
 
 
 
+    /** tooltip 上方的实体头像（inventory 容器绘制），数据取自网内 NBT；空网无头像。 */
     @Override
     public Optional<TooltipComponent> getTooltipImage(ItemStack stack) {
         if (this.type == Type.EMPTY) {
@@ -193,6 +202,7 @@ public class NetItem extends Item {
         return type.getDescription().copy().withStyle(ChatFormatting.AQUA);
     }
 
+    /** 物品名追加「(内部实体名)」后缀：优先自定义名（JSON 反序列化，失败仅告警一次并回退类型名）。 */
     @Override
     @Nonnull
     public Component getName(@Nonnull ItemStack stack) {
@@ -213,7 +223,7 @@ public class NetItem extends Item {
         return new NetEntity(shooter.getX(), shooter.getY() + 1.25, shooter.getZ(), worldIn, newStack);
     }
 
-    //helper methods
+    // 辅助方法
 
     public static boolean containsEntity(ItemStack stack) {
         var tag=stack.getTag();
@@ -243,6 +253,7 @@ public class NetItem extends Item {
         return type == EntityType.PLAYER || PetHomeConfig.mobcatcherBlackList.contains(type);
     }
 
+    /** 抓捕资格判定：黑名单（玩家 + mobcatcherBlackList 配置）永不捕捉；mobcatcherOnlyTamableAnimal 开启时仅可驯服动物可捕。 */
     public static boolean canCatchMob(Entity livingEntity) {
         var type = livingEntity.getType();
         if (PetHomeConfig.mobcatcherOnlyTamableAnimal) {
@@ -262,6 +273,7 @@ public class NetItem extends Item {
 
     }
 
+    /** 按 NBT 重建实体（withInfo=true 时 load 完整状态，含血量/自定义名）。 */
     public static Entity getEntityFromNBT(CompoundTag nbt, Level world, boolean withInfo) {
         Entity entity = BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(getEntityID(nbt))).create(world);
         if (withInfo) {

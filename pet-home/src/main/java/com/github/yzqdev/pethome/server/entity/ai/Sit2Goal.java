@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.server.entity.ai;
 
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.animal.Fox;
@@ -16,18 +16,18 @@ public class Sit2Goal extends Goal {
     }
 
     public boolean canContinueToUse() {
-        return ((ModifedToBeTameable)this.mob).isTame() && ((ModifedToBeTameable)this.mob).isStayingStill();
+        return ((ModifiedToBeTameable)this.mob).isTame() && ((ModifiedToBeTameable)this.mob).isStayingStill();
     }
 
     public boolean canUse() {
-        if (!((ModifedToBeTameable)this.mob).isTame()) {
+        if (!((ModifiedToBeTameable)this.mob).isTame()) {
             return false;
         } else if (this.mob.isInWaterOrBubble()) {
             return false;
         } else if (!this.mob.onGround()) {
             return false;
         } else {
-            return ((ModifedToBeTameable)this.mob).isStayingStill();
+            return ((ModifiedToBeTameable)this.mob).isStayingStill();
         }
     }
 

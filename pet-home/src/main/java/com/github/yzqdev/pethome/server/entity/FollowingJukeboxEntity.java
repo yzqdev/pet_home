@@ -3,7 +3,7 @@ package com.github.yzqdev.pethome.server.entity;
 import com.github.yzqdev.pethome.server.NbtKeys;
 
 import com.github.yzqdev.pethome.client.ClientEvents;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -32,6 +32,10 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * disc_jockey（唱片骑师）附魔实体：漂浮跟随宠物的迷你唱片机（1.20 侧专属内容）。
+ * 唱片内容存在宠物 citadel tag（随宠物存档），本实体只同步跟随目标 UUID 与当前唱片供客户端渲染/音效。
+ */
 public class FollowingJukeboxEntity extends Entity {
 
     private static final EntityDataAccessor<Optional<UUID>> FOLLOWING_UUID = SynchedEntityData.defineId(FollowingJukeboxEntity.class, EntityDataSerializers.OPTIONAL_UUID);
@@ -48,6 +52,11 @@ public class FollowingJukeboxEntity extends Entity {
         this(PHEntityRegistry.FOLLOWING_JUKEBOX.get(), world);
     }
 
+    /**
+     * 每 tick：自身自旋并按 delta 移动；距宠物远于 2+宽度格直接贴过去，否则绕宠物做圆周飘动。
+     * 服务端从宠物 citadel tag 拉取唱片（内容变化才重设数据槽），广播实体事件 66（播放中）/67（空闲）
+     * 驱动客户端 DiscJockeySound 起停；宠物失去 disc_jockey 附魔或目标消失时解除绑定并 discard。
+     */
     public void tick() {
         super.tick();
         Entity following = getFollowing();
@@ -77,7 +86,7 @@ public class FollowingJukeboxEntity extends Entity {
                     this.level().broadcastEntityEvent(this, event);
                     lastBroadcastEvent = event;
                 }
-                if(following instanceof LivingEntity && !TameableUtils.hasEnchant((LivingEntity) following, DIEnchantmentRegistry.DISK_JOCKEY)){
+                if(following instanceof LivingEntity && !TameableUtils.hasEnchant((LivingEntity) following, PHEnchantmentRegistry.DISK_JOCKEY)){
                     this.setFollowingUUID(null);
                 }
             }else{
@@ -136,6 +145,7 @@ public class FollowingJukeboxEntity extends Entity {
         this.entityData.set(JUKEBOX_ITEM, item);
     }
 
+    /** 写唱片到跟随宠物的 citadel tag（空 stack 即取下）；取下唱片时广播 67 让客户端立即停音效。 */
     public void addDiscToOwner(ItemStack stack){
         if(getFollowing() instanceof LivingEntity living){
             TameableUtils.setPetJukeboxDisc(living, stack);
@@ -169,7 +179,15 @@ public class FollowingJukeboxEntity extends Entity {
         return true;
     }
 
+    /**
+     * 右键/右键指定面统一走 {@link #interact}：取下当前唱片掉落，或把手持唱片装入（生存模式消耗）。
+     * 客户端直接 PASS（对齐 26.x 的 isClientSide 守卫）：交互逻辑写宠物 citadel tag 与生成掉落物，
+     * 只应由服务端执行，客户端预测会造成主从不同步。
+     */
     public InteractionResult interact(Player player, InteractionHand hand) {
+        if (this.level().isClientSide()) {
+            return InteractionResult.PASS;
+        }
         boolean flag = false;
         ItemStack held = player.getItemInHand(hand);
         if (!this.getRecordItem().isEmpty()) {
@@ -189,6 +207,7 @@ public class FollowingJukeboxEntity extends Entity {
     }
 
 
+    /** 仅客户端：66/67 转交 {@link ClientEvents#updateEntityStatus} 驱动 DiscJockeySound 起停，播放中随机冒音符粒子。 */
     @OnlyIn(Dist.CLIENT)
     public void handleEntityEvent(byte id) {
         if (id == 66 || id == 67) {

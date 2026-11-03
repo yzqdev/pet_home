@@ -1,8 +1,8 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
-import com.github.yzqdev.pethome.server.entity.DIActivityRegistry;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.entity.PHActivityRegistry;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 import com.github.yzqdev.pethome.server.entity.ai.AmphibianFollowOwnerBehavior;
 import com.github.yzqdev.pethome.server.entity.ai.AmphibianStayBehavior;
@@ -33,8 +33,8 @@ public class AxolotlAiMixin {
             )
     )
     private static void di_makeBrain(Brain<Axolotl> brain, CallbackInfoReturnable<Brain<?>> cir) {
-        brain.addActivity(DIActivityRegistry.AXOLOTL_FOLLOW.get(), ImmutableList.of(Pair.of(0, new AmphibianFollowOwnerBehavior(0.3F, 0.6F))));
-        brain.addActivity(DIActivityRegistry.AXOLOTL_STAY.get(), ImmutableList.of(Pair.of(0, new AmphibianStayBehavior())));
+        brain.addActivity(PHActivityRegistry.AXOLOTL_FOLLOW.get(), ImmutableList.of(Pair.of(0, new AmphibianFollowOwnerBehavior(0.3F, 0.6F))));
+        brain.addActivity(PHActivityRegistry.AXOLOTL_STAY.get(), ImmutableList.of(Pair.of(0, new AmphibianStayBehavior())));
     }
 
     @Inject(
@@ -48,12 +48,12 @@ public class AxolotlAiMixin {
     private static void di_updateActivity(Axolotl axolotl, CallbackInfo ci) {
         Brain<Axolotl> brain = axolotl.getBrain();
         Activity activity = brain.getActiveNonCoreActivity().orElse(null);
-        if (activity != Activity.PLAY_DEAD && !axolotl.isPlayingDead() && axolotl instanceof ModifedToBeTameable modifedToBeTameable) {
+        if (activity != Activity.PLAY_DEAD && !axolotl.isPlayingDead() && axolotl instanceof ModifiedToBeTameable modifedToBeTameable) {
             if (modifedToBeTameable.isStayingStill()) {
-                brain.setActiveActivityIfPossible(DIActivityRegistry.AXOLOTL_STAY.get());
+                brain.setActiveActivityIfPossible(PHActivityRegistry.AXOLOTL_STAY.get());
                 ci.cancel();
             } else if (modifedToBeTameable.isFollowingOwner()) {
-                brain.setActiveActivityToFirstValid(ImmutableList.of(Activity.PLAY_DEAD, Activity.FIGHT, DIActivityRegistry.AXOLOTL_FOLLOW.get()));
+                brain.setActiveActivityToFirstValid(ImmutableList.of(Activity.PLAY_DEAD, Activity.FIGHT, PHActivityRegistry.AXOLOTL_FOLLOW.get()));
                 ci.cancel();
             }
         }
@@ -81,7 +81,7 @@ public class AxolotlAiMixin {
             cancellable = true
     )
     private static void di_getSpeedModifierChasing(LivingEntity axolotl, CallbackInfoReturnable<Float> cir) {
-        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, DIEnchantmentRegistry.SPEEDSTER);
+        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantmentRegistry.SPEEDSTER);
         cir.setReturnValue(axolotl.isInWaterOrBubble() ? 0.6F + speedsterLevel * 0.05F : 0.15F + speedsterLevel * 0.1F);
     }
 
@@ -94,7 +94,7 @@ public class AxolotlAiMixin {
             cancellable = true
     )
     private static void di_getSpeedModifierFollowingAdult(LivingEntity axolotl, CallbackInfoReturnable<Float> cir) {
-        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, DIEnchantmentRegistry.SPEEDSTER);
+        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantmentRegistry.SPEEDSTER);
         cir.setReturnValue(axolotl.isInWaterOrBubble() ? 0.6F + speedsterLevel * 0.05F : 0.15F + speedsterLevel * 0.1F);
     }
 
@@ -107,7 +107,7 @@ public class AxolotlAiMixin {
             cancellable = true
     )
     private static void di_getSpeedModifier(LivingEntity axolotl, CallbackInfoReturnable<Float> cir) {
-        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, DIEnchantmentRegistry.SPEEDSTER);
+        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantmentRegistry.SPEEDSTER);
         cir.setReturnValue(axolotl.isInWaterOrBubble() ? 0.5F + speedsterLevel * 0.05F : 0.15F + speedsterLevel * 0.15F);
     }
 

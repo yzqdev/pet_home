@@ -1,6 +1,6 @@
 {
   "type": "pet_home:di_loot_modifier",
-  "loot_type": 9,
+  "loot_type": "paralysis",
   "conditions": [
     {
       "condition": "minecraft:any_of",

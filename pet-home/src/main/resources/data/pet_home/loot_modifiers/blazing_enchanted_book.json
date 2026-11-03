@@ -1,6 +1,6 @@
 {
   "type": "pet_home:di_loot_modifier",
-  "loot_type": 6,
+  "loot_type": "blazing_protection",
   "conditions": [
     {
       "condition": "forge:loot_table_id",

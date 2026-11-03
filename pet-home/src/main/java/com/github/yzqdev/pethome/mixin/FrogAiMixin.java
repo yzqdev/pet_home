@@ -1,10 +1,10 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.server.entity.DIActivityRegistry;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.PHActivityRegistry;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.ai.AmphibianFollowOwnerBehavior;
 import com.github.yzqdev.pethome.server.entity.ai.AmphibianStayBehavior;
-import com.github.yzqdev.pethome.server.misc.DITagRegistry;
+import com.github.yzqdev.pethome.server.misc.PHTagRegistry;
 import com.google.common.collect.ImmutableList;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.sounds.SoundEvents;
@@ -34,8 +34,8 @@ public class FrogAiMixin {
             )
     )
     private static void di_makeBrain(Brain<Frog> brain, CallbackInfoReturnable<Brain<?>> cir) {
-        brain.addActivity(DIActivityRegistry.FROG_FOLLOW.get(), ImmutableList.of(Pair.of(0, new AmphibianFollowOwnerBehavior(1.25F, 1.0F)), Pair.of(2, new ShootTongue(SoundEvents.FROG_TONGUE, SoundEvents.FROG_EAT))));
-        brain.addActivity(DIActivityRegistry.FROG_STAY.get(), ImmutableList.of(Pair.of(0, new AmphibianStayBehavior())));
+        brain.addActivity(PHActivityRegistry.FROG_FOLLOW.get(), ImmutableList.of(Pair.of(0, new AmphibianFollowOwnerBehavior(1.25F, 1.0F)), Pair.of(2, new ShootTongue(SoundEvents.FROG_TONGUE, SoundEvents.FROG_EAT))));
+        brain.addActivity(PHActivityRegistry.FROG_STAY.get(), ImmutableList.of(Pair.of(0, new AmphibianStayBehavior())));
     }
 
     private static boolean canAttack(Frog frog) {
@@ -53,9 +53,9 @@ public class FrogAiMixin {
     private static void di_updateActivity(Frog frog, CallbackInfo ci) {
         Brain<Frog> brain = frog.getBrain();
         Activity activity = brain.getActiveNonCoreActivity().orElse(null);
-        if (frog instanceof ModifedToBeTameable modifedToBeTameable) {
+        if (frog instanceof ModifiedToBeTameable modifedToBeTameable) {
             if (modifedToBeTameable.isStayingStill()) {
-                brain.setActiveActivityIfPossible(DIActivityRegistry.FROG_STAY.get());
+                brain.setActiveActivityIfPossible(PHActivityRegistry.FROG_STAY.get());
                 ci.cancel();
             } else if (modifedToBeTameable.isFollowingOwner()) {
                 if(frog.getTarget() != null && frog.getTarget().isAlive()){
@@ -63,7 +63,7 @@ public class FrogAiMixin {
                     brain.setMemory(MemoryModuleType.NEAREST_ATTACKABLE, frog.getTarget());
                     brain.setActiveActivityIfPossible(Activity.TONGUE);
                 }else{
-                    frog.getBrain().setActiveActivityToFirstValid(ImmutableList.of(DIActivityRegistry.FROG_FOLLOW.get(), Activity.TONGUE, Activity.LAY_SPAWN, Activity.LONG_JUMP, Activity.SWIM,  Activity.IDLE));
+                    frog.getBrain().setActiveActivityToFirstValid(ImmutableList.of(PHActivityRegistry.FROG_FOLLOW.get(), Activity.TONGUE, Activity.LAY_SPAWN, Activity.LONG_JUMP, Activity.SWIM,  Activity.IDLE));
                 }
                 ci.cancel();
             }
@@ -79,6 +79,6 @@ public class FrogAiMixin {
             cancellable = true
     )
     private static void di_getTemptationItems(CallbackInfoReturnable<Ingredient> cir) {
-        cir.setReturnValue(Ingredient.merge(ImmutableList.of(cir.getReturnValue(), Ingredient.of(DITagRegistry.TAME_FROGS_WITH))));
+        cir.setReturnValue(Ingredient.merge(ImmutableList.of(cir.getReturnValue(), Ingredient.of(PHTagRegistry.TAME_FROGS_WITH))));
     }
 }

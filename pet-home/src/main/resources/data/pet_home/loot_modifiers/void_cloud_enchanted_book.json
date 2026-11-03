@@ -1,6 +1,6 @@
 {
   "type": "pet_home:di_loot_modifier",
-  "loot_type": 3,
+  "loot_type": "void_cloud",
   "conditions": [
     {
       "condition": "forge:loot_table_id",

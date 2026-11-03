@@ -7,9 +7,9 @@ import com.github.yzqdev.pethome.server.NbtKeys;
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
 import com.github.yzqdev.pethome.server.entity.IFrog;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
-import com.github.yzqdev.pethome.server.misc.DITagRegistry;
+import com.github.yzqdev.pethome.server.misc.PHTagRegistry;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -45,7 +45,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Mixin(Frog.class)
-public abstract class FrogMixin extends Animal implements ModifedToBeTameable, IComandableMob, IFrog {
+public abstract class FrogMixin extends Animal implements ModifiedToBeTameable, IComandableMob, IFrog {
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(Frog.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(Frog.class, EntityDataSerializers.INT);
@@ -195,7 +195,7 @@ public abstract class FrogMixin extends Animal implements ModifedToBeTameable, I
     }
 
     private boolean isTamingItem(ItemStack stack) {
-        return stack.is(DITagRegistry.TAME_FROGS_WITH);
+        return stack.is(PHTagRegistry.TAME_FROGS_WITH);
     }
 
     @Override

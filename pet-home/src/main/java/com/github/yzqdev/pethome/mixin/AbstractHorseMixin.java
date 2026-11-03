@@ -1,8 +1,8 @@
 package com.github.yzqdev.pethome.mixin;
 
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,7 +22,7 @@ import javax.annotation.Nullable;
 import java.util.UUID;
 
 @Mixin(AbstractHorse.class)
-public abstract class AbstractHorseMixin extends Animal implements ModifedToBeTameable {
+public abstract class AbstractHorseMixin extends Animal implements ModifiedToBeTameable {
 
     @Shadow
     protected float playerJumpPendingScale;
@@ -42,14 +42,14 @@ public abstract class AbstractHorseMixin extends Animal implements ModifedToBeTa
     public abstract void setTamed(boolean tame);
 
     @Shadow
-    public abstract void setIsJumping(boolean p_30656_);
+    public abstract void setIsJumping(boolean jumping);
 
     @Shadow
     public abstract boolean isStanding();
 
     @Shadow @Nullable public abstract UUID getOwnerUUID();
 
-    @Shadow public abstract void setOwnerUUID(@org.jetbrains.annotations.Nullable UUID p_30587_);
+    @Shadow public abstract void setOwnerUUID(@org.jetbrains.annotations.Nullable UUID uuid);
 
     @Inject(
             method = {"tickRidden(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/phys/Vec3;)V"},
@@ -58,7 +58,7 @@ public abstract class AbstractHorseMixin extends Animal implements ModifedToBeTa
             cancellable = true
     )
     private void di_tickRidden(Player rider, Vec3 vec3, CallbackInfo ci) {
-        if (this.isAlive() && this.isVehicle() && this.isInWaterOrBubble() && TameableUtils.hasEnchant(this, DIEnchantmentRegistry.AMPHIBIOUS)) {
+        if (this.isAlive() && this.isVehicle() && this.isInWaterOrBubble() && TameableUtils.hasEnchant(this, PHEnchantmentRegistry.AMPHIBIOUS)) {
             LivingEntity livingentity = (LivingEntity) this.getControllingPassenger();
             this.setYRot(livingentity.getYRot());
             this.yRotO = this.getYRot();

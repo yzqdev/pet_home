@@ -18,7 +18,8 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public class RenderHighlightedBlock extends EntityRenderer<HighlightedBlockEntity> {
 
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "textures/highlighted_block.png");
-    private HighlightedBlockModel highlightedBlockModel = new HighlightedBlockModel();
+    private HighlightedBlockModel highlightedBlockModel =
+            new HighlightedBlockModel(HighlightedBlockModel.createBodyLayer().bakeRoot());
 
     public RenderHighlightedBlock(EntityRendererProvider.Context context) {
         super(context);

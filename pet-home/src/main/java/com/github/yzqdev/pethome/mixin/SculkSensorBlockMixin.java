@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
@@ -23,7 +23,7 @@ public class SculkSensorBlockMixin {
             cancellable = true
     )
     private void di_onStepOn(Level level, BlockPos pos, BlockState state, Entity entity, CallbackInfo ci) {
-        if(entity instanceof LivingEntity living && TameableUtils.isTamed(living) && TameableUtils.hasEnchant(living, DIEnchantmentRegistry.MUFFLED)){
+        if(entity instanceof LivingEntity living && TameableUtils.isTamed(living) && TameableUtils.hasEnchant(living, PHEnchantmentRegistry.MUFFLED)){
             ci.cancel();
         }
     }

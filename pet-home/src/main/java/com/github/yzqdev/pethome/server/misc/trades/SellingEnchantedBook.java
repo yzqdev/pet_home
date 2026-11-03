@@ -15,6 +15,9 @@ import net.minecraft.world.level.block.Block;
 
 import java.util.Random;
 
+/**
+ * 售卖指定宠物附魔书：等级在 1~maxLevels-1 间随机，固定绿宝石价（驯兽师专属附魔书交易）。
+ */
 public class SellingEnchantedBook implements VillagerTrades.ItemListing {
     private final Enchantment enchantment;
     private final int emeraldCount;

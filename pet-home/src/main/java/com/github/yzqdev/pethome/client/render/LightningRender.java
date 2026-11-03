@@ -38,7 +38,7 @@ public class LightningRender {
         for (Iterator<Map.Entry<Object, BoltOwnerData>> iter = boltOwners.entrySet().iterator(); iter.hasNext(); ) {
             Map.Entry<Object, BoltOwnerData> entry = iter.next();
             BoltOwnerData data = entry.getValue();
-            // tick our bolts based on the refresh rate, removing if they're now finished
+            // 按刷新率推进每条闪电的生命周期，到期的移除
             if (refresh) {
                 data.bolts.removeIf(bolt -> bolt.tick(timestamp));
             }

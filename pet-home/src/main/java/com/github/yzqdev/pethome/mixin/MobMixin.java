@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 import com.github.yzqdev.pethome.server.entity.ai.AmphibiousPathNavigation;
 import com.github.yzqdev.pethome.server.entity.ai.AquaticMoveControl;
@@ -42,7 +42,7 @@ public abstract class MobMixin extends LivingEntity {
     )
     private void di_tick(CallbackInfo ci) {
         if(TameableUtils.isTamed(this) && !level().isClientSide()){
-            if(TameableUtils.hasEnchant(this, DIEnchantmentRegistry.AMPHIBIOUS) && !((LivingEntity)this instanceof Axolotl)){
+            if(TameableUtils.hasEnchant(this, PHEnchantmentRegistry.AMPHIBIOUS) && !((LivingEntity)this instanceof Axolotl)){
                 if(!hasWaterEnchantNavigator && this.isInWaterOrBubble()){
                     this.setPathfindingMalus(BlockPathTypes.WATER, 0.0F);
                     this.setPathfindingMalus(BlockPathTypes.WATER_BORDER, 0.0F);
@@ -73,7 +73,7 @@ public abstract class MobMixin extends LivingEntity {
             cancellable = true
     )
     private void di_pickUpItem(ItemEntity item, CallbackInfo ci) {
-        if(TameableUtils.isTamed(this) && TameableUtils.hasEnchant(this, DIEnchantmentRegistry.LINKED_INVENTORY)){
+        if(TameableUtils.isTamed(this) && TameableUtils.hasEnchant(this, PHEnchantmentRegistry.LINKED_INVENTORY)){
             Entity owner = TameableUtils.getOwnerOf(this);
             if(owner instanceof Player){
                 ci.cancel();
@@ -94,7 +94,7 @@ public abstract class MobMixin extends LivingEntity {
             cancellable = true
     )
     private void di_playAmbientSound(CallbackInfo ci) {
-        if(TameableUtils.isTamed(this) && TameableUtils.hasEnchant(this, DIEnchantmentRegistry.MUFFLED)){
+        if(TameableUtils.isTamed(this) && TameableUtils.hasEnchant(this, PHEnchantmentRegistry.MUFFLED)){
             ci.cancel();
         }
     }

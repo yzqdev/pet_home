@@ -12,16 +12,13 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 驯养革新设置界面（Tab 单屏风格）：
- * 顶部 Tab 切换分类；每行 = 标签 | 值控件 | 独立重置按钮（对齐 BoccHUD 风格）。
- * 打开方式：模组列表"配置"按钮，或 /pet_home_config 命令。修改即时写入配置并生效。
- */
+
 public class PetHomeConfigScreen extends Screen {
     private record Category(String nameKey, List<ConfigEntry> entries) {
     }
@@ -61,11 +58,11 @@ public class PetHomeConfigScreen extends Screen {
         friendly.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_F_DISPLAY_WARNING, LangDefinition.GUI_F_DISPLAY_WARNING_DESC, PetHomeConfig.DISPLAY_HIT_WARNING));
         friendly.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_F_PROTECT_TEAM, LangDefinition.GUI_F_PROTECT_TEAM_DESC, PetHomeConfig.PROTECT_TEAM_MEMBERS));
         friendly.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_F_RESPECT_TEAM, LangDefinition.GUI_F_RESPECT_TEAM_DESC, PetHomeConfig.RESPECT_TEAM_RULES));
-        friendly.add(new ConfigEntry.StringListEntry(LangDefinition.GUI_F_CAN_HURT_PET_ITEMS, LangDefinition.GUI_F_CAN_HURT_PET_ITEMS_DESC, PetHomeConfig.CAN_HURT_PET_ITEM));
-        friendly.add(new ConfigEntry.StringListEntry(LangDefinition.GUI_F_CAN_HURT_ALL_ITEMS, LangDefinition.GUI_F_CAN_HURT_ALL_ITEMS_DESC, PetHomeConfig.CAN_HURT_ALL_ITEM));
-        friendly.add(new ConfigEntry.StringListEntry(LangDefinition.GUI_F_NO_PROTECTION, LangDefinition.GUI_F_NO_PROTECTION_DESC, PetHomeConfig.NO_PROTECTION_ENTITY));
-        friendly.add(new ConfigEntry.StringListEntry(LangDefinition.GUI_F_EXTRA_PROTECTED, LangDefinition.GUI_F_EXTRA_PROTECTED_DESC, PetHomeConfig.OTHER_SHOULD_PROTECT_ENTITY));
-        friendly.add(new ConfigEntry.StringListEntry(LangDefinition.GUI_F_PLAYER_PROTECTED, LangDefinition.GUI_F_PLAYER_PROTECTED_DESC, PetHomeConfig.PLAYER_CANT_HURT_ENTITY));
+        friendly.add(listEntry(LangDefinition.GUI_F_CAN_HURT_PET_ITEMS, LangDefinition.GUI_F_CAN_HURT_PET_ITEMS_DESC, PetHomeConfig.CAN_HURT_PET_ITEM));
+        friendly.add(listEntry(LangDefinition.GUI_F_CAN_HURT_ALL_ITEMS, LangDefinition.GUI_F_CAN_HURT_ALL_ITEMS_DESC, PetHomeConfig.CAN_HURT_ALL_ITEM));
+        friendly.add(listEntry(LangDefinition.GUI_F_NO_PROTECTION, LangDefinition.GUI_F_NO_PROTECTION_DESC, PetHomeConfig.NO_PROTECTION_ENTITY));
+        friendly.add(listEntry(LangDefinition.GUI_F_EXTRA_PROTECTED, LangDefinition.GUI_F_EXTRA_PROTECTED_DESC, PetHomeConfig.OTHER_SHOULD_PROTECT_ENTITY));
+        friendly.add(listEntry(LangDefinition.GUI_F_PLAYER_PROTECTED, LangDefinition.GUI_F_PLAYER_PROTECTED_DESC, PetHomeConfig.PLAYER_CANT_HURT_ENTITY));
         categories.add(new Category(LangDefinition.GUI_CAT_FRIENDLY_NAME, friendly));
 
         List<ConfigEntry> general = new ArrayList<>();
@@ -75,7 +72,7 @@ public class PetHomeConfigScreen extends Screen {
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_TRINARY_COMMAND, LangDefinition.GUI_G_TRINARY_COMMAND_DESC, PetHomeMod.CONFIG.trinaryCommandSystem));
         general.add(new ConfigEntry.IntEntry(LangDefinition.GUI_G_PETSTORE_WEIGHT, LangDefinition.GUI_G_PETSTORE_WEIGHT_DESC, PetHomeMod.CONFIG.petstoreVillageWeight, 0, 100));
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_MOB_TAMABLE_ONLY, LangDefinition.GUI_G_MOB_TAMABLE_ONLY_DESC, PetHomeConfig.MOBCATCHER_ONLY_TAMABLE_ANIMAL));
-        general.add(new ConfigEntry.StringListEntry(LangDefinition.GUI_G_MOB_BLACKLIST, LangDefinition.GUI_G_MOB_BLACKLIST_DESC, PetHomeConfig.MOBCATCHER_BLACKLIST));
+        general.add(listEntry(LangDefinition.GUI_G_MOB_BLACKLIST, LangDefinition.GUI_G_MOB_BLACKLIST_DESC, PetHomeConfig.MOBCATCHER_BLACKLIST));
         // 宠物罗盘：总开关 + 两个独立传送（与 1.21/26.1 的配置项一一对应）
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_PET_COMPASS_ENABLE, LangDefinition.GUI_G_PET_COMPASS_ENABLE_DESC, PetHomeMod.CONFIG.petCompassEnable));
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_TELEPORT_PLAYER_TO_PET, LangDefinition.GUI_G_TELEPORT_PLAYER_TO_PET_DESC, PetHomeMod.CONFIG.petCompassTeleportPlayerToPet));
@@ -84,6 +81,8 @@ public class PetHomeConfigScreen extends Screen {
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_PET_INFO_OVERLAY, LangDefinition.GUI_G_PET_INFO_OVERLAY_DESC, PetHomeMod.CONFIG.petInfoOverlay));
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_PET_INFO_OVERLAY_REQUIRE_SHIFT, LangDefinition.GUI_G_PET_INFO_OVERLAY_REQUIRE_SHIFT_DESC, PetHomeMod.CONFIG.petInfoOverlayRequireShift));
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_PET_INFO_OVERLAY_IGNORE_JADE, LangDefinition.GUI_G_PET_INFO_OVERLAY_IGNORE_JADE_DESC, PetHomeMod.CONFIG.petInfoOverlayIgnoreJade));
+        // 调试日志总开关（与 1.21/26.1/26.3 的 debugMode 对应）
+        general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_DEBUG_MODE, LangDefinition.GUI_G_DEBUG_MODE_DESC, PetHomeMod.CONFIG.debugMode));
         categories.add(new Category(LangDefinition.GUI_CAT_GENERAL_NAME, general));
 
         List<ConfigEntry> tameable = new ArrayList<>();
@@ -229,14 +228,38 @@ public class PetHomeConfigScreen extends Screen {
                 }
             };
         }
-        if (entry instanceof ConfigEntry.StringListEntry listEntry) {
-            EditBox box = new EditBox(this.font, x, y, VALUE_WIDTH, 20, Component.empty());
-            box.setValue(listEntry.toText());
-            box.setMaxLength(1024);
-            box.setResponder(listEntry::fromText);
-            return box;
+        if (entry instanceof ConfigEntry.ScreenEntry screenEntry) {
+            // 对齐 NeoForge 三侧：按钮显示当前条目数，点击进入 ListEditorScreen
+            return Button.builder(Component.literal(screenEntry.getSummary()),
+                            b -> this.minecraft.setScreen(screenEntry.open(this)))
+                    .bounds(x, y, VALUE_WIDTH, 20)
+                    .build();
         }
         throw new IllegalStateException("unknown entry: " + entry.getClass());
+    }
+
+    /**
+     * 列表编辑入口（对齐 26.3 同名工厂）：按钮显示当前条目数，点击进入 ListEditorScreen（标签键兼作编辑器标题）；
+     * Reset 恢复默认列表。修改写回 spec 内存，缓存刷新与落盘由 onClose 统一处理。
+     */
+    private static ConfigEntry.ScreenEntry listEntry(String labelKey, String tooltipKey,
+                                                     ForgeConfigSpec.ConfigValue<List<? extends String>> value) {
+        return new ConfigEntry.ScreenEntry(
+                labelKey,
+                tooltipKey,
+                () -> String.valueOf(value.get() == null ? 0 : value.get().size()),
+                current -> new ListEditorScreen(
+                        current,
+                        Component.translatable(labelKey),
+                        () -> {
+                            List<? extends String> list = value.get();
+                            return list == null ? new ArrayList<>() : new ArrayList<>(list);
+                        },
+                        list -> value.set(list)),
+                () -> {
+                    List<? extends String> def = value.getDefault();
+                    value.set(def == null ? new ArrayList<>() : new ArrayList<>(def));
+                });
     }
 
     private static Component booleanText(boolean v) {
@@ -259,7 +282,7 @@ public class PetHomeConfigScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics);
+        PanoramaBackground.render(this, graphics, partialTick);
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 14, 0x55FF9F);
         graphics.drawCenteredString(this.font, Component.translatable(LangDefinition.GUI_SUBTITLE), this.width / 2, 28, 0x888888);
 
@@ -332,6 +355,7 @@ public class PetHomeConfigScreen extends Screen {
         }
     }
 
+    /** 关闭时把界面内已写入的 spec 值刷新进静态缓存（部分配置不走 ModConfigEvent，需手动触发）。 */
     @Override
     public void onClose() {
         PetHomeConfig.refreshCachedValues();

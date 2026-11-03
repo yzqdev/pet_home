@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.entity.PsychicWallEntity;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 import net.minecraft.world.entity.Entity;
@@ -12,6 +12,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 注入 {@code Entity}：按宠物附魔改写实体级热路径判定——
+ * fireproof 免火、amphibious 不被流体推动且可骑乘入水、muffled 静音（不发声响游戏事件）、
+ * 同主宠物互认友军（isAlliedTo）、念力墙对同队实体不产生碰撞。
+ */
 @Mixin(Entity.class)
 public class EntityMixin {
 
@@ -25,7 +30,7 @@ public class EntityMixin {
     )
     private void di_isFireImmune(CallbackInfoReturnable<Boolean> cir) {
         Entity us = (Entity)((Object)this);
-        if(TameableUtils.isTamed(us) && TameableUtils.hasEnchant((LivingEntity) us, DIEnchantmentRegistry.FIREPROOF)){
+        if(TameableUtils.isTamed(us) && TameableUtils.hasEnchant((LivingEntity) us, PHEnchantmentRegistry.FIREPROOF)){
             cir.setReturnValue(true);
         }
     }
@@ -37,7 +42,7 @@ public class EntityMixin {
             cancellable = true
     )
     protected void di_pushedByWater(CallbackInfoReturnable<Boolean> cir) {
-        if((Object)this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity)(Object)this) && TameableUtils.hasEnchant((LivingEntity)(Object)this, DIEnchantmentRegistry.AMPHIBIOUS)){
+        if((Object)this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity)(Object)this) && TameableUtils.hasEnchant((LivingEntity)(Object)this, PHEnchantmentRegistry.AMPHIBIOUS)){
             cir.setReturnValue(false);
         }
     }
@@ -73,7 +78,7 @@ public class EntityMixin {
             cancellable = true
     )
     protected void di_rideableInWater(CallbackInfoReturnable<Boolean> cir) {
-        if((Object)this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity)(Object)this) && TameableUtils.hasEnchant((LivingEntity)(Object)this, DIEnchantmentRegistry.AMPHIBIOUS)){
+        if((Object)this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity)(Object)this) && TameableUtils.hasEnchant((LivingEntity)(Object)this, PHEnchantmentRegistry.AMPHIBIOUS)){
             cir.setReturnValue(true);
         }
     }
@@ -85,7 +90,7 @@ public class EntityMixin {
             cancellable = true
     )
     protected void di_getMovementEmission(CallbackInfoReturnable<Entity.MovementEmission> cir) {
-        if((Object)this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity)(Object)this) && TameableUtils.hasEnchant((LivingEntity)(Object)this, DIEnchantmentRegistry.MUFFLED)){
+        if((Object)this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity)(Object)this) && TameableUtils.hasEnchant((LivingEntity)(Object)this, PHEnchantmentRegistry.MUFFLED)){
             cir.setReturnValue(Entity.MovementEmission.NONE);
         }
     }
@@ -97,7 +102,7 @@ public class EntityMixin {
             cancellable = true
     )
     protected void di_gameEvent(GameEvent event, Entity entity, CallbackInfo ci) {
-        if((Object)this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity)(Object)this) && TameableUtils.hasEnchant((LivingEntity)(Object)this, DIEnchantmentRegistry.MUFFLED)){
+        if((Object)this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity)(Object)this) && TameableUtils.hasEnchant((LivingEntity)(Object)this, PHEnchantmentRegistry.MUFFLED)){
             ci.cancel();
         }
 

@@ -2,10 +2,10 @@ package com.github.yzqdev.pethome.server;
 
 
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.server.block.DIBlockRegistry;
+import com.github.yzqdev.pethome.server.block.PHBlockRegistry;
 import com.github.yzqdev.pethome.server.block.PetBedBlock;
 import com.github.yzqdev.pethome.server.block.PetBedBlockEntity;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.entity.*;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 import com.github.yzqdev.pethome.server.misc.*;
@@ -22,7 +22,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.goal.AvoidEntityGoal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
@@ -40,7 +39,6 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -67,16 +65,16 @@ import java.util.function.Predicate;
 @Mod.EventBusSubscriber(modid = PetHomeMod.MODID)
 public class ServerEvents {
 
-    public static final TargetingConditions ZOMBIE_TARGET = TargetingConditions.forCombat().range(32.0D);
-    //list of pets to be teleported across dimensions, cleared after every tick
+    // 待跨维度传送的宠物列表，每 tick 结束后清空
     public static List<Triple<Entity, ServerLevel, UUID>> teleportingPets = new ArrayList<>();
 
     // 以维度 key 而非 Level 实例为键：Level 在维度重载时会重建，旧实例作键会永久滞留导致泄漏
     private static final Map<ResourceKey<Level>, CollarTickTracker> COLLAR_TICK_TRACKER_MAP = new HashMap<>();
 
+    /** mod 初始化：注册 ForgeChunkManager 的强载票据回调（本 mod 票据随存档加载即清除）并注入村庄宠物店结构。 */
     public static void serverInit() {
         ForgeChunkManager.setForcedChunkLoadingCallback(PetHomeMod.MODID, ServerEvents::removeAllChunkTickets);
-        DIVillagePieceRegistry.registerHouses();
+        PHVillagePieceRegistry.registerHouses();
     }
 
     /** 服务器启动时把注册好的宠物商店元素注入村庄结构池（26.1 侧同模式） */
@@ -110,6 +108,7 @@ public class ServerEvents {
         }
     }
 
+    /** ForgeChunkManager 加载回调：本 mod 名下的实体强载票据（罗盘临时强载遗留）在读取时全部清除。 */
     private static void removeAllChunkTickets(ServerLevel serverLevel, ForgeChunkManager.TicketHelper ticketHelper) {
         int i = 0;
         for (Map.Entry<UUID, Pair<LongSet, LongSet>> entry : ticketHelper.getEntityTickets().entrySet()) {
@@ -129,6 +128,7 @@ public class ServerEvents {
         }
     }
 
+    /** 交互处理标 5 tick 项圈防抖（见 {@link CollarTickTracker}），仅在服务端生效。 */
     public static void blockCollarTick(Entity entity) {
         if (!entity.level().isClientSide()) {
             // computeIfAbsent：tracker 不存在时创建而不是解引用 null（原逻辑在 tracker==null 时 NPE、非空时什么都不做）
@@ -137,6 +137,7 @@ public class ServerEvents {
         }
     }
 
+    /** 实体进入世界：罗盘档案建档/重绑（宠物床复活实体带原 PetId 回来）；health_boost 宠物恢复安全血量；已驯服实体回归时清除其灯笼召回请求。 */
     @SubscribeEvent
     public static void onEntityJoinWorldEvent(EntityJoinLevelEvent event) {
         // 宠物罗盘：档案更新（区块加载/维度切换/宠物床复活回到世界——复活实体带着原 PetId，重新绑定 Entity UUID）
@@ -144,11 +145,11 @@ public class ServerEvents {
             PetCompassTracker.updateRecord(living);
         }
         if (event.getEntity() instanceof LivingEntity living && TameableUtils.couldBeTamed(living)) {
-            if (TameableUtils.hasEnchant(living, DIEnchantmentRegistry.HEALTH_BOOST)) {
+            if (TameableUtils.hasEnchant(living, PHEnchantmentRegistry.HEALTH_BOOST)) {
                 living.setHealth((float) Math.max(living.getHealth(), TameableUtils.getSafePetHealth(living)));
             }
             if (living.isAlive() && TameableUtils.isTamed(living)) {
-                DIWorldData data = DIWorldData.get(living.level());
+                PHWorldData data = PHWorldData.get(living.level());
                 if (data != null) {
                     data.removeMatchingLanternRequests(living.getUUID());
                 }
@@ -156,25 +157,32 @@ public class ServerEvents {
         }
     }
 
+    /** 实体离开世界：跟随态宠物卸载时写入灯笼召回请求（{@link TameableUtils#shouldUnloadToLantern}）；health_boost 存安全血量供重进恢复。 */
     @SubscribeEvent
     public static void onEntityLeaveWorld(EntityLeaveLevelEvent event) {
         if (event.getEntity() instanceof LivingEntity living) {
             if (!living.level().isClientSide() && living.isAlive() && TameableUtils.isTamed(living) && TameableUtils.shouldUnloadToLantern(living)) {
                 UUID ownerUUID = TameableUtils.getOwnerUUIDOf(event.getEntity());
                 String saveName = event.getEntity().hasCustomName() ? event.getEntity().getCustomName().getString() : "";
-                DIWorldData data = DIWorldData.get(living.level());
+                PHWorldData data = PHWorldData.get(living.level());
                 if (data != null) {
                     LanternRequest request = new LanternRequest(living.getUUID(), ForgeRegistries.ENTITY_TYPES.getKey(event.getEntity().getType()).toString(), ownerUUID, living.blockPosition(), event.getEntity().level().dayTime(), saveName);
                     data.addLanternRequest(request);
                 }
             }
-            if (TameableUtils.couldBeTamed(living) && TameableUtils.hasEnchant(living, DIEnchantmentRegistry.HEALTH_BOOST)) {
+            if (TameableUtils.couldBeTamed(living) && TameableUtils.hasEnchant(living, PHEnchantmentRegistry.HEALTH_BOOST)) {
                 TameableUtils.setSafePetHealth(living, living.getHealth());
             }
 
         }
     }
 
+    /**
+     * LevelTickEvent 汇总：召回队列每 20 tick（仅主世界、END 相位）；项圈防抖递减、
+     * xp_transfer 经验吸附（每 10 tick，逐玩家，对齐 26.3 onWorldTick）与
+     * teleportingPets 跨维度重建（unRide → create+restoreFrom → 窒息上探 → addFreshEntity → DISCARD 原体）。
+     * 注意历史行为：跨维度重建段只判 isClientSide 不判 Phase，START/END 各执行一次（写时保持原逻辑）。
+     */
     @SubscribeEvent
     public static void onServerTick(TickEvent.LevelTickEvent tick) {
         // 宠物罗盘召回队列：全局队列只在主世界 tick 上处理（每 20 tick 一轮）
@@ -185,6 +193,11 @@ public class ServerEvents {
             COLLAR_TICK_TRACKER_MAP.computeIfAbsent(tick.level.dimension(), k -> new CollarTickTracker());
             CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.get(tick.level.dimension());
             tracker.tick();
+        }
+        if (!tick.level.isClientSide() && tick.level.getGameTime() % 10 == 0 && tick.level instanceof ServerLevel serverLevel) {
+            for (ServerPlayer serverPlayer : serverLevel.players()) {
+                xpTransferTick(serverPlayer, serverLevel);
+            }
         }
         if (!tick.level.isClientSide() && tick.level instanceof ServerLevel) {
             for (final var triple : teleportingPets) {
@@ -211,12 +224,72 @@ public class ServerEvents {
                         endpointWorld.addFreshEntity(teleportedEntity);
                     }
                     entity.remove(Entity.RemovalReason.DISCARDED);
+                    // 跨维度重建完成后补发罗盘数据：召回入队时发的刷新包早于实际到位（宠物还在旧维度），
+                    // 此时才拿到新维度/新位置；GUI 开着时原位刷新，关闭时 handleData 不开屏
+                    if (player instanceof ServerPlayer serverPlayer) {
+                        PetHomeMod.LOGGER.debug("[compass-debug] cross-dim pet arrived, resending compass data");
+                        PetCompassTracker.handleOpenRequest(serverPlayer);
+                    }
                 }
             }
             teleportingPets.clear();
         }
     }
 
+    /**
+     * xp_transfer 附魔（per-player tick，移植自 26.3 ServerEvent.onWorldTick）：吸附玩家 10 格内
+     * 未坐下、无仇恨宠物的经验球（近距给主人加分、远距施加吸力并让宠物寻路追球）。
+     * 宠物范围覆盖两类归属载体：原版 {@link TamableAnimal} 与本模组改造宠物（{@link ModifiedToBeTameable}，
+     * 兔子等）——26.3 基准版本只查 TamableAnimal，此处为四侧统一的完善版。
+     */
+    private static void xpTransferTick(ServerPlayer serverPlayer, ServerLevel serverLevel) {
+        AABB playerArea = serverPlayer.getBoundingBox().inflate(10.0);
+        Predicate<Entity> petFilter = pet ->
+                TameableUtils.isTamed(pet)
+                        && pet instanceof Mob mobPet
+                        && !(mobPet instanceof TamableAnimal tamable && tamable.isOrderedToSit())
+                        && mobPet.getTarget() == null
+                        && TameableUtils.hasEnchant(mobPet, PHEnchantmentRegistry.XP_Transfer);
+        List<Mob> pets = serverLevel.getEntitiesOfClass(Mob.class, playerArea, petFilter);
+
+        for (Mob pet : pets) {
+            AABB searchBox = pet.getBoundingBox().inflate(10.0);
+            List<ExperienceOrb> orbs = serverLevel.getEntitiesOfClass(ExperienceOrb.class, searchBox);
+
+            if (orbs.isEmpty()) {
+                continue;
+            }
+
+            Entity owner = TameableUtils.getOwnerOf(pet);
+            if (!(owner instanceof Player player)) {
+                continue;
+            }
+
+            for (ExperienceOrb orb : orbs) {
+                Vec3 targetPos = new Vec3(pet.getX(), pet.getY() + (double) pet.getEyeHeight() / 2.0D, pet.getZ());
+                Vec3 vec3 = targetPos.subtract(orb.position());
+                double distSqr = vec3.lengthSqr();
+
+                if (distSqr < 2.0D) {
+                    player.giveExperiencePoints(orb.getValue());
+                    orb.discard();
+                    continue;
+                }
+
+                if (distSqr < 64.0D) {
+                    double d1 = 1.0D - Math.sqrt(distSqr) / 8.0D;
+                    // 给经验球施加向宠物的加速度
+                    orb.setDeltaMovement(orb.getDeltaMovement().add(vec3.normalize().scale(d1 * d1 * 0.5D)));
+                }
+            }
+
+            ExperienceOrb closestOrb = orbs.get(0);
+            pet.getLookControl().setLookAt(closestOrb, 30.0F, 30.0F);
+            pet.getNavigation().moveTo(closestOrb, 1.2D);
+        }
+    }
+
+    /** 投射物命中：玩家投射物不命中自家宠物（SKIP_ENTITY）；穿透箭命中宠物降为非穿透并消失（防原版软崩溃）；deflection 附魔反弹投射物并播放护盾粒子。 */
     @SubscribeEvent
     public static void onProjectileImpactEvent(ProjectileImpactEvent event) {
         if (event.getRayTraceResult() instanceof EntityHitResult) {
@@ -230,7 +303,7 @@ public class ServerEvents {
             }
             if (TameableUtils.isTamed(hit)) {
                 if (event.getEntity() instanceof AbstractArrow arrow) {
-                    //fixes soft crash with vanilla
+                    // 规避原版实体的软崩溃
                     if (arrow.getPierceLevel() > 0) {
                         arrow.setPierceLevel((byte) 0);
                         arrow.remove(Entity.RemovalReason.DISCARDED);
@@ -239,14 +312,14 @@ public class ServerEvents {
                         return;
                     }
                 }
-                if (TameableUtils.hasEnchant((LivingEntity) hit, DIEnchantmentRegistry.DEFLECTION)) {
+                if (TameableUtils.hasEnchant((LivingEntity) hit, PHEnchantmentRegistry.DEFLECTION)) {
 //                    event.setCanceled(true);
                     event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY);
                     float xRot = event.getProjectile().getXRot();
                     float yRot = event.getProjectile().yRotO;
                     Vec3 vec3 = event.getProjectile().position().subtract(hit.position()).normalize().scale(hit.getBbWidth() + 0.5F);
                     Vec3 vec32 = hit.position().add(vec3);
-                    hit.level().addParticle(DIParticleRegistry.DEFLECTION_SHIELD.get(), vec32.x, vec32.y, vec32.z, xRot, yRot, 0.0F);
+                    hit.level().addParticle(PHParticleRegistry.DEFLECTION_SHIELD.get(), vec32.x, vec32.y, vec32.z, xRot, yRot, 0.0F);
                     event.getProjectile().setDeltaMovement(event.getProjectile().getDeltaMovement().scale(-0.2D));
                     event.getProjectile().setYRot(yRot + 180);
                     event.getProjectile().setXRot(xRot + 180);
@@ -255,6 +328,7 @@ public class ServerEvents {
         }
     }
 
+    /** 苹果掉落物到期时按数量 10%/个概率腐化为烂苹果（rottenApple 配置开启时），续命 10 tick 防连锁到期。 */
     @SubscribeEvent
     public static void onItemDespawnEvent(ItemExpireEvent event) {
         if (event.getEntity().getItem().getItem() == Items.APPLE && PetHomeMod.CONFIG.rottenApple.get()) {
@@ -267,9 +341,9 @@ public class ServerEvents {
         }
     }
 
+    /** 友好保护落点：被保护时取消仇恨双向记录（受害方与真正攻击方的 lastHurtByMob 置空），防止 AI 报复循环。 */
     @SubscribeEvent
     public static void onLivingIncomingDamage(LivingHurtEvent event) {
-//friendly fire
         if (FriendlyFireCommon.preventAttack(event.getEntity(), event.getSource(), event.getAmount())) {
 
 
@@ -282,22 +356,28 @@ public class ServerEvents {
         }
     }
 
+    /** immaturity_curse（幼稚诅咒）惩罚：宠物造成的伤害乘 0.7 后向上取整。 */
     @SubscribeEvent
     public static void onLivingDamage(LivingDamageEvent event) {
 //        if(TameableUtils.isTamed(event.getEntity()) && event.getSource().getDirectEntity() instanceof Player player && TameableUtils.isPetOf(player, event.getEntity()) && !player.isShiftKeyDown()){
 //            event.setCanceled(true);
 //        }
         if (event.getSource().getEntity() instanceof LivingEntity pet && TameableUtils.isTamed(event.getSource().getEntity())) {
-            if (TameableUtils.hasEnchant(pet, DIEnchantmentRegistry.IMMATURITY_CURSE)) {
+            if (TameableUtils.hasEnchant(pet, PHEnchantmentRegistry.IMMATURITY_CURSE)) {
                 event.setAmount((float) Math.ceil(event.getAmount() * 0.7F));
             }
         }
 
     }
 
+    /**
+     * 宠物死亡总处理：绑定宠物床时把完整实体 NBT 存为 RespawnRequest（次日复活）；
+     * 非 TamableAnimal 的宠物向在线主人发死亡消息（原版只对 TamableAnimal 发）；
+     * 最后交罗盘标记档案（有床保留 alive=false，无床删档）。
+     */
     @SubscribeEvent
     public static void onLivingDie(LivingDeathEvent event) {
-        if (TameableUtils.isTamed(event.getEntity()) && !TameableUtils.isZombiePet(event.getEntity())) {
+        if (TameableUtils.isTamed(event.getEntity())) {
 
             BlockPos bedPos = TameableUtils.getPetBedPos(event.getEntity());
             if (bedPos != null) {
@@ -305,7 +385,7 @@ public class ServerEvents {
                 event.getEntity().addAdditionalSaveData(data);
                 String saveName = event.getEntity().hasCustomName() ? event.getEntity().getCustomName().getString() : "";
                 RespawnRequest request = new RespawnRequest(ForgeRegistries.ENTITY_TYPES.getKey(event.getEntity().getType()).toString(), TameableUtils.getPetBedDimension(event.getEntity()), data, bedPos, event.getEntity().level().dayTime(), saveName);
-                DIWorldData worldData = DIWorldData.get(event.getEntity().level());
+                PHWorldData worldData = PHWorldData.get(event.getEntity().level());
                 if (worldData != null) {
                     worldData.addRespawnRequest(request);
                 }
@@ -316,39 +396,13 @@ public class ServerEvents {
                     owner.sendSystemMessage(event.getEntity().getCombatTracker().getDeathMessage());
                 }
             }
-            if (event.getEntity() instanceof Mob mob && event.getEntity().level().getDifficulty() != Difficulty.PEACEFUL && TameableUtils.hasEnchant(mob, DIEnchantmentRegistry.UNDEAD_CURSE)) {
-                Mob zombieCopy = (Mob) mob.getType().create(mob.level());
-                int id = zombieCopy.getId();
-                Entity owner = TameableUtils.getOwnerOf(mob);
-                CompoundTag livingNbt = new CompoundTag();
-                mob.addAdditionalSaveData(livingNbt);
-                livingNbt.putString("DeathLootTable", BuiltInLootTables.EMPTY.toString());
-                zombieCopy.readAdditionalSaveData(livingNbt);
-                zombieCopy.setId(id);
-                if (zombieCopy instanceof TamableAnimal tamed) {
-                    tamed.setTame(false);
-                    tamed.setOwnerUUID(null);
-                    tamed.setOrderedToSit(false);
-                }
-                if (zombieCopy instanceof ModifedToBeTameable tameable) {
-                    tameable.setTame(false);
-                    tameable.setTameOwnerUUID(null);
-                }
-                if (zombieCopy instanceof IComandableMob commandableMob) {
-                    commandableMob.setCommand(0);
-                }
-                zombieCopy.copyPosition(mob);
-                zombieCopy.setTarget(owner instanceof Player && !((Player) owner).isCreative() ? (Player) owner : mob.level().getNearestPlayer(ZOMBIE_TARGET, mob));
-                mob.level().addFreshEntity(zombieCopy);
-                zombieCopy.setHealth(zombieCopy.getMaxHealth());
-                TameableUtils.setZombiePet(zombieCopy, true);
-            }
 
-            // 宠物罗盘：死亡档案保留，仅标记待宠物床复活（compass.md：不因 Entity UUID 消失而删档）
+            // 宠物罗盘：死亡档案保留，仅标记待宠物床复活（档案不因实体消失而删除）
             PetCompassTracker.onPetDeath(event.getEntity());
         }
     }
 
+    /** 巨泡存活时禁止玩家主动下车（bubbling 附魔困住目标），破裂后自然解除。 */
     @SubscribeEvent
     public static void onEntityMount(EntityMountEvent event) {
 
@@ -358,6 +412,7 @@ public class ServerEvents {
     }
 
 
+    /** 宠物床被拆：清该床全部复活请求（向主人发告别消息）并重置周边宠物的床绑定。 */
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.getState().getBlock() instanceof PetBedBlock) {
@@ -368,6 +423,7 @@ public class ServerEvents {
         }
     }
 
+    /** 掠夺兽生成时（rabbitsScareRavagers 配置）加一个怕兔子的回避 AI（对应原版彩蛋）。 */
     @SubscribeEvent
     public static void onEntityJoinWorld(MobSpawnEvent.FinalizeSpawn event) {
         try {
@@ -380,6 +436,10 @@ public class ServerEvents {
         }
     }
 
+    /**
+     * 村民交易：图书管理员各等级移除原版附魔书交易，替换为不含宠物附魔的版本（附魔书交易由战利品修改器提供）；
+     * 为驯兽师（animal_tamer）职业逐级配置 1-5 级交易（宠物物品/食材/带附魔项圈等）。
+     */
     @SubscribeEvent
     public static void onVillagerTrades(VillagerTradesEvent event) {
 
@@ -394,7 +454,7 @@ public class ServerEvents {
             }
 
         }
-        if (event.getType() == DIVillagerRegistry.ANIMAL_TAMER.get()) {
+        if (event.getType() == PHVillagerRegistry.ANIMAL_TAMER.get()) {
             List<VillagerTrades.ItemListing> level1 = new ArrayList<>();
             List<VillagerTrades.ItemListing> level2 = new ArrayList<>();
             List<VillagerTrades.ItemListing> level3 = new ArrayList<>();
@@ -415,8 +475,8 @@ public class ServerEvents {
             level3.add(new SellingItemTrade(PHItemRegistry.ROTTEN_APPLE.get(), 4, 1, 1, 10));
 //            level3.add(new SellingItemTrade(Items.CARROT_ON_A_STICK, 3, 1, 2, 10));
             level3.add(new SellingRandomEnchantedBook());
-//            level3.add(new SellingItemTrade(Items.LEATHER_HORSE_ARMOR, 4, 1, 3, 11));
-            level3.add(new SellingItemTrade(DIBlockRegistry.DRUM.get(), 2, 3, 7, 11));
+//            level3.add(new SellingItemTrade(Items.LEATHER_HORSE_ARMOR, 8, 1, 2, 15));
+            level3.add(new SellingItemTrade(PHBlockRegistry.DRUM.get(), 2, 3, 7, 11));
             level3.add(new SellingItemTrade(Items.TADPOLE_BUCKET, 6, 1, 4, 13));
             level3.add(new EnchantItemTrade(PHItemRegistry.COLLAR_TAG.get(), 20, 2, 8, 3, 10));
 //            level4.add(new SellingItemTrade(Items.IRON_HORSE_ARMOR, 8, 1, 2, 15));
@@ -435,6 +495,7 @@ public class ServerEvents {
         }
     }
 
+    /** 有宠物床的宠物死亡不掉落战利品/经验（装备与 NBT 都随复活请求带走）。 */
     @SubscribeEvent
     public static void onLivingDrops(LivingDropsEvent event) {
         if (TameableUtils.isTamed(event.getEntity()) && TameableUtils.getPetBedPos(event.getEntity()) != null) {
@@ -442,16 +503,17 @@ public class ServerEvents {
         }
     }
 
+    /** defusal（拆除）附魔：30 格内存在等级覆盖爆炸点的宠物时取消爆炸，播放灭火音效与云雾粒子。 */
     @SubscribeEvent
     public static void onExplosion(ExplosionEvent.Start event) {
         float dist = 30;
         Vec3 center = event.getExplosion().getPosition();
         Vec3 bottom = center.add(-dist, -dist, -dist);
         Vec3 top = center.add(dist, dist, dist);
-        Predicate<Entity> defusal = (animal) -> TameableUtils.isTamed(animal) && TameableUtils.hasEnchant((LivingEntity) animal, DIEnchantmentRegistry.DEFUSAL);
+        Predicate<Entity> defusal = (animal) -> TameableUtils.isTamed(animal) && TameableUtils.hasEnchant((LivingEntity) animal, PHEnchantmentRegistry.DEFUSAL);
         boolean flag = false;
         for (LivingEntity defuser : event.getLevel().getEntitiesOfClass(LivingEntity.class, new AABB(bottom, top), EntitySelector.NO_SPECTATORS.and(defusal))) {
-            float level = 10 * TameableUtils.getEnchantLevel(defuser, DIEnchantmentRegistry.DEFUSAL);
+            float level = 10 * TameableUtils.getEnchantLevel(defuser, PHEnchantmentRegistry.DEFUSAL);
             if (defuser.distanceToSqr(center) <= level * level) {
                 flag = true;
                 break;
@@ -469,6 +531,7 @@ public class ServerEvents {
         }
     }
 
+    /** tethered_teleport 宠物随主人传送：20 格内符合 {@link TameableUtils#isValidTeleporter} 的宠物，同维度窒息上探后直传，跨维度进 teleportingPets 队列。 */
     private static void teleportNearbyPets(Player owner, Vec3 fromPos, Vec3 toPos, Level fromLevel, Level toLevel) {
         double dist = 20;
         boolean removeAndReadd = fromLevel.dimension() != toLevel.dimension();
@@ -489,6 +552,7 @@ public class ServerEvents {
         }
     }
 
+    /** 玩家原版传送事件（末影珍珠/紫颂果等）触发宠物随行。 */
     @SubscribeEvent
     public static void onEntityTeleport(EntityTeleportEvent event) {
         if (event.getEntity() instanceof Player) {
@@ -496,6 +560,7 @@ public class ServerEvents {
         }
     }
 
+    /** 玩家跨维度（下界传送门等）触发宠物随行，目标维度为玩家即将进入的维度。 */
     @SubscribeEvent
     public static void onEntityTravelToDimension(EntityTravelToDimensionEvent event) {
         if (!event.isCanceled()) {
@@ -509,6 +574,7 @@ public class ServerEvents {
         }
     }
 
+    /** 阻止怪物把自家宠物设为攻击目标（原版不保护改造宠物的场景兜底）。 */
     @SubscribeEvent
     public static void onSetAttackTarget(LivingChangeTargetEvent event) {
         if (TameableUtils.isTamed(event.getEntity()) && event.getNewTarget() instanceof Player player && TameableUtils.isPetOf(player, event.getEntity())) {
@@ -516,6 +582,7 @@ public class ServerEvents {
         }
     }
 
+    /** 铁砧合并两张带附魔项圈：按原版附魔合并规则（同附魔升一级/取高、冲突不可合并）计算经验消耗并产出合成结果。 */
     @SubscribeEvent
     public static void onUpdateAnvil(AnvilUpdateEvent event) {
         if(event.getLeft().is(PHItemRegistry.COLLAR_TAG.get()) && !event.getLeft().getAllEnchantments().isEmpty() && event.getRight().is(PHItemRegistry.COLLAR_TAG.get()) && !event.getRight().getAllEnchantments().isEmpty()){

@@ -17,6 +17,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 注入 {@code FishingHook}：让羽毛钓竿投射物 {@link FeatherEntity}（其子类）复用钓钩逻辑——
+ * 忽略流体（可在空气/陆地飞行）并接管收线判定（32 格内手持羽毛钓竿不收线，否则丢弃）。
+ */
 @Mixin(FishingHook.class)
 public abstract class FishingHookMixin extends Projectile {
 

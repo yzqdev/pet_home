@@ -119,9 +119,9 @@
   "pet_home.sound.subtitle.chain_lightning": "Błyskawica strzela",
   "pet_home.sound.subtitle.giant_bubble_inflate": "Wielka bańka rośnie",
   "pet_home.sound.subtitle.giant_bubble_pop": "Wielka bańka pęka",
-  "pet_home.sound.subtitle.pet_bed_uses": "Ustawiono legowisko",
+  "pet_home.sound.subtitle.pet_bed_use": "Ustawiono legowisko",
   "pet_home.sound.subtitle.drum": "Bęben dowodzenia bije",
   "pet_home.sound.subtitle.psychic_wall": "Fizyczna ściana brzęczy",
-  "pet_home.sound.subtitle.psychic_wall_deflect": "Fizyczna ściana odbija"
-   "pet_home.sound.subtitle.blazing_protection": "Płonący pręt znika"
+  "pet_home.sound.subtitle.psychic_wall_deflect": "Fizyczna ściana odbija",
+"pet_home.sound.subtitle.blazing_protection": "Płonący pręt znika"
 }

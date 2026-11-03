@@ -1,6 +1,6 @@
 {
   "type": "pet_home:di_loot_modifier",
-  "loot_type": 1,
+  "loot_type": "bubbling",
   "conditions": [
     {
       "condition": "forge:loot_table_id",

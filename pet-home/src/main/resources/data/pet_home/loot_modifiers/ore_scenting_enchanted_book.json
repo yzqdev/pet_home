@@ -1,6 +1,6 @@
 {
   "type": "pet_home:di_loot_modifier",
-  "loot_type": 4,
+  "loot_type": "ore_scenting",
   "conditions": [
     {
       "condition": "forge:loot_table_id",

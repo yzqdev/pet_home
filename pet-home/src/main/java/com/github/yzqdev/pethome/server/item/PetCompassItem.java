@@ -16,7 +16,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 /**
- * 宠物罗盘：右键打开宠物列表 GUI（compass.md 第九节），列表展示玩家全部宠物，
+ * 宠物罗盘：右键打开宠物列表 GUI，列表展示玩家全部宠物，
  * 选中后可传送玩家到宠物 / 召回宠物（两个功能由配置独立开关）。
  */
 public class PetCompassItem extends Item {
@@ -31,7 +31,7 @@ public class PetCompassItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide) {
             com.github.yzqdev.pethome.network.Networking.sendMSGToServer(
-                    new com.github.yzqdev.pethome.network.PropertiesMessage(com.github.yzqdev.pethome.ModConstants.petCompassOpen, new CompoundTag(), 0));
+                    com.github.yzqdev.pethome.network.PetCompassOpenPacket.INSTANCE);
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }

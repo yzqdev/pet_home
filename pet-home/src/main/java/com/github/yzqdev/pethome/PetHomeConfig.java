@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome;
 
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.enchantment.PetEnchantment;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+
 @Mod.EventBusSubscriber(modid = PetHomeMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class PetHomeConfig {
     public static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
@@ -33,7 +34,7 @@ public class PetHomeConfig {
     public final ForgeConfigSpec.BooleanValue petBedRespawns;
     public final ForgeConfigSpec.BooleanValue collarTag;
     public final ForgeConfigSpec.BooleanValue rabbitsScareRavagers;
-    // 宠物罗盘（compass.md：enable / 两个传送完全独立）
+    // 宠物罗盘 两个传送完全独立）
     public final ForgeConfigSpec.BooleanValue petCompassEnable;
     public final ForgeConfigSpec.BooleanValue petCompassTeleportPlayerToPet;
     public final ForgeConfigSpec.BooleanValue petCompassTeleportPetToPlayer;
@@ -41,6 +42,7 @@ public class PetHomeConfig {
     public final ForgeConfigSpec.BooleanValue petInfoOverlay;
     public final ForgeConfigSpec.BooleanValue petInfoOverlayRequireShift;
     public final ForgeConfigSpec.BooleanValue petInfoOverlayIgnoreJade;
+    public final ForgeConfigSpec.BooleanValue debugMode;
     public final ForgeConfigSpec.IntValue petstoreVillageWeight;
 
     public final ForgeConfigSpec.BooleanValue petCurseEnchantmentsLootOnly;
@@ -58,7 +60,7 @@ public class PetHomeConfig {
     public static final ForgeConfigSpec.BooleanValue MOBCATCHER_ONLY_TAMABLE_ANIMAL = BUILDER.comment("Mob catcher only catches tamable animal").define("mobcatcherOnlyTamableAnimal", true);
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> MOBCATCHER_BLACKLIST = BUILDER.comment("entities that can't be caught").defineListAllowEmpty("mobcatcherBlacklist", List.of("minecraft:painting"),   PetHomeConfig::validateEntityTypesName);
 
-    // friendly fire
+    // 友好保护
 
     static {
         BUILDER.push("friendly_fire");
@@ -122,14 +124,15 @@ public class PetHomeConfig {
         swingThroughPets = builder.comment("true if attacks do not register on pets from their owners and go through them to attack a mob behind them").translation("swing_through_pets").define("swing_through_pets", true);
         rottenApple = builder.comment("true if apples can turn into rotten apples if they despawn").translation("rotten_apple").define("rotten_apple", true);
         petBedRespawns = builder.comment("true if mobs can respawn in pet beds the next morning after they die").translation("pet_bed_respawns").define("pet_bed_respawns", true);
-        collarTag = builder.comment("true if collar tag functionality are enabled. If this is disabled, there is no way to enchant mobs!").translation("collar_tags").define("collar_tags", true);
+        collarTag = builder.comment("true if collar tag functionality are enabled. If this is disabled, there is no way to enchant mobs!").translation("collarTag").define("collarTag", true);
         rabbitsScareRavagers = builder.comment("true if rabbits scare ravagers like they used to do").translation("rabbits_scare_ravagers").define("rabbits_scare_ravagers", true);
-        petCompassEnable = builder.comment("master switch for the pet compass system").translation("pet_compass_enable").define("pet_compass_enable", true);
-        petCompassTeleportPlayerToPet = builder.comment("allow teleporting the player to the pet").translation("teleport_player_to_pet").define("teleport_player_to_pet", true);
-        petCompassTeleportPetToPlayer = builder.comment("allow teleporting (recalling) the pet to the player").translation("teleport_pet_to_player").define("teleport_pet_to_player", true);
-        petInfoOverlay = builder.comment("show the pet info panel at the top of the screen while looking at your own pet").translation("pet_info_overlay").define("pet_info_overlay", true);
-        petInfoOverlayRequireShift = builder.comment("require holding the sneak key while looking at the pet to show the panel (off = just look at the pet)").translation("pet_info_overlay_require_shift").define("pet_info_overlay_require_shift", false);
-        petInfoOverlayIgnoreJade = builder.comment("show the pet info panel even when Jade is installed (with Jade present the panel is hidden by default since its tooltip already shows pet info)").translation("pet_info_overlay_ignore_jade").define("pet_info_overlay_ignore_jade", false);
+        petCompassEnable = builder.comment("master switch for the pet compass system").translation("petCompassEnable").define("petCompassEnable", true);
+        petCompassTeleportPlayerToPet = builder.comment("allow teleporting the player to the pet").translation("teleportPlayerToPet").define("teleportPlayerToPet", true);
+        petCompassTeleportPetToPlayer = builder.comment("allow teleporting (recalling) the pet to the player").translation("teleportPetToPlayer").define("teleportPetToPlayer", true);
+        petInfoOverlay = builder.comment("show the pet info panel at the top of the screen while looking at your own pet").translation("petInfoOverlay").define("petInfoOverlay", true);
+        petInfoOverlayRequireShift = builder.comment("require holding the sneak key while looking at the pet to show the panel (off = just look at the pet)").translation("petInfoOverlayRequireShift").define("petInfoOverlayRequireShift", false);
+        petInfoOverlayIgnoreJade = builder.comment("show the pet info panel even when Jade is installed (with Jade present the panel is hidden by default since its tooltip already shows pet info)").translation("petInfoOverlayIgnoreJade").define("petInfoOverlayIgnoreJade", false);
+        debugMode = builder.comment("enable debug logs for troubleshooting (key systems print diagnostic info when on)").translation("debugMode").define("debugMode", false);
         petstoreVillageWeight = builder.comment("the spawn weight of the pet store in villages, set to 0 to disable it entirely").translation("petstore_village_weight").defineInRange("petstore_village_weight", 17, 0, 1000);
         builder.pop();
         builder.push("loot");
@@ -148,7 +151,7 @@ public class PetHomeConfig {
         builder.pop();
         builder.push("enchantments");
         try {
-            for (Field f : DIEnchantmentRegistry.class.getDeclaredFields()) {
+            for (Field f : PHEnchantmentRegistry.class.getDeclaredFields()) {
                 Object obj = f.get(null);
                 if (obj instanceof PetEnchantment) {
                     String registryName = ((PetEnchantment) obj).getName();
@@ -171,7 +174,6 @@ public class PetHomeConfig {
         return entry == null || entry.get();
     }
     public static boolean mobcatcherOnlyTamableAnimal;
-    // 集合缓存给空集合默认值：配置加载事件触发前被访问也不会 NPE（专用服务器曾因此崩溃）
     public static Set<EntityType<?>> mobcatcherBlackList = Set.of();
     public static boolean protectPetsFromPets = true;
 
@@ -194,8 +196,8 @@ public class PetHomeConfig {
         refreshCachedValues();
     }
 
-    /** 把 spec 当前值刷新进缓存静态字段；设置界面保存后也会调用 */
     public static void refreshCachedValues() {
+        com.github.yzqdev.pethome.server.entity.TameableUtils.refreshSpeciesGates();
         mobcatcherBlackList=(MOBCATCHER_BLACKLIST.get()).stream().map((entityTypeName) -> BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(entityTypeName))).collect(Collectors.toSet());;
         mobcatcherOnlyTamableAnimal=MOBCATCHER_ONLY_TAMABLE_ANIMAL.get();
         respectTeamRules = RESPECT_TEAM_RULES.get();
@@ -206,7 +208,6 @@ public class PetHomeConfig {
         displayHitWarning = DISPLAY_HIT_WARNING.get();
         protectTeamMembers = PROTECT_TEAM_MEMBERS.get();
 
-        // convert the list of strings into a set of items
         noProtectionEntity = (NO_PROTECTION_ENTITY.get()).stream().map((entityTypeName) -> BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(entityTypeName))).collect(Collectors.toSet());
         otherShouldProtectionEntity = (OTHER_SHOULD_PROTECT_ENTITY.get()).stream().map((entityTypeName) -> BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(entityTypeName))).collect(Collectors.toSet());
         playerCantHurtEntity = (PLAYER_CANT_HURT_ENTITY.get()).stream().map((entityTypeName) -> BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(entityTypeName))).collect(Collectors.toSet());

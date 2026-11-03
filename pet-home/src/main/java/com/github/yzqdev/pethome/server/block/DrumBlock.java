@@ -4,7 +4,7 @@ package com.github.yzqdev.pethome.server.block;
 
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
-import com.github.yzqdev.pethome.server.misc.DISoundRegistry;
+import com.github.yzqdev.pethome.server.misc.PHSoundRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
@@ -66,7 +66,7 @@ public class DrumBlock extends BaseEntityBlock {
             if(count > 0){
                 player.displayClientMessage(Component.translatable("message.pet_home.drum_command_" + currentCommand, count), true);
             }
-            player.playSound(DISoundRegistry.DRUM.get(), 3, 0.3F + 0.4F * random.nextFloat());
+            player.playSound(PHSoundRegistry.DRUM.get(), 3, 0.3F + 0.4F * random.nextFloat());
             level.gameEvent(player, GameEvent.NOTE_BLOCK_PLAY, pos);
             return InteractionResult.SUCCESS;
         }
@@ -113,7 +113,7 @@ public class DrumBlock extends BaseEntityBlock {
                     uuid = drum.getPlacerUUID();
                 }
                 this.issueCommand(level, pos, state.getValue(COMMAND), uuid);
-                level.playSound(null, pos, DISoundRegistry.DRUM.get(), SoundSource.BLOCKS, 3, 0.3F + 0.4F * random.nextFloat());
+                level.playSound(null, pos, PHSoundRegistry.DRUM.get(), SoundSource.BLOCKS, 3, 0.3F + 0.4F * random.nextFloat());
                 level.gameEvent(null, GameEvent.NOTE_BLOCK_PLAY, pos);
             }
             level.setBlock(pos, state.setValue(POWERED, Boolean.valueOf(flag)), 3);
@@ -121,7 +121,7 @@ public class DrumBlock extends BaseEntityBlock {
     }
 
     public void fallOn(Level level, BlockState state, BlockPos pos, Entity entity, float f) {
-        entity.playSound(DISoundRegistry.DRUM.get(), 3, 0.6F + 0.4F * random.nextFloat());
+        entity.playSound(PHSoundRegistry.DRUM.get(), 3, 0.6F + 0.4F * random.nextFloat());
         super.fallOn(level, state, pos, entity, f);
     }
 

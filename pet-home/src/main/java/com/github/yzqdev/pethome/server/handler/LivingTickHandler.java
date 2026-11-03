@@ -2,16 +2,16 @@ package com.github.yzqdev.pethome.server.handler;
 
 import com.github.yzqdev.pethome.client.ClientEvents;
 import com.github.yzqdev.pethome.server.ServerEvents;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.entity.FollowingJukeboxEntity;
 import com.github.yzqdev.pethome.server.entity.GiantBubbleEntity;
 import com.github.yzqdev.pethome.server.entity.PHEntityRegistry;
 import com.github.yzqdev.pethome.server.entity.PsychicWallEntity;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
-import com.github.yzqdev.pethome.server.misc.DIParticleRegistry;
+import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
 import com.github.yzqdev.pethome.server.misc.PetCompassTracker;
-import com.github.yzqdev.pethome.server.misc.DISoundRegistry;
-import com.github.yzqdev.pethome.server.misc.ModEffects;
+import com.github.yzqdev.pethome.server.misc.PHSoundRegistry;
+import com.github.yzqdev.pethome.server.misc.PHEffects;
 import com.github.yzqdev.pethome.util.LivingUtils;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -21,9 +21,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -35,20 +32,22 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * 从 CommonProxy.onLivingUpdate 拆分而来：宠物每 tick 的各种附魔效果。
- */
+
 public class LivingTickHandler {
 
-    private static final UUID FROST_FANG_SLOW = UUID.fromString("1eaf83ff-7207-4596-b37a-d7a07b3ec4cf");
-
+    /**
+     * 宠物附魔 tick 引擎（LivingTickEvent，双端调用、内部各分支自判 isClientSide）：
+     * 先做罗盘 20 tick 低频建档，再对可驯服生物依次驱动免疫帧/抗毒/两栖供氧/magnetic/
+     * shadow_hands 状态机/disk_jockey/linked_inventory/被动光环（shepherd 等六种）/
+     * void_cloud 缓降/ore_scenting/psychic_wall/blazing_protection/healing_aura/
+     * night_vision/insight/sonic_boom；项圈防抖期内全部跳过。
+     */
     @SubscribeEvent
     public void onLivingUpdate(LivingEvent.LivingTickEvent event) {
         // 宠物罗盘：20 tick 低频档案更新（首次驯服懒初始化 PetId + 位置/名字/维度刷新，无变化不写盘）
         if (event.getEntity() instanceof Mob compassMob && !event.getEntity().level().isClientSide() && compassMob.tickCount % 20 == 0) {
             PetCompassTracker.updateRecord(compassMob);
         }
-        int frozenTime = TameableUtils.getFrozenTime(event.getEntity());
         // 混乱之脑：混乱(DRUNK)状态的怪物转火周围其他怪物（自 1.21 移植；对所有怪物生效，不限于宠物）
         if (event.getEntity() instanceof Mob chaosMob && ServerEvents.canTickCollar(event.getEntity())) {
             tickChaos(chaosMob);
@@ -57,31 +56,28 @@ public class LivingTickHandler {
             tickImmunityFrame(event.getEntity());
             tickPoisonResistance(event.getEntity());
             tickAmphibious(event.getEntity());
-            if (event.getEntity() instanceof Mob mob && TameableUtils.hasEnchant(event.getEntity(), DIEnchantmentRegistry.MAGNETIC)) {
+            if (event.getEntity() instanceof Mob mob && TameableUtils.hasEnchant(event.getEntity(), PHEnchantmentRegistry.MAGNETIC)) {
                 tickMagnetic(mob);
             }
             tickShadowHands(event.getEntity());
             tickDiskJockey(event.getEntity());
-            if (event.getEntity() instanceof Mob mob && TameableUtils.hasEnchant(event.getEntity(), DIEnchantmentRegistry.LINKED_INVENTORY)) {
+            if (event.getEntity() instanceof Mob mob && TameableUtils.hasEnchant(event.getEntity(), PHEnchantmentRegistry.LINKED_INVENTORY)) {
                 tickLinkedInventory(mob);
             }
             tickPassiveAuras(event.getEntity());
             tickVoidCloud(event.getEntity());
             tickOreScenting(event.getEntity());
-            if (event.getEntity() instanceof Mob mob && TameableUtils.isZombiePet(event.getEntity()) && !event.getEntity().level().isClientSide()) {
-                tickZombiePetAI(mob);
-            }
-            if (event.getEntity() instanceof Mob mob && TameableUtils.getEnchantLevel(event.getEntity(), DIEnchantmentRegistry.PSYCHIC_WALL) > 0 && !event.getEntity().level().isClientSide()) {
+            if (event.getEntity() instanceof Mob mob && TameableUtils.getEnchantLevel(event.getEntity(), PHEnchantmentRegistry.PSYCHIC_WALL) > 0 && !event.getEntity().level().isClientSide()) {
                 tickPsychicWall(mob);
             }
-            if (TameableUtils.hasEnchant(event.getEntity(), DIEnchantmentRegistry.BLAZING_PROTECTION) && !event.getEntity().level().isClientSide()) {
+            if (TameableUtils.hasEnchant(event.getEntity(), PHEnchantmentRegistry.BLAZING_PROTECTION) && !event.getEntity().level().isClientSide()) {
                 tickBlazingProtection(event.getEntity());
             }
-            if (TameableUtils.hasEnchant(event.getEntity(), DIEnchantmentRegistry.HEALING_AURA) && !event.getEntity().level().isClientSide()) {
+            if (TameableUtils.hasEnchant(event.getEntity(), PHEnchantmentRegistry.HEALING_AURA) && !event.getEntity().level().isClientSide()) {
                 tickHealingAura(event.getEntity());
             }
             // 以下 3 个自 1.21 移植
-            if (TameableUtils.hasEnchant(event.getEntity(), DIEnchantmentRegistry.NIGHT_VISION) && !event.getEntity().level().isClientSide()) {
+            if (TameableUtils.hasEnchant(event.getEntity(), PHEnchantmentRegistry.NIGHT_VISION) && !event.getEntity().level().isClientSide()) {
                 tickNightVision(event.getEntity());
             }
             if (event.getEntity() instanceof Mob mob && !event.getEntity().level().isClientSide()) {
@@ -89,14 +85,10 @@ public class LivingTickHandler {
                 tickSonicBoom(mob);
             }
         }
-
-        if (frozenTime > 0) {
-            tickFrozen(event.getEntity(), frozenTime);
-        }
     }
 
     private void tickImmunityFrame(LivingEntity entity) {
-        if (TameableUtils.hasEnchant(entity, DIEnchantmentRegistry.IMMUNITY_FRAME) && !entity.level().isClientSide()) {
+        if (TameableUtils.hasEnchant(entity, PHEnchantmentRegistry.IMMUNITY_FRAME) && !entity.level().isClientSide()) {
             int i = TameableUtils.getImmuneTime(entity);
             if (i > 0) {
                 TameableUtils.setImmuneTime(entity, i - 1);
@@ -105,17 +97,18 @@ public class LivingTickHandler {
     }
 
     private void tickPoisonResistance(LivingEntity entity) {
-        if (entity.hasEffect(MobEffects.POISON) && TameableUtils.hasEnchant(entity, DIEnchantmentRegistry.POISON_RESISTANCE)) {
+        if (entity.hasEffect(MobEffects.POISON) && TameableUtils.hasEnchant(entity, PHEnchantmentRegistry.POISON_RESISTANCE)) {
             entity.removeEffect(MobEffects.POISON);
         }
     }
 
     private void tickAmphibious(LivingEntity entity) {
-        if (TameableUtils.hasEnchant(entity, DIEnchantmentRegistry.AMPHIBIOUS)) {
+        if (TameableUtils.hasEnchant(entity, PHEnchantmentRegistry.AMPHIBIOUS)) {
             entity.setAirSupply(entity.getMaxAirSupply());
         }
     }
 
+    /** magnetic（磁力）附魔：服务端记录当前吸附目标实体 ID；客户端画磁力线粒子；双端把目标往宠物方向拉动（宠物自身减速）。 */
     private void tickMagnetic(Mob mob) {
         Entity sucking = TameableUtils.getPetAttackTarget(mob);
         if (!mob.level().isClientSide()) {
@@ -136,13 +129,13 @@ public class LivingTickHandler {
                     float f1 = 0.5F * (mob.getRandom().nextFloat() - 0.5F);
                     float f2 = 0.5F * (mob.getRandom().nextFloat() - 0.5F);
                     float f3 = 0.5F * (mob.getRandom().nextFloat() - 0.5F);
-                    mob.level().addParticle(DIParticleRegistry.MAGNET.get(), vec3.x + f1, vec3.y + f2, vec3.z + f3, 0.0F, 0.0F, 0.0F);
+                    mob.level().addParticle(PHParticleRegistry.MAGNET.get(), vec3.x + f1, vec3.y + f2, vec3.z + f3, 0.0F, 0.0F, 0.0F);
                 }
             }
         }
         if (sucking != null) {
             if (mob.tickCount % 15 == 0) {
-                mob.playSound(DISoundRegistry.MAGNET_LOOP.get(), 1F, 1F);
+                mob.playSound(PHSoundRegistry.MAGNET_LOOP.get(), 1F, 1F);
             }
             mob.setDeltaMovement(mob.getDeltaMovement().multiply(0.88D, 1.0D, 0.88D));
             Vec3 move = new Vec3(mob.getX() - sucking.getX(), mob.getY() - (double) sucking.getEyeHeight() / 2.0D - sucking.getY(), mob.getZ() - sucking.getZ());
@@ -150,8 +143,13 @@ public class LivingTickHandler {
         }
     }
 
+    /**
+     * shadow_hands（暗影手）状态机入口：客户端只把出拳进度同步给渲染层（ClientEvents 本地 Map）；
+     * 服务端目标不可为玩家/驯服动物，16 格内有视线则 {@link #tickShadowPunch}，否则 {@link #updateShadowPunchTarget}
+     * （目标继承主人仇恨）。等级即并发拳数。
+     */
     private void tickShadowHands(LivingEntity entity) {
-        int shadowHandsLevel = TameableUtils.getEnchantLevel(entity, DIEnchantmentRegistry.SHADOW_HANDS);
+        int shadowHandsLevel = TameableUtils.getEnchantLevel(entity, PHEnchantmentRegistry.SHADOW_HANDS);
         if (shadowHandsLevel <= 0 || !(entity instanceof Mob)) {
             return;
         }
@@ -173,6 +171,7 @@ public class LivingTickHandler {
         }
     }
 
+    /** 单拳推进：5 tick 冷却占拳 → 进度 0..10 递增 → 满拳造成 clamp(等级,2,4) 点伤害并收拳。 */
     private void tickShadowPunch(Mob mob, Entity punching, int[] punchProgress, int shadowHandsLevel) {
         int[] striking = TameableUtils.getShadowPunchStriking(mob);
         if (punchProgress == null || punchProgress.length < shadowHandsLevel) {
@@ -215,20 +214,24 @@ public class LivingTickHandler {
         }
     }
 
+    /**
+     * 无有效出拳目标时回收进行中的拳并从宠物自身目标/主人仇恨里挑新目标（对齐 26.3：
+     * 主人「被打目标」优先于「攻击过的目标」，else-if 连接）。收拳递减必须无条件执行：
+     * 目标实体被移除后 getPetAttackTarget 返回 null，若把递减放在 punching!=null 里，打死敌人
+     * （实体消失）后 punch 卡在当前值，对应手永久保持握拳姿态。
+     */
     private void updateShadowPunchTarget(Mob mob, Entity punching, int[] punchProgress, int shadowHandsLevel) {
-        if (punching != null) {
-            boolean flag = true;
-            for (int i = 0; i < Math.min(shadowHandsLevel, punchProgress.length); i++) {
-                if (punchProgress[i] > 0) {
-                    punchProgress[i] = punchProgress[i] - 1;
-                    flag = false;
-                }
+        boolean flag = true;
+        for (int i = 0; i < Math.min(shadowHandsLevel, punchProgress.length); i++) {
+            if (punchProgress[i] > 0) {
+                punchProgress[i] = punchProgress[i] - 1;
+                flag = false;
             }
-            TameableUtils.setShadowPunchStriking(mob, new int[shadowHandsLevel]);
-            TameableUtils.setShadowPunchTimes(mob, punchProgress);
-            if (flag) {
-                TameableUtils.setPetAttackTarget(mob, -1);
-            }
+        }
+        TameableUtils.setShadowPunchStriking(mob, new int[shadowHandsLevel]);
+        TameableUtils.setShadowPunchTimes(mob, punchProgress);
+        if (flag) {
+            TameableUtils.setPetAttackTarget(mob, -1);
         }
         Entity punchingTarget = null;
         if (mob.getTarget() != null) {
@@ -236,8 +239,7 @@ public class LivingTickHandler {
         } else if (TameableUtils.getOwnerOf(mob) instanceof LivingEntity owner) {
             if (owner.getLastHurtByMob() != null && owner.getLastHurtByMob().isAlive() && !TameableUtils.hasSameOwnerAs(mob, owner.getLastHurtByMob())) {
                 punchingTarget = owner.getLastHurtByMob();
-            }
-            if (owner.getLastHurtMob() != null && owner.getLastHurtMob().isAlive() && !TameableUtils.hasSameOwnerAs(mob, owner.getLastHurtMob())) {
+            } else if (owner.getLastHurtMob() != null && owner.getLastHurtMob().isAlive() && !TameableUtils.hasSameOwnerAs(mob, owner.getLastHurtMob())) {
                 punchingTarget = owner.getLastHurtMob();
             }
         }
@@ -246,8 +248,9 @@ public class LivingTickHandler {
         }
     }
 
+    /** disk_jockey（唱片骑师）：每 10 tick 确保跟随唱片实体存在（丢失则补建并写回 UUID）。 */
     private void tickDiskJockey(LivingEntity entity) {
-        if (TameableUtils.hasEnchant(entity, DIEnchantmentRegistry.DISK_JOCKEY) && !entity.level().isClientSide() && entity.tickCount % 10 == 0) {
+        if (TameableUtils.hasEnchant(entity, PHEnchantmentRegistry.DISK_JOCKEY) && !entity.level().isClientSide() && entity.tickCount % 10 == 0) {
             UUID uuid = TameableUtils.getPetJukeboxUUID(entity);
             if (uuid == null || !(((ServerLevel) entity.level()).getEntity(uuid) instanceof FollowingJukeboxEntity)) {
                 FollowingJukeboxEntity follower = PHEntityRegistry.FOLLOWING_JUKEBOX.get().create(entity.level());
@@ -259,36 +262,36 @@ public class LivingTickHandler {
         }
     }
 
+    /** linked_inventory（联动背包）：强制开启宠物的拾取能力（canPickUpLoot），拾取由 MobMixin 拦截入包。 */
     private void tickLinkedInventory(Mob mob) {
         if (!mob.canPickUpLoot()) {
             mob.setCanPickUpLoot(true);
         }
     }
 
+    /** 各被动光环分发：shepherd 吸引动物、infamy 挑衅、intimidation 威吓、blight 枯萎、rejuvenation 吸经验回血（xp_transfer 走 ServerEvents.xpTransferTick 玩家驱动版）。 */
     private void tickPassiveAuras(LivingEntity entity) {
-        int shepherdLvl = TameableUtils.getEnchantLevel(entity, DIEnchantmentRegistry.SHEPHERD);
+        int shepherdLvl = TameableUtils.getEnchantLevel(entity, PHEnchantmentRegistry.SHEPHERD);
         if (shepherdLvl > 0) {
             TameableUtils.attractAnimals(entity, shepherdLvl * 3);
         }
-        if (TameableUtils.hasEnchant(entity, DIEnchantmentRegistry.INFAMY_CURSE)) {
+        if (TameableUtils.hasEnchant(entity, PHEnchantmentRegistry.INFAMY_CURSE)) {
             TameableUtils.aggroRandomMonsters(entity);
         }
-        if (TameableUtils.hasEnchant(entity, DIEnchantmentRegistry.INTIMIDATION)) {
-            TameableUtils.scareRandomMonsters(entity, TameableUtils.getEnchantLevel(entity, DIEnchantmentRegistry.INTIMIDATION));
+        if (TameableUtils.hasEnchant(entity, PHEnchantmentRegistry.INTIMIDATION)) {
+            TameableUtils.scareRandomMonsters(entity, TameableUtils.getEnchantLevel(entity, PHEnchantmentRegistry.INTIMIDATION));
         }
-        if (TameableUtils.hasEnchant(entity, DIEnchantmentRegistry.BLIGHT_CURSE)) {
+        if (TameableUtils.hasEnchant(entity, PHEnchantmentRegistry.BLIGHT_CURSE)) {
             TameableUtils.destroyRandomPlants(entity);
         }
-        if (TameableUtils.hasEnchant(entity, DIEnchantmentRegistry.REJUVENATION)) {
+        if (TameableUtils.hasEnchant(entity, PHEnchantmentRegistry.REJUVENATION)) {
             TameableUtils.absorbExpOrbs(entity);
-        }
-        if (TameableUtils.hasEnchant(entity, DIEnchantmentRegistry.XP_Transfer)) {
-            TameableUtils.xpTransfer(entity);
         }
     }
 
+    /** void_cloud（虚空云）缓降：下落 >3 格时施加反向运动减速悬停（朝主人位置/高度靠拢），并同步 fallDistance。 */
     private void tickVoidCloud(LivingEntity entity) {
-        if (TameableUtils.hasEnchant(entity, DIEnchantmentRegistry.VOID_CLOUD) && !entity.isInWaterOrBubble() && entity.fallDistance > 3.0F && !entity.onGround()) {
+        if (TameableUtils.hasEnchant(entity, PHEnchantmentRegistry.VOID_CLOUD) && !entity.isInWaterOrBubble() && entity.fallDistance > 3.0F && !entity.onGround()) {
             Entity owner = TameableUtils.getOwnerOf(entity);
             boolean shouldMoveToOwnerXZ = owner != null && Math.abs(owner.getY() - entity.getY()) < 1;
             double targetX = shouldMoveToOwnerXZ ? owner.getX() : entity.getX();
@@ -311,29 +314,18 @@ public class LivingTickHandler {
         }
     }
 
+    /** ore_scenting 节流入口：按等级换算嗅探间隔/范围/高亮时长/矿点数上限后委托 {@link TameableUtils#detectRandomOres}。 */
     private void tickOreScenting(LivingEntity entity) {
-        int oreLvl = TameableUtils.getEnchantLevel(entity, DIEnchantmentRegistry.ORE_SCENTING);
+        int oreLvl = TameableUtils.getEnchantLevel(entity, PHEnchantmentRegistry.ORE_SCENTING);
         if (oreLvl > 0 && !entity.level().isClientSide()) {
             int interval = 100 + Math.max(150, 550 - oreLvl * 100);
             TameableUtils.detectRandomOres(entity, interval, 5 + oreLvl * 2, oreLvl * 50, oreLvl * 3);
         }
     }
 
-    private void tickZombiePetAI(Mob mob) {
-        if (mob.getTarget() instanceof Player && ((Player) mob.getTarget()).isCreative()) {
-            mob.setTarget(null);
-        }
-        if (mob.getTarget() == null || !mob.getTarget().isAlive()) {
-            mob.setTarget(mob.level().getNearestPlayer(ServerEvents.ZOMBIE_TARGET, mob));
-        } else if (mob.distanceTo(mob.getTarget()) < mob.getBbWidth() + 0.5F) {
-            mob.doHurtTarget(mob.getTarget());
-        } else if (mob.getNavigation().isDone()) {
-            mob.getNavigation().moveTo(mob.getTarget(), 1.0D);
-        }
-    }
-
+    /** psychic_wall（念力墙）：冷却结束后在宠物（或主人仇恨目标）与目标之间竖起 level+1 格宽、level*100 tick 寿命的墙，并置 level*200+40 tick 冷却（目标回退 else-if，对齐 26.3）。 */
     private void tickPsychicWall(Mob mob) {
-        int psychicWallLevel = TameableUtils.getEnchantLevel(mob, DIEnchantmentRegistry.PSYCHIC_WALL);
+        int psychicWallLevel = TameableUtils.getEnchantLevel(mob, PHEnchantmentRegistry.PSYCHIC_WALL);
         int cooldown = TameableUtils.getPsychicWallCooldown(mob);
         if (cooldown > 0) {
             TameableUtils.setPsychicWallCooldown(mob, cooldown - 1);
@@ -347,8 +339,7 @@ public class LivingTickHandler {
                 if (owner.getLastHurtByMob() != null && owner.getLastHurtByMob().isAlive() && !TameableUtils.hasSameOwnerAs(mob, owner.getLastHurtByMob())) {
                     blocking = owner.getLastHurtByMob();
                     blockingFrom = owner;
-                }
-                if (owner.getLastHurtMob() != null && owner.getLastHurtMob().isAlive() && !TameableUtils.hasSameOwnerAs(mob, owner.getLastHurtMob())) {
+                } else if (owner.getLastHurtMob() != null && owner.getLastHurtMob().isAlive() && !TameableUtils.hasSameOwnerAs(mob, owner.getLastHurtMob())) {
                     blocking = owner.getLastHurtMob();
                     blockingFrom = owner;
                 }
@@ -374,9 +365,10 @@ public class LivingTickHandler {
         }
     }
 
+    /** blazing_protection 充能：护盾未满（2*级）时每 200 tick 充一条。 */
     private void tickBlazingProtection(LivingEntity entity) {
         int bars = TameableUtils.getBlazingProtectionBars(entity);
-        if (bars < 2 * TameableUtils.getEnchantLevel(entity, DIEnchantmentRegistry.BLAZING_PROTECTION)) {
+        if (bars < 2 * TameableUtils.getEnchantLevel(entity, PHEnchantmentRegistry.BLAZING_PROTECTION)) {
             int cooldown = TameableUtils.getBlazingProtectionCooldown(entity);
             if (cooldown > 0) {
                 cooldown--;
@@ -388,13 +380,18 @@ public class LivingTickHandler {
         }
     }
 
+    /**
+     * healing_aura 相位机（时间存独立数据槽）：>0 治疗期——给 4 格内同主受伤者上再生，归零转入
+     * 负值冷却（-600~-1200）；<0 冷却期逐 tick 回升；==0 待机——每 200 tick 或受击脉冲（impulse）时
+     * 附近有伤员则进入 200 tick 治疗期。负值也经 setter 写槽（实现侧判等防无效同步）。
+     */
     private void tickHealingAura(LivingEntity entity) {
         int time = TameableUtils.getHealingAuraTime(entity);
         if (time > 0) {
             List<LivingEntity> hurtNearby = TameableUtils.getAuraHealables(entity);
             for (LivingEntity needsHealing : hurtNearby) {
                 if (!needsHealing.hasEffect(MobEffects.REGENERATION)) {
-                    needsHealing.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100, TameableUtils.getEnchantLevel(entity, DIEnchantmentRegistry.HEALING_AURA) - 1));
+                    needsHealing.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100, TameableUtils.getEnchantLevel(entity, PHEnchantmentRegistry.HEALING_AURA) - 1));
                 }
             }
             time--;
@@ -413,37 +410,18 @@ public class LivingTickHandler {
         TameableUtils.setHealingAuraTime(entity, time);
     }
 
-    private void tickFrozen(LivingEntity entity, int frozenTime) {
-        TameableUtils.setFrozenTimeTag(entity, frozenTime - 1);
-        AttributeInstance instance = entity.getAttribute(Attributes.MOVEMENT_SPEED);
-        if (instance != null) {
-            float f = -0.1F * entity.getPercentFrozen();
-            if (frozenTime > 1) {
-                AttributeModifier fangModifier = new AttributeModifier(FROST_FANG_SLOW, "Frost fang slow", f, AttributeModifier.Operation.ADDITION);
-                if (!instance.hasModifier(fangModifier)) {
-                    instance.addTransientModifier(fangModifier);
-                }
-            } else {
-                instance.removeModifier(FROST_FANG_SLOW);
-            }
-        }
-        for (int i = 0; i < 1 + entity.getRandom().nextInt(2); i++) {
-            entity.level().addParticle(ParticleTypes.SNOWFLAKE, entity.getRandomX(0.7F), entity.getRandomY(), entity.getRandomZ(0.7F), 0.0F, 0.0F, 0.0F);
-        }
-    }
-
     // ===== 以下 4 个自 1.21 移植（chaos / night_vision / insight / sonic_boom 附魔） =====
 
     /** 混乱之脑：混乱(DRUNK)状态的怪物每几秒转向攻击 10 格内随机其他怪物，头顶冒问号粒子 */
     private void tickChaos(Mob attacker) {
-        if (attacker.level().isClientSide() || !attacker.hasEffect(ModEffects.DRUNK.get()) || !(attacker instanceof Monster)) {
+        if (attacker.level().isClientSide() || !attacker.hasEffect(PHEffects.DRUNK.get()) || !(attacker instanceof Monster)) {
             return;
         }
         double x = attacker.getX();
         double y = attacker.getY() + attacker.getBbHeight() + 0.4;
         double z = attacker.getZ();
         if (attacker.level().getGameTime() % 10 == 0) {
-            ((ServerLevel) (attacker.level())).sendParticles(DIParticleRegistry.QUESTION_MARK.get(), x, y, z, 1, 0, 0, 0, 0.0D);
+            ((ServerLevel) (attacker.level())).sendParticles(PHParticleRegistry.QUESTION_MARK.get(), x, y, z, 1, 0, 0, 0, 0.0D);
         }
         // 实体查询移到效果判断之后：绝大多数 tick 没有 DRUNK 效果，原先每 Mob 每 tick 都做 10 格 AABB 查询
         List<Monster> genericMobs = attacker.level().getEntitiesOfClass(Monster.class, LivingUtils.getBoundingBoxAroundEntity(attacker, 10.0F));
@@ -479,7 +457,7 @@ public class LivingTickHandler {
 
     /** Insight（洞察）：黑暗中的宠物让周围敌对生物发光 */
     private void tickInsight(Mob pet) {
-        var insightLevel = TameableUtils.getEnchantLevel(pet, DIEnchantmentRegistry.INSIGHT);
+        var insightLevel = TameableUtils.getEnchantLevel(pet, PHEnchantmentRegistry.INSIGHT);
         // %20 节流：发光效果时长 20 tick，到点重刷即可；原先是每 tick 做一次 level*15 格的大范围实体查询
         if (insightLevel > 0 && pet.tickCount % 20 == 0 && pet.level() instanceof ServerLevel serverLevel) {
             if (serverLevel.getMaxLocalRawBrightness(pet.getOnPos().above()) < 9) {
@@ -490,7 +468,7 @@ public class LivingTickHandler {
 
     /** Sonic Boom（音波轰击）：有目标且（距离 10~20 格或周围敌对密集）时，每 200 tick 释放一次 */
     private void tickSonicBoom(Mob pet) {
-        if (TameableUtils.hasEnchant(pet, DIEnchantmentRegistry.SONIC_BOOM)) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantmentRegistry.SONIC_BOOM)) {
             var beingAttacked = pet.getTarget();
             // 200 tick 冷却判断前置，避免每 tick 白做 10 格实体查询
             if (beingAttacked != null && pet.tickCount % 200 == 0 && pet.level() instanceof ServerLevel serverLevel) {

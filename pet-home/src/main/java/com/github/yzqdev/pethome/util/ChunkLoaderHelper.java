@@ -14,6 +14,7 @@ import java.util.UUID;
  */
 public class ChunkLoaderHelper {
 
+    /** 以 center 所在区块为中心强载 3x3 区块（FORCED 票据，owner 为本 mod，ticket 用调用方给定的 UUID）。 */
     public static void forceLoadAround(ServerLevel level, BlockPos center, UUID ticket) {
         ChunkPos chunkPos = new ChunkPos(center);
         for (int i = -1; i <= 1; i++) {
@@ -23,6 +24,7 @@ public class ChunkLoaderHelper {
         }
     }
 
+    /** 释放 forceLoadAround 加的同 3x3 范围票据（须与加载成对调用，否则区块被永久强载）。 */
     public static void unloadAround(ServerLevel level, BlockPos center, UUID ticket) {
         ChunkPos chunkPos = new ChunkPos(center);
         for (int i = -1; i <= 1; i++) {

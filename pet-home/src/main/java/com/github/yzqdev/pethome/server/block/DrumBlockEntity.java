@@ -9,12 +9,15 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.UUID;
 
+/**
+ * 指挥鼓方块实体：仅持久化放置者 UUID——DrumBlock 右键/红石触发时据此确定向谁的宠物广播三态指令。
+ */
 public class DrumBlockEntity extends BlockEntity {
 
     private UUID placerUUID;
 
     public DrumBlockEntity(BlockPos pos, BlockState state) {
-        super(DITileEntityRegistry.DRUM.get(), pos, state);
+        super(PHTileEntityRegistry.DRUM.get(), pos, state);
     }
 
     public UUID getPlacerUUID() {

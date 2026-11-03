@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.server.entity.ai;
 
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.core.BlockPos;
@@ -31,7 +31,7 @@ public class AmphibianFollowOwnerBehavior<T extends Animal> extends Behavior<T> 
    }
 
     protected boolean checkExtraStartConditions(ServerLevel level, T axolotl) {
-        if(axolotl instanceof ModifedToBeTameable tamed){
+        if(axolotl instanceof ModifiedToBeTameable tamed){
             owner = tamed.getTameOwner();
             if(owner != null && owner.isAlive() && !owner.isSpectator() && tamed.isFollowingOwner()){
                 return true;
@@ -43,20 +43,20 @@ public class AmphibianFollowOwnerBehavior<T extends Animal> extends Behavior<T> 
 
     protected boolean canStillUse(ServerLevel level, T axolotl, long gameTime) {
         if(!axolotl.getBrain().hasMemoryValue(MemoryModuleType.BREED_TARGET) && owner != null && owner.isAlive()){
-            return ((ModifedToBeTameable)axolotl).isFollowingOwner() && axolotl.distanceTo(owner) > STOP_DISTANCE;
+            return ((ModifiedToBeTameable)axolotl).isFollowingOwner() && axolotl.distanceTo(owner) > STOP_DISTANCE;
         }
         return false;
     }
 
-    protected void stop(ServerLevel p_23492_, T axolotl, long gameTime) {
+    protected void stop(ServerLevel level, T axolotl, long gameTime) {
         axolotl.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
     }
 
-    protected void tick(ServerLevel p_23503_, T axolotl, long gameTime) {
+    protected void tick(ServerLevel level, T axolotl, long gameTime) {
         if (axolotl.distanceToSqr(this.owner) >= 144.0D) {
             this.teleportToOwner(axolotl);
         } else{
-            int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, DIEnchantmentRegistry.SPEEDSTER);
+            int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantmentRegistry.SPEEDSTER);
             float speed = axolotl.isInWaterOrBubble() ? baseSpeedWater + speedsterLevel * 0.05F : baseSpeedLand + speedsterLevel * 0.1F;
             BehaviorUtils.lookAtEntity(axolotl, owner);
             BehaviorUtils.setWalkAndLookTargetMemories(axolotl, owner, speed, (int)STOP_DISTANCE);
@@ -64,8 +64,8 @@ public class AmphibianFollowOwnerBehavior<T extends Animal> extends Behavior<T> 
     }
 
 
-    private int randomIntInclusive(int p_25301_, int p_25302_) {
-        return this.owner.getRandom().nextInt(p_25302_ - p_25301_ + 1) + p_25301_;
+    private int randomIntInclusive(int min, int max) {
+        return this.owner.getRandom().nextInt(max - min + 1) + min;
     }
 
     private void teleportToOwner(T axolotl) {
@@ -83,13 +83,13 @@ public class AmphibianFollowOwnerBehavior<T extends Animal> extends Behavior<T> 
 
     }
 
-    private boolean maybeTeleportTo(T axolotl, int p_25304_, int p_25305_, int p_25306_) {
-        if (Math.abs((double)p_25304_ - this.owner.getX()) < 2.0D && Math.abs((double)p_25306_ - this.owner.getZ()) < 2.0D) {
+    private boolean maybeTeleportTo(T axolotl, int x, int y, int z) {
+        if (Math.abs((double)x - this.owner.getX()) < 2.0D && Math.abs((double)z - this.owner.getZ()) < 2.0D) {
             return false;
-        } else if (!this.canTeleportTo(axolotl, new BlockPos(p_25304_, p_25305_, p_25306_))) {
+        } else if (!this.canTeleportTo(axolotl, new BlockPos(x, y, z))) {
             return false;
         } else {
-            axolotl.moveTo((double)p_25304_ + 0.5D, (double)p_25305_, (double)p_25306_ + 0.5D, axolotl.getYRot(), axolotl.getXRot());
+            axolotl.moveTo((double)x + 0.5D, (double)y, (double)z + 0.5D, axolotl.getYRot(), axolotl.getXRot());
             axolotl.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
             return true;
         }

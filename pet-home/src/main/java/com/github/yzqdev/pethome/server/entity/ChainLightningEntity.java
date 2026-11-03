@@ -20,6 +20,11 @@ import net.minecraftforge.network.PlayMessages;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * chain_lightning（连锁闪电）附魔的闪电段实体：不可存档的瞬时实体（5 tick 自毁），
+ * 定位到当前目标并造成 3 点闪电伤害，再在 8 格内选一个最近的新目标（非创造者友军/
+ * 未被电过/有视线）生成子段继续跳跃，剩余段数存 TARGET_COUNT 槽位逐段递减。
+ */
 public class ChainLightningEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> CREATOR_ID = SynchedEntityData.defineId(ChainLightningEntity.class, EntityDataSerializers.INT);
@@ -53,6 +58,7 @@ public class ChainLightningEntity extends Entity {
         this.entityData.define(DIES_IN, 5);
     }
 
+    /** 主 tick：跟随目标高度中点、首 tick 闪电伤害、尚未连锁时挑新目标生成子段、倒计时自毁。 */
     @Override
     public void tick() {
         super.tick();
@@ -173,12 +179,12 @@ public class ChainLightningEntity extends Entity {
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag p_20052_) {
+    protected void readAdditionalSaveData(CompoundTag compound) {
 
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag p_20139_) {
+    protected void addAdditionalSaveData(CompoundTag compound) {
 
     }
 }

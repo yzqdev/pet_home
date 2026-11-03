@@ -3,7 +3,7 @@ package com.github.yzqdev.pethome.mixin;
 
 
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 import net.minecraft.core.BlockPos;
@@ -20,6 +20,10 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 注入 {@code FollowOwnerGoal}：三态指令系统开启时只有跟随态（command==2）启用原版跟随；
+ * amphibious 附魔允许传送落点选水中并直接水中寻路跟随主人。
+ */
 @Mixin(FollowOwnerGoal.class)
 public abstract class FollowOwnerGoalMixin extends Goal {
 
@@ -68,7 +72,7 @@ public abstract class FollowOwnerGoalMixin extends Goal {
             cancellable = true
     )
     private void di_canTeleportTo(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
-        if(TameableUtils.hasEnchant(tamable, DIEnchantmentRegistry.AMPHIBIOUS) && level.isWaterAt(pos)){
+        if(TameableUtils.hasEnchant(tamable, PHEnchantmentRegistry.AMPHIBIOUS) && level.isWaterAt(pos)){
             cir.setReturnValue(true);
         }
     }
@@ -80,7 +84,7 @@ public abstract class FollowOwnerGoalMixin extends Goal {
             cancellable = true
     )
     private void di_tick(CallbackInfo ci) {
-        if(TameableUtils.hasEnchant(tamable, DIEnchantmentRegistry.AMPHIBIOUS) && tamable.isInWaterOrBubble() && this.tamable.distanceToSqr(this.owner) < 144.0D){
+        if(TameableUtils.hasEnchant(tamable, PHEnchantmentRegistry.AMPHIBIOUS) && tamable.isInWaterOrBubble() && this.tamable.distanceToSqr(this.owner) < 144.0D){
             tamable.getNavigation().moveTo(owner, speedModifier);
             ci.cancel();
         }

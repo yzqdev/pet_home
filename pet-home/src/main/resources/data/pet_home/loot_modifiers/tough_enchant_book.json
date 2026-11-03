@@ -1,6 +1,6 @@
 {
   "type": "pet_home:di_loot_modifier",
-  "loot_type": 10,
+  "loot_type": "tough",
   "conditions": [
     {
       "condition": "forge:loot_table_id",

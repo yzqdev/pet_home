@@ -1,17 +1,15 @@
 package com.github.yzqdev.pethome.client.gui;
 
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
-/**
- * 配置界面的单个条目：标签 + 悬浮提示 + 读写访问器 + 控件类型。
- * 修改立即写入 ForgeConfigSpec（由 Forge 自动落盘）。
- */
+
 public abstract class ConfigEntry {
     /** 每行高度 */
     public static final int ROW_HEIGHT = 24;
@@ -150,40 +148,6 @@ public abstract class ConfigEntry {
         }
     }
 
-    /** 字符串列表条目：逗号分隔的文本框 */
-    public static class StringListEntry extends ConfigEntry {
-        private final ForgeConfigSpec.ConfigValue<List<? extends String>> value;
-
-        public StringListEntry(String label, @Nullable String tooltip, ForgeConfigSpec.ConfigValue<List<? extends String>> value) {
-            super(label, tooltip);
-            this.value = value;
-        }
-
-        public String toText() {
-            List<? extends String> list = value.get();
-            return list == null ? "" : String.join(", ", list);
-        }
-
-        public void fromText(String text) {
-            List<String> list = new ArrayList<>();
-            for (String part : text.split(",")) {
-                String trimmed = part.trim();
-                if (!trimmed.isEmpty()) {
-                    list.add(trimmed);
-                }
-            }
-            value.set(list);
-        }
-
-        @Override
-        public void resetToDefault() {
-            List<? extends String> def = value.getDefault();
-            if (def != null) {
-                value.set(new ArrayList<>(def));
-            }
-        }
-    }
-
     /** 附魔开关条目（keyed by registry name） */
     public static class EnchantToggleEntry extends ConfigEntry {
         private final ForgeConfigSpec.BooleanValue value;
@@ -204,6 +168,38 @@ public abstract class ConfigEntry {
         @Override
         public void resetToDefault() {
             value.set(value.getDefault());
+        }
+    }
+
+    /** 子界面入口条目（对齐 26.3 同名类）：按钮显示摘要（如列表条目数），点击打开编辑子界面；Reset 执行传入的恢复默认动作 */
+    public static class ScreenEntry extends ConfigEntry {
+        private final Supplier<String> summary;
+        private final Function<PetHomeConfigScreen, Screen> screenFactory;
+        private final Runnable resetAction;
+
+        public ScreenEntry(
+                String label, @Nullable String tooltip,
+                Supplier<String> summary,
+                Function<PetHomeConfigScreen, Screen> screenFactory,
+                Runnable resetAction) {
+            super(label, tooltip);
+            this.summary = summary;
+            this.screenFactory = screenFactory;
+            this.resetAction = resetAction;
+        }
+
+        public String getSummary() {
+            return summary.get();
+        }
+
+        /** @return 以当前界面为父界面的编辑子界面 */
+        public Screen open(PetHomeConfigScreen current) {
+            return screenFactory.apply(current);
+        }
+
+        @Override
+        public void resetToDefault() {
+            resetAction.run();
         }
     }
 }

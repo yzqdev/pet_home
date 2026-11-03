@@ -7,9 +7,6 @@ public class PetBedDrop {
     private static final String DOMESTICATION_INNOVATION = "pet_home";
 
     public static boolean hasPetBedPos(EntityMaid maid) {
-
             return TameableUtils.isTamed(maid) && TameableUtils.getPetBedPos(maid) != null;
-
-
     }
 }

@@ -21,6 +21,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * 绿宝石换附魔物品交易：对固定物品按原版附魔台逻辑（复刻的 {@code selectEnchantment}）
+ * 随机附 1~N 条魔再卖给玩家；候选池含诅咒、排除 treasure-only，经验等级影响出高等级魔的概率。
+ */
 public class EnchantItemTrade implements VillagerTrades.ItemListing {
     private final ItemStack itemStack;
     private final int enchantXp;
@@ -44,6 +48,7 @@ public class EnchantItemTrade implements VillagerTrades.ItemListing {
         this.priceMultiplier = priceMultiplier;
     }
 
+    /** 报价时即时附魔：附魔等级高低决定绿宝石价（{@code baseEmeraldCost + enchantXp}，上限 64）。 */
     public MerchantOffer getOffer(Entity entity, RandomSource random) {
         int i = Math.max(6, enchantXp + 5 - random.nextInt(5));
         ItemStack itemstack = enchant(random, new ItemStack(this.itemStack.getItem()), i, enchantmentCount);
