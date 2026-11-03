@@ -7,7 +7,7 @@ import com.github.yzqdev.pethome.server.NbtKeys;
 import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.util.IComandableMob;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.particles.ParticleOptions;
@@ -43,7 +43,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Mixin(Axolotl.class)
-public abstract class AxolotlMixin extends Animal implements ModifedToBeTameable, IComandableMob {
+public abstract class AxolotlMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 
     @Shadow public abstract void readAdditionalSaveData(CompoundTag compound);
 

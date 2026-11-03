@@ -20,6 +20,8 @@ public class PHEntityRegistry {
     public static final DeferredHolder<EntityType<?>, EntityType<HighlightedBlockEntity>> HIGHLIGHTED_BLOCK = DEF_REG.register("highlighted_block", () -> build(EntityType.Builder.of(HighlightedBlockEntity::new, MobCategory.MISC).sized(1.0F, 1.0F).fireImmune(), "highlighted_block"));
     public static final DeferredHolder<EntityType<?>, EntityType<FeatherEntity>> FEATHER = DEF_REG.register("feather", () -> build(EntityType.Builder.of(FeatherEntity::new, MobCategory.MISC).sized(0.2F, 0.2F).fireImmune(), "feather"));
     public static final DeferredHolder<EntityType<?>, EntityType<RecallBallEntity>> RECALL_BALL = DEF_REG.register("recall_ball", () -> build(EntityType.Builder.of(RecallBallEntity::new, MobCategory.MISC).sized(0.8F, 0.8F).fireImmune(), "recall_ball"));
+    /** disc_jockey（唱片骑师，自 1.20 移植）：跟随宠物的漂浮唱片机。 */
+    public static final DeferredHolder<EntityType<?>, EntityType<FollowingJukeboxEntity>> FOLLOWING_JUKEBOX = DEF_REG.register("following_jukebox", () -> build(EntityType.Builder.of(FollowingJukeboxEntity::new, MobCategory.MISC).sized(0.65F, 0.65F).fireImmune(), "following_jukebox"));
     public static  final DeferredHolder<EntityType<?>, EntityType<NetEntity>> NET_ENTITY = DEF_REG.register("net_entity", () -> EntityType.Builder
             .<NetEntity>of(NetEntity::new, MobCategory.MISC)
             .setShouldReceiveVelocityUpdates(true)

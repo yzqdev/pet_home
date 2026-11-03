@@ -1,36 +1,47 @@
 package com.github.yzqdev.pethome.client.model;
 
 import com.github.yzqdev.pethome.server.entity.RecallBallEntity;
-import com.google.common.collect.ImmutableList;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.model.EntityModel;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.model.geom.PartPose;
+import net.minecraft.client.model.geom.builders.CubeListBuilder;
+import net.minecraft.client.model.geom.builders.LayerDefinition;
+import net.minecraft.client.model.geom.builders.MeshDefinition;
+import net.minecraft.client.model.geom.builders.PartDefinition;
 
-public class HighlightedBlockModel extends AdvancedEntityModel<RecallBallEntity> {
-    private final AdvancedModelBox box;
+/** 高亮方块实体模型。已从 Tabula 体系迁移到原版 ModelPart/LayerDefinition，静态几何无动画。 */
+public class HighlightedBlockModel extends EntityModel<RecallBallEntity> {
+    private final ModelPart root;
 
-    public HighlightedBlockModel() {
-        texWidth = 64;
-        texHeight = 64;
+    public HighlightedBlockModel(ModelPart root) {
+        this.root = root;
+    }
 
-        box = new AdvancedModelBox(this);
-        box.setPos(0.0F, 0.0F, 0.0F);
-        box.setTextureOffset(0, 0).addBox(-8, -8, -8, 16.0F, 16.0F, 16.0F, 0.0F, false);
-
-        this.updateDefaultPose();
+    public static LayerDefinition createBodyLayer() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+        root.addOrReplaceChild(
+                "box",
+                CubeListBuilder.create().texOffs(0, 0).addBox(-8.0F, -8.0F, -8.0F, 16, 16, 16),
+                PartPose.ZERO);
+        return LayerDefinition.create(mesh, 64, 64);
     }
 
     @Override
-    public Iterable<BasicModelPart> parts() {
-        return ImmutableList.of(box);
+    public void setupAnim(RecallBallEntity entity, float limbSwing, float limbSwingAmount, float age, float yaw, float pitch) {
+        this.resetPose();
+    }
+
+    private void resetPose() {
+        this.root.getAllParts().forEach(ModelPart::resetPose);
     }
 
     @Override
-    public void setupAnim(RecallBallEntity recallBallEntity, float limbSwing, float limbSwingAmount, float age, float yaw, float pitch) {
-        this.resetToDefaultPose();
+    public void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int packedLight, int packedOverlay, int color) {
+        // 旧 Tabula 渲染忽略调用点传入的 color（顶点固定白色）；原版 Cube.compile 会把 color 写入顶点，
+        // 调用点的 1（不透明黑）会把模型染黑——固定 -1 与旧行为一致
+        this.root.render(poseStack, buffer, packedLight, packedOverlay, -1);
     }
-
-    @Override
-    public Iterable<AdvancedModelBox> getAllParts() {
-        return ImmutableList.of(box);
-    }
-
-
 }

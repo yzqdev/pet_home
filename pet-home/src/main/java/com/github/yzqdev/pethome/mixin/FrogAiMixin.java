@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
 import com.github.yzqdev.pethome.server.entity.PHActivityRegistry;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.ai.AmphibianFollowOwnerBehavior;
 import com.github.yzqdev.pethome.server.entity.ai.AmphibianStayBehavior;
 import com.github.yzqdev.pethome.server.misc.PHTagRegistry;
@@ -55,7 +55,7 @@ public class FrogAiMixin {
     private static void di_updateActivity(Frog frog, CallbackInfo ci) {
         Brain<Frog> brain = frog.getBrain();
         Activity activity = brain.getActiveNonCoreActivity().orElse(null);
-        if (frog instanceof ModifedToBeTameable modifedToBeTameable) {
+        if (frog instanceof ModifiedToBeTameable modifedToBeTameable) {
             if (modifedToBeTameable.isStayingStill()) {
                 brain.setActiveActivityIfPossible(PHActivityRegistry.FROG_STAY.get());
                 ci.cancel();

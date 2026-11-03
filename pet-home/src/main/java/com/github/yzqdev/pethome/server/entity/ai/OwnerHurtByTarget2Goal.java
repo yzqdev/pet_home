@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.server.entity.ai;
 
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.target.TargetGoal;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
@@ -20,14 +20,14 @@ public class OwnerHurtByTarget2Goal extends TargetGoal {
     }
 
     public boolean canUse() {
-        if (((ModifedToBeTameable)this.tameAnimal).isTame() && !((ModifedToBeTameable)this.tameAnimal).isStayingStill()) {
-            LivingEntity livingentity = ((ModifedToBeTameable)this.tameAnimal).getTameOwner();
+        if (((ModifiedToBeTameable)this.tameAnimal).isTame() && !((ModifiedToBeTameable)this.tameAnimal).isStayingStill()) {
+            LivingEntity livingentity = ((ModifiedToBeTameable)this.tameAnimal).getTameOwner();
             if (livingentity == null) {
                 return false;
             } else {
                 this.ownerLastHurt = livingentity.getLastHurtByMob();
                 int i = livingentity.getLastHurtMobTimestamp();
-                return i != this.timestamp && this.canAttack(this.ownerLastHurt, TargetingConditions.DEFAULT) && ((ModifedToBeTameable)this.tameAnimal).isValidAttackTarget(this.ownerLastHurt);
+                return i != this.timestamp && this.canAttack(this.ownerLastHurt, TargetingConditions.DEFAULT) && ((ModifiedToBeTameable)this.tameAnimal).isValidAttackTarget(this.ownerLastHurt);
             }
         } else {
             return false;
@@ -36,7 +36,7 @@ public class OwnerHurtByTarget2Goal extends TargetGoal {
 
     public void start() {
         this.mob.setTarget(this.ownerLastHurt);
-        LivingEntity livingentity = ((ModifedToBeTameable)this.tameAnimal).getTameOwner();
+        LivingEntity livingentity = ((ModifiedToBeTameable)this.tameAnimal).getTameOwner();
         if (livingentity != null) {
             this.timestamp = livingentity.getLastHurtMobTimestamp();
         }

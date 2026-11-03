@@ -71,7 +71,9 @@ public abstract class WolfMixin extends TamableAnimal implements IComandableMob 
             cancellable = true
     )
     private void di_onInteract(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
-        if(PetHomeConfig.trinaryCommandSystem){
+        // 手持该宠物食物且原版会消费它时不拦——回血（不满血）/ 繁殖（成年可恋爱）/ 幼年加速成长；三态只接管「原版这次右键什么也不做」的情况
+        boolean vanillaFoodAction = this.isFood(player.getItemInHand(hand)) && (this.getHealth() < this.getMaxHealth() || this.isBaby() || (this.getAge() == 0 && this.canFallInLove()));
+        if(PetHomeConfig.trinaryCommandSystem && !vanillaFoodAction){
             this.jumping = false;
             this.navigation.stop();
             this.setTarget((LivingEntity)null);

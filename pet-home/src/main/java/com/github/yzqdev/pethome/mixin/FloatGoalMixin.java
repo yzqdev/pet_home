@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
 
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.FloatGoal;
@@ -28,7 +28,7 @@ public abstract class FloatGoalMixin extends Goal {
             cancellable = true
     )
     private void di_canUse(CallbackInfoReturnable<Boolean> cir){
-        if(TameableUtils.isTamed(mob) && TameableUtils.hasEnchant(mob, ModEnchantments.AMPHIBIOUS)){
+        if(TameableUtils.isTamed(mob) && TameableUtils.hasEnchant(mob, PHEnchantments.AMPHIBIOUS)){
             cir.setReturnValue(false);
         }
     }

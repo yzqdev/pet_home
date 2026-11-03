@@ -5,7 +5,7 @@ plugins {
     `maven-publish`
     id("net.neoforged.moddev")
     idea
-   id("me.modmuss50.mod-publish-plugin")
+    id("me.modmuss50.mod-publish-plugin")
 }
 
 val minecraft_version = property("minecraft_version") as String
@@ -106,6 +106,10 @@ repositories {
 dependencies {
     implementation("maven.modrinth:touhou-little-maid:1.4.0-neoforge+mc1.21.1")
 
+    // GeckoLib 宠物 overlay 适配：编译期可见，运行时按 ModList.isLoaded 门控，不进发布 jar
+    compileOnly(libs.neoGeckolib)
+    localRuntimeConfig(libs.neoGeckolib)
+
     implementation("maven.modrinth:jade:15.9.1+neoforge")
     runtimeOnly("maven.modrinth:l_enders-cataclysm:3.16")
     runtimeOnly("maven.modrinth:lionfish-api:2.6")
@@ -153,7 +157,7 @@ publishing {
 publishMods {
     file.set(tasks.named<Jar>("jar").flatMap { it.archiveFile })
 
-    type.set( STABLE)
+    type.set( BETA)
     modLoaders.add("neoforge")
     changelog.set("")
     curseforge {

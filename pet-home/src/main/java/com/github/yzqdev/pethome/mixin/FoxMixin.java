@@ -7,7 +7,7 @@ import com.github.yzqdev.pethome.server.NbtKeys;
 import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.util.IComandableMob;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.ai.FollowOwner2Goal;
 import com.github.yzqdev.pethome.server.entity.ai.OwnerHurtTarget2Goal;
 import com.github.yzqdev.pethome.server.entity.ai.Sit2Goal;
@@ -36,7 +36,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Mixin(Fox.class)
-public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IComandableMob {
+public abstract class FoxMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 
     @Shadow @Final private static EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_0;
     @Shadow @Final private static EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_1;

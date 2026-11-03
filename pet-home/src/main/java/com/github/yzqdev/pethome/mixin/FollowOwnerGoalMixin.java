@@ -4,7 +4,7 @@ package com.github.yzqdev.pethome.mixin;
 
 import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.util.IComandableMob;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.core.BlockPos;
@@ -70,7 +70,7 @@ public abstract class FollowOwnerGoalMixin extends Goal {
             cancellable = true
     )
     private void di_tick(CallbackInfo ci) {
-        if(TameableUtils.hasEnchant(tamable, ModEnchantments.AMPHIBIOUS) && tamable.isInWaterOrBubble() && this.tamable.distanceToSqr(this.owner) < 144.0D){
+        if(TameableUtils.hasEnchant(tamable, PHEnchantments.AMPHIBIOUS) && tamable.isInWaterOrBubble() && this.tamable.distanceToSqr(this.owner) < 144.0D){
             tamable.getNavigation().moveTo(owner, speedModifier);
             ci.cancel();
         }

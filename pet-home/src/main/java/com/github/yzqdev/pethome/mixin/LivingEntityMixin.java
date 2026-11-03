@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
 import com.github.yzqdev.pethome.PHConstants;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.util.IPetbedDataEntity;
 import com.github.yzqdev.pethome.util.PetSyncDataEntity;
 import com.github.yzqdev.pethome.util.TameableUtils;
@@ -118,7 +118,7 @@ public abstract class LivingEntityMixin extends Entity implements IPetbedDataEnt
 
     }
     private boolean isLandAndSea(){
-        return TameableUtils.hasEnchant(((LivingEntity) (Entity)this), ModEnchantments.AMPHIBIOUS);
+        return TameableUtils.hasEnchant(((LivingEntity) (Entity)this), PHEnchantments.AMPHIBIOUS);
     }
     @Override
     public CompoundTag getCitadelEntityData() {

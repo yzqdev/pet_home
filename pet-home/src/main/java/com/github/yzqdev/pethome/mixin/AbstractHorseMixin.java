@@ -2,8 +2,8 @@ package com.github.yzqdev.pethome.mixin;
 
 import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -23,7 +23,7 @@ import javax.annotation.Nullable;
 import java.util.UUID;
 
 @Mixin(AbstractHorse.class)
-public abstract class AbstractHorseMixin extends Animal implements ModifedToBeTameable {
+public abstract class AbstractHorseMixin extends Animal implements ModifiedToBeTameable {
 
     @Shadow
     protected float playerJumpPendingScale;
@@ -59,7 +59,7 @@ public abstract class AbstractHorseMixin extends Animal implements ModifedToBeTa
             cancellable = true
     )
     private void di_tickRidden(Player rider, Vec3 vec3, CallbackInfo ci) {
-        if (this.isAlive() && this.isVehicle() && this.isInWaterOrBubble() && TameableUtils.hasEnchant(this, ModEnchantments.AMPHIBIOUS)) {
+        if (this.isAlive() && this.isVehicle() && this.isInWaterOrBubble() && TameableUtils.hasEnchant(this, PHEnchantments.AMPHIBIOUS)) {
             LivingEntity livingentity = (LivingEntity) this.getControllingPassenger();
             this.setYRot(livingentity.getYRot());
             this.yRotO = this.getYRot();

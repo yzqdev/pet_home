@@ -3,13 +3,19 @@ package com.github.yzqdev.pethome.server.misc;
 import com.github.yzqdev.pethome.PHConstants;
 import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.datagen.LangDefinition;
-import com.github.yzqdev.pethome.network.PropertiesMessage;
+import com.github.yzqdev.pethome.network.PetCompassDataPacket;
+import com.github.yzqdev.pethome.server.entity.RecallBallEntity;
 import com.github.yzqdev.pethome.util.CitadelEntityData;
+import com.github.yzqdev.pethome.util.IComandableMob;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -18,6 +24,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -92,10 +99,77 @@ public class PetCompassTracker {
                 pet.level().getGameTime(),
                 true);
         PetRecord existing = data.getPetRecord(petId);
-        if (existing != null && sameData(existing, updated)) {
+        if (existing != null && sameData(existing, updated) && !existing.inBall) {
             return;
         }
+        // 宠物实体上线（含宝盒重建）：inBall 标记随之清除
+        if (existing != null) {
+            updated.inBall = false;
+        }
         data.putPetRecord(updated);
+    }
+
+    /** 宠物被召回宝盒收存：档案标记 inBall，位置/维度改为宝盒落点（实体已 discard，之后按宝盒定位）。 */
+    public static void onPetCapturedByRecallBall(LivingEntity pet, RecallBallEntity ball) {
+        if (pet.level().isClientSide()) {
+            return;
+        }
+        UUID petId = getPetId(pet);
+        if (petId == null) {
+            return;
+        }
+        PHWorldData data = PHWorldData.get(pet.level());
+        if (data == null) {
+            return;
+        }
+        PetRecord record = data.getPetRecord(petId);
+        if (record == null) {
+            return;
+        }
+        record.inBall = true;
+        record.ballUuid = ball.getUUID().toString();
+        record.ballKind = "recall";
+        record.dimension = ball.level().dimension().location().toString();
+        record.x = ball.getBlockX();
+        record.y = ball.getBlockY();
+        record.z = ball.getBlockZ();
+        record.lastKnownTime = pet.level().getGameTime();
+        data.putPetRecord(record);
+    }
+
+    /**
+     * 宠物被宠物球（补兽网）收存：与宝盒同构地标记 inBall，位置改为「装宠物的物品」所在处。
+     * 宠物球里的宠物是 ItemEntity（掉落物）或已在玩家背包，故入参按 {@link Entity} 取落点——
+     * 无掉落物（直接进背包）时退化为玩家位置。不接这条链路时，档案会一直指向已 discard 的旧实体 UUID，
+     * 罗盘显示「状态：未加载」且召回走强载队列必然超时失败。
+     */
+    public static void onPetCapturedByNet(LivingEntity pet, @Nullable Entity container) {
+        if (pet.level().isClientSide()) {
+            return;
+        }
+        UUID petId = getPetId(pet);
+        if (petId == null) {
+            return;
+        }
+        PHWorldData data = PHWorldData.get(pet.level());
+        if (data == null) {
+            return;
+        }
+        PetRecord record = data.getPetRecord(petId);
+        if (record == null) {
+            return;
+        }
+        record.inBall = true;
+        if (container != null) {
+            record.ballUuid = container.getUUID().toString();
+            record.ballKind = "net";
+            record.dimension = container.level().dimension().location().toString();
+            record.x = container.getBlockX();
+            record.y = container.getBlockY();
+            record.z = container.getBlockZ();
+        }
+        record.lastKnownTime = pet.level().getGameTime();
+        data.putPetRecord(record);
     }
 
     /** 宠物死亡：档案保留、alive 置 false（罗盘档案不因实体消失而删除）。 */
@@ -177,6 +251,7 @@ public class PetCompassTracker {
                     entry.putInt("Y", living.getBlockY());
                     entry.putInt("Z", living.getBlockZ());
                     entry.putInt("Dist", (int) living.distanceTo(player));
+                    putLiveStatus(entry, living);
                 } else {
                     // 不在线的死亡档案：宠物床复活请求可能已被移除（如床被破坏）——无请求即永久消失
                     if (!record.alive) {
@@ -197,15 +272,129 @@ public class PetCompassTracker {
                         entry.putInt("Dist", (int) player.position().distanceTo(
                                 new BlockPos(record.x, record.y, record.z).getCenter()));
                     }
+                    // 宝盒中的宠物：按宝盒实体定位（宝盒可能被水流/活塞移动过），找到则刷新档案坐标
+                    if (record.inBall) {
+                        Entity ball = findEntityByEntityUuid(player, record.ballUuid);
+                        if (ball != null && ball.isAlive()) {
+                            record.dimension = ball.level().dimension().location().toString();
+                            record.x = ball.getBlockX();
+                            record.y = ball.getBlockY();
+                            record.z = ball.getBlockZ();
+                            data.putPetRecord(record);
+                        }
+                        entry.putString("Dim", record.dimension);
+                        entry.putInt("X", record.x);
+                        entry.putInt("Y", record.y);
+                        entry.putInt("Z", record.z);
+                        entry.putInt("Dist", (int) player.position().distanceTo(
+                                new BlockPos(record.x, record.y, record.z).getCenter()));
+                    }
                 }
                 entry.putBoolean("Loaded", loaded);
                 entry.putBoolean("Alive", alive);
+                entry.putBoolean("InBall", record.inBall);
+                entry.putString("BallKind", record.ballKind);
+                // 失效判定：未加载的条目里，坐标所在区块已加载却仍查不到实体 → 实体确实不在了（转让/被清除/跨版本存档），
+                // 区别于「区块没载入所以暂时够不着」的普通未加载（那种召回能成功），失效条目才显示删除按钮
+                entry.putBoolean("Stale", !loaded && alive && !record.inBall && isRecordStale(player, record));
                 out.put("Pet" + count, entry);
                 count++;
             }
         }
         out.putInt("Count", count);
-        PacketDistributor.sendToPlayer(player, new PropertiesMessage(PHConstants.petCompassData, out, 0));
+        PacketDistributor.sendToPlayer(player, new PetCompassDataPacket(out));
+    }
+
+    /**
+     * 档案是否失效（宠物实体确实已不在该坐标的已加载区块里）。
+     * 判据：目标维度存在 + 坐标所在区块已加载（实体若还在必能被 {@code getEntity} 找到）→ 查不到即实体已消失。
+     * 区块未加载时判为「暂时够不着」（不失效），因为召回的强载队列能把宠物拉回来。
+     */
+    private static boolean isRecordStale(ServerPlayer player, PetRecord record) {
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(record.entityUuid);
+        } catch (IllegalArgumentException e) {
+            return true;
+        }
+        MinecraftServer server = null;
+        if (player != null && player.level() instanceof ServerLevel sl) {
+            server = sl.getServer();
+        }
+        if (server == null) {
+            return false;
+        }
+        ServerLevel level = resolveServerLevel(server, record.dimension);
+        if (level == null) {
+            return false;
+        }
+        if (level.getEntity(uuid) != null) {
+            return false;
+        }
+        return level.isPositionEntityTicking(new BlockPos(record.x, record.y, record.z));
+    }
+
+    @Nullable
+    private static ServerLevel resolveServerLevel(MinecraftServer server, String dimension) {
+        try {
+            return server.getLevel(ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimension)));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 删除（遗忘）宠物档案：仅移除罗盘档案，不动实体本身——万一宠物其实还活着（如在别人那儿），删档只是不再显示。
+     * 服务端校验档案所有权，防伪造包删他人档案。
+     */
+    public static void handleForgetRequest(ServerPlayer player, CompoundTag tag) {
+        if (!PetHomeConfig.petCompassEnable) {
+            return;
+        }
+        UUID petId;
+        try {
+            petId = UUID.fromString(tag.getString("PetId"));
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        PHWorldData data = PHWorldData.get(player.level());
+        if (data == null) {
+            return;
+        }
+        PetRecord record = data.getPetRecord(petId);
+        if (record == null || !record.ownerId.equals(player.getUUID())) {
+            return;
+        }
+        data.removePetRecord(petId);
+        player.sendSystemMessage(Component.translatable(LangDefinition.message("pet_compass.forgotten")));
+        handleOpenRequest(player);
+    }
+
+    /**
+     * 在线宠物的实时状态（罗盘状态列）：血量、三态指令、附魔摘要。
+     * 指令编号即 {@link IComandableMob#getCommand()} 原值（0 游走 / 1 停留 / 2 跟随），
+     * 非本模组三态宠物（无 duck 接口）写 -1 由客户端隐藏该段；
+     * 附魔摘要序列化「id路径:等级」分号串（复用 jade/信息面板同款语言键渲染），无附魔为空串。
+     */
+    private static void putLiveStatus(CompoundTag entry, LivingEntity living) {
+        entry.putFloat("Health", living.getHealth());
+        entry.putFloat("MaxHealth", living.getMaxHealth());
+        int cmd = -1;
+        if (living instanceof IComandableMob commandableMob) {
+            cmd = commandableMob.getCommand();
+        }
+        entry.putInt("Cmd", cmd);
+        StringBuilder enchants = new StringBuilder();
+        Map<ResourceLocation, Integer> map = TameableUtils.getEnchants(living);
+        if (map != null) {
+            for (Map.Entry<ResourceLocation, Integer> e : map.entrySet()) {
+                if (enchants.length() > 0) {
+                    enchants.append(';');
+                }
+                enchants.append(e.getKey().getPath()).append(':').append(e.getValue());
+            }
+        }
+        entry.putString("Enchants", enchants.toString());
     }
 
     /** 按 Entity UUID 在全部维度中查找在线实体（档案的 entityUuid 是字符串，解析失败返回 null） */

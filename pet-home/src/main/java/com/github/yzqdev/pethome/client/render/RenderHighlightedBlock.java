@@ -19,7 +19,8 @@ public class RenderHighlightedBlock extends EntityRenderer<HighlightedBlockEntit
 
 
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "textures/highlighted_block.png");
-    private final HighlightedBlockModel highlightedBlockModel = new HighlightedBlockModel();
+    private final HighlightedBlockModel highlightedBlockModel =
+            new HighlightedBlockModel(HighlightedBlockModel.createBodyLayer().bakeRoot());
 
     public RenderHighlightedBlock(EntityRendererProvider.Context context) {
         super(context);

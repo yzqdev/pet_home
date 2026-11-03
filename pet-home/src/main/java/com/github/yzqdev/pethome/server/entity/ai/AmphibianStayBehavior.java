@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.server.entity.ai;
 
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.behavior.Behavior;
@@ -15,12 +15,12 @@ public class AmphibianStayBehavior<T extends Animal> extends Behavior<T> {
     }
 
     protected boolean checkExtraStartConditions(ServerLevel level, T axolotl) {
-        return ((ModifedToBeTameable)axolotl).isStayingStill();
+        return ((ModifiedToBeTameable)axolotl).isStayingStill();
     }
 
 
     protected boolean canStillUse(ServerLevel level, T axolotl, long gameTime) {
-        return ((ModifedToBeTameable)axolotl).isStayingStill();
+        return ((ModifiedToBeTameable)axolotl).isStayingStill();
 
     }
 

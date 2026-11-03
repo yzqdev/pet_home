@@ -2,11 +2,12 @@ package com.github.yzqdev.pethome.server.event;
 
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.client.ClientGameEvents;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
+import com.github.yzqdev.pethome.server.entity.FollowingJukeboxEntity;
 import com.github.yzqdev.pethome.server.entity.GiantBubbleEntity;
 import com.github.yzqdev.pethome.server.entity.PHEntityRegistry;
 import com.github.yzqdev.pethome.server.entity.PsychicWallEntity;
-import com.github.yzqdev.pethome.server.misc.ModEffects;
+import com.github.yzqdev.pethome.server.misc.PHEffects;
 import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
 import com.github.yzqdev.pethome.server.misc.PetCompassTracker;
 import com.github.yzqdev.pethome.server.misc.PHSoundRegistry;
@@ -33,6 +34,7 @@ import static com.github.yzqdev.pethome.server.event.ServerEvent.canTickCollar;
 
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 /**
  * 宠物附魔 tick 引擎（{@code EntityTickEvent.Pre}，仅 Mob 且通过项圈防抖）：
@@ -72,13 +74,13 @@ public class EntityTickHandler {
      * DRUNK 效果副作用（对怪物生效）：10 格内随机转移仇恨到另一怪物并冒问号粒子；
      * AABB 查询仅在有该效果时执行。仅服务端（客户端 level 会 CCE）。
      */
-    public static void mobTick(net.neoforged.neoforge.event.tick.EntityTickEvent.Pre event, LivingEntity attacker) {
+    public static void mobTick(EntityTickEvent.Pre event, LivingEntity attacker) {
         // 仅服务端执行：涉及 ServerLevel（粒子、目标选择）等逻辑，客户端 level 为 ClientLevel 会 ClassCastException
         if (attacker.level().isClientSide()) {
             return;
         }
         // 10 格 AABB 查询只在醉酒效果存在时才做（原先每 Mob 每 tick 无条件查询）
-        if (attacker.hasEffect(ModEffects.DRUNK) && attacker instanceof Monster monster) {
+        if (attacker.hasEffect(PHEffects.DRUNK) && attacker instanceof Monster monster) {
             List<Monster> genericMobs = attacker.level().getEntitiesOfClass(Monster.class, LivingUtils.getBoundingBoxAroundEntity(attacker, (double) 10.0F));
             if (genericMobs == null) {
                 return;
@@ -110,11 +112,11 @@ public class EntityTickHandler {
         }
     }
 
-    private static void handleSurvivalEnchants(net.neoforged.neoforge.event.tick.EntityTickEvent.Pre event, Mob pet) {
+    private static void handleSurvivalEnchants(EntityTickEvent.Pre event, Mob pet) {
         // 烈焰保护：宠物着火时向周围实体蔓延火焰
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.BLAZING_PROTECTION) && !pet.level().isClientSide()) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.BLAZING_PROTECTION) && !pet.level().isClientSide()) {
             int bars = TameableUtils.getBlazingProtectionBars(pet);
-            if (bars < 2 * TameableUtils.getEnchantLevel(pet, ModEnchantments.BLAZING_PROTECTION)) {
+            if (bars < 2 * TameableUtils.getEnchantLevel(pet, PHEnchantments.BLAZING_PROTECTION)) {
                 int cooldown = TameableUtils.getBlazingProtectionCooldown(pet);
                 if (cooldown > 0) {
                     cooldown--;
@@ -127,7 +129,7 @@ public class EntityTickHandler {
         }
 
         // 无敌帧：受击后短暂无敌
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.IMMUNITY_FRAME) && !pet.level().isClientSide()) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.IMMUNITY_FRAME) && !pet.level().isClientSide()) {
             int i = TameableUtils.getImmuneTime(pet);
             if (i > 0) {
                 TameableUtils.setImmuneTime(pet, i - 1);
@@ -135,23 +137,23 @@ public class EntityTickHandler {
         }
 
         // 毒素免疫
-        if (pet.hasEffect(MobEffects.POISON) && TameableUtils.hasEnchant(pet, ModEnchantments.POISON_RESISTANCE)) {
+        if (pet.hasEffect(MobEffects.POISON) && TameableUtils.hasEnchant(pet, PHEnchantments.POISON_RESISTANCE)) {
             pet.removeEffect(MobEffects.POISON);
         }
 
         // 两栖：水生宠物离水后获得水下呼吸
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.AMPHIBIOUS)) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.AMPHIBIOUS)) {
             pet.setAirSupply(pet.getMaxAirSupply());
         }
 
         // 治愈光环：周期性治疗周围玩家
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.HEALING_AURA) && !pet.level().isClientSide()) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.HEALING_AURA) && !pet.level().isClientSide()) {
             int time = TameableUtils.getHealingAuraTime(pet);
             if (time > 0) {
                 List<LivingEntity> hurtNearby = TameableUtils.getAuraHealables(pet);
                 for (LivingEntity needsHealing : hurtNearby) {
                     if (!needsHealing.hasEffect(MobEffects.REGENERATION)) {
-                        needsHealing.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100, TameableUtils.getEnchantLevel(pet, ModEnchantments.HEALING_AURA) - 1));
+                        needsHealing.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100, TameableUtils.getEnchantLevel(pet, PHEnchantments.HEALING_AURA) - 1));
                     }
                 }
                 time--;
@@ -169,7 +171,7 @@ public class EntityTickHandler {
 
     private static void handleUtilityEnchants(Mob pet) {
         // 夜视：给宠物与主人施加夜视
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.NIGHT_VISION) && TameableUtils.isTamed(pet)) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.NIGHT_VISION) && TameableUtils.isTamed(pet)) {
             var owner = TameableUtils.getOwnerOf(pet);
             if (owner != null && owner.distanceToSqr(pet) < 10 && owner instanceof Player petOwner) {
                 if (!petOwner.hasEffect(MobEffects.NIGHT_VISION) && pet.tickCount % 40 == 0) {
@@ -178,13 +180,11 @@ public class EntityTickHandler {
             }
         }
 
-        // 经验转移（当前停用）
-//        if (TameableUtils.hasEnchant(pet, ModEnchantments.XP_Transfer)) {
-//            TameableUtils.xpTransfer(pet);
-//        }
+        // 经验转移（xp_transfer）：由 ServerEvent.onWorldTick 的玩家驱动版本承担（每 10 tick 逐玩家吸附经验球），
+        // 此处不再按宠物逐 tick 实现，避免与玩家驱动版重复给经验。
 
         // 虚空云：缓慢下落防摔伤害
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.VOID_CLOUD) && !pet.isInWaterOrBubble() && pet.fallDistance > 3.0F && !pet.onGround()) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.VOID_CLOUD) && !pet.isInWaterOrBubble() && pet.fallDistance > 3.0F && !pet.onGround()) {
             Entity owner = TameableUtils.getOwnerOf(pet);
             boolean shouldMoveToOwnerXZ = owner != null && Math.abs(owner.getY() - pet.getY()) < 1;
             double targetX = shouldMoveToOwnerXZ ? owner.getX() : pet.getX();
@@ -207,30 +207,55 @@ public class EntityTickHandler {
         }
 
         // 矿石嗅探：高亮附近矿石
-        int oreLvl = TameableUtils.getEnchantLevel(pet, ModEnchantments.ORE_SCENTING);
+        int oreLvl = TameableUtils.getEnchantLevel(pet, PHEnchantments.ORE_SCENTING);
         if (oreLvl > 0 && !pet.level().isClientSide && pet.isAlive()) {
             int interval = 100 + Math.max(150, 550 - oreLvl * 100);
             TameableUtils.detectRandomOres(pet, interval, 5 + oreLvl * 2, oreLvl * 50, oreLvl * 3);
         }
 
         // 连锁背包
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.LINKED_INVENTORY)) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.LINKED_INVENTORY)) {
             if (!pet.canPickUpLoot()) pet.setCanPickUpLoot(true);
         }
 
         // 洞察：对目标施加发光
-        var insightLevel = TameableUtils.getEnchantLevel(pet, ModEnchantments.INSIGHT);
+        var insightLevel = TameableUtils.getEnchantLevel(pet, PHEnchantments.INSIGHT);
         // 效果时长 20 tick，每 20 tick 刷新一次即可（原先每 tick 做亮度查询+发光刷新）
         if (insightLevel > 0 && pet.tickCount % 20 == 0 && pet.level() instanceof ServerLevel serverLevel) {
             if (serverLevel.getMaxLocalRawBrightness(pet.getOnPos().above()) < 9) {
                 TameableUtils.applyGlowingEffect(pet, insightLevel);
             }
         }
+
+        // disc_jockey（唱片骑师，自 1.20 移植）：每 10 tick 确保跟随唱片实体存在（丢失则补建并写回 UUID）
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.DISC_JOCKEY)
+                && !pet.level().isClientSide()
+                && pet.tickCount % 10 == 0) {
+            tickDiscJockey(pet);
+        }
+    }
+
+    /** disc_jockey（自 1.20 移植）：唱片机丢失（卸载/维度切换）时按 citadel tag 的 UUID 补建并跟随宠物。 */
+    private static void tickDiscJockey(Mob pet) {
+        UUID jukeboxUUID = TameableUtils.getPetJukeboxUUID(pet);
+        boolean alive =
+                jukeboxUUID != null
+                        && pet.level() instanceof ServerLevel serverLevel
+                        && serverLevel.getEntity(jukeboxUUID) instanceof FollowingJukeboxEntity;
+        if (!alive) {
+            FollowingJukeboxEntity follower = PHEntityRegistry.FOLLOWING_JUKEBOX.get().create(pet.level());
+            if (follower != null) {
+                follower.setFollowingUUID(pet.getUUID());
+                follower.copyPosition(pet);
+                pet.level().addFreshEntity(follower);
+                TameableUtils.setPetJukeboxUUID(pet, follower.getUUID());
+            }
+        }
     }
 
     private static void handleCombatEnchants(Mob pet) {
         // 音波轰击：周期性对周围敌对生物造成音波伤害
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.SonicBoom) && !pet.level().isClientSide()) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.SonicBoom) && !pet.level().isClientSide()) {
             var beingAttacked = pet.getTarget();
             // 200 tick 冷却判断前置，范围查询只在真正触发的 tick 做（原先每 tick 白做查询）
             if (beingAttacked != null && pet.tickCount % 200 == 0) {
@@ -241,13 +266,13 @@ public class EntityTickHandler {
         }
 
         // 暗影之手
-        int shadowHandsLevel = TameableUtils.getEnchantLevel(pet, ModEnchantments.SHADOW_HANDS);
+        int shadowHandsLevel = TameableUtils.getEnchantLevel(pet, PHEnchantments.SHADOW_HANDS);
         if (shadowHandsLevel > 0) {
             handleShadowHandsLogic(pet, shadowHandsLevel);
         }
 
         // 经验吸收：宠物吸收地上经验瓶回复自身
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.REJUVENATION)) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.REJUVENATION)) {
             TameableUtils.absorbExpOrbs(pet);
         }
     }
@@ -306,19 +331,19 @@ public class EntityTickHandler {
                 TameableUtils.setShadowPunchTimes(mob, punchProgress);
             }
         } else {
-            // 目标失效处理逻辑
-            if (punching != null) {
-                boolean flag = true;
-                for (int i = 0; i < Math.min(level, punchProgress.length); i++) {
-                    if (punchProgress[i] > 0) {
-                        punchProgress[i]--;
-                        flag = false;
-                    }
+            // 目标失效处理逻辑。收拳递减必须无条件执行：目标实体被移除后 getPetAttackTarget
+            // 返回 null，若把递减放在 punching!=null 里，打死敌人（实体消失）后 punch 卡在
+            // 当前值，对应手永久保持握拳姿态
+            boolean flag = true;
+            for (int i = 0; i < Math.min(level, punchProgress.length); i++) {
+                if (punchProgress[i] > 0) {
+                    punchProgress[i]--;
+                    flag = false;
                 }
-                TameableUtils.setShadowPunchStriking(mob, new int[level]);
-                TameableUtils.setShadowPunchTimes(mob, punchProgress);
-                if (flag) TameableUtils.setPetAttackTarget(mob, -1);
             }
+            TameableUtils.setShadowPunchStriking(mob, new int[level]);
+            TameableUtils.setShadowPunchTimes(mob, punchProgress);
+            if (flag) TameableUtils.setPetAttackTarget(mob, -1);
             // 寻找新目标
             Entity punchingTarget = mob.getTarget();
             if (punchingTarget == null && TameableUtils.getOwnerOf(mob) instanceof LivingEntity owner) {
@@ -336,25 +361,25 @@ public class EntityTickHandler {
 
     private static void handleControlEnchants(Mob pet) {
         // 枯萎诅咒
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.BLIGHT_CURSE)) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.BLIGHT_CURSE)) {
             TameableUtils.destroyRandomPlants(pet);
         }
         // 臭名昭著：怪物优先攻击该宠物
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.INFAMY_CURSE)) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.INFAMY_CURSE)) {
             TameableUtils.aggroRandomMonsters(pet);
         }
         // 威吓：威吓粒子+击退周围敌对生物
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.INTIMIDATION)) {
-            TameableUtils.scareRandomMonsters(pet, TameableUtils.getEnchantLevel(pet, ModEnchantments.INTIMIDATION));
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.INTIMIDATION)) {
+            TameableUtils.scareRandomMonsters(pet, TameableUtils.getEnchantLevel(pet, PHEnchantments.INTIMIDATION));
         }
         // 牧羊人：引导周围同主人宠物跟随
-        int shepherdLvl = TameableUtils.getEnchantLevel(pet, ModEnchantments.SHEPHERD);
+        int shepherdLvl = TameableUtils.getEnchantLevel(pet, PHEnchantments.SHEPHERD);
         if (shepherdLvl > 0) {
             TameableUtils.attractAnimals(pet, shepherdLvl * 3);
         }
 
         // 念力墙
-        int psychicWallLevel = TameableUtils.getEnchantLevel(pet, ModEnchantments.PSYCHIC_WALL);
+        int psychicWallLevel = TameableUtils.getEnchantLevel(pet, PHEnchantments.PSYCHIC_WALL);
         if (psychicWallLevel > 0 && !pet.level().isClientSide()) {
             int cooldown = TameableUtils.getPsychicWallCooldown(pet);
             if (cooldown > 0) {
@@ -394,7 +419,7 @@ public class EntityTickHandler {
         }
 
         // 引力：吸附周围掉落物
-        if (TameableUtils.hasEnchant(pet, ModEnchantments.MAGNETIC)) {
+        if (TameableUtils.hasEnchant(pet, PHEnchantments.MAGNETIC)) {
             handleMagneticLogic(pet);
         }
     }

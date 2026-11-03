@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
 
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -29,7 +29,7 @@ public abstract class MobMixin extends LivingEntity {
             cancellable = true
     )
     private void di_pickUpItem(ItemEntity item, CallbackInfo ci) {
-        if (TameableUtils.isTamed(this) && TameableUtils.hasEnchant(this, ModEnchantments.LINKED_INVENTORY)) {
+        if (TameableUtils.isTamed(this) && TameableUtils.hasEnchant(this, PHEnchantments.LINKED_INVENTORY)) {
             Entity owner = TameableUtils.getOwnerOf(this);
             if (owner instanceof Player player) {
                 ci.cancel();
@@ -40,6 +40,14 @@ public abstract class MobMixin extends LivingEntity {
                 }
             }
 
+        }
+    }
+
+    /** muffled（安静，自 1.20 移植）：取消驯服宠物的环境音（idle 叫声）。 */
+    @Inject(method = "playAmbientSound()V", at = @At(value = "HEAD"), cancellable = true)
+    private void di_playAmbientSound(CallbackInfo ci) {
+        if (TameableUtils.isTamed(this) && TameableUtils.hasEnchant(this, PHEnchantments.MUFFLED)) {
+            ci.cancel();
         }
     }
 

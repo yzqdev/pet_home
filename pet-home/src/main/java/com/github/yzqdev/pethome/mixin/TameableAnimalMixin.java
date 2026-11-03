@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
@@ -48,7 +48,7 @@ public abstract class TameableAnimalMixin extends Animal {
             cancellable = true
     )
     private void di_canTeleportTo(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
-        if (TameableUtils.hasEnchant((LivingEntity) (Object) this, ModEnchantments.AMPHIBIOUS) && this.level().isWaterAt(pos)) {
+        if (TameableUtils.hasEnchant((LivingEntity) (Object) this, PHEnchantments.AMPHIBIOUS) && this.level().isWaterAt(pos)) {
             cir.setReturnValue(true);
         }
     }

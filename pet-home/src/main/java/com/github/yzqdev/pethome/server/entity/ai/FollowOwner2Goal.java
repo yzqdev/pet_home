@@ -4,8 +4,8 @@ package com.github.yzqdev.pethome.server.entity.ai;
 import com.github.yzqdev.pethome.util.IComandableMob;
 import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.util.TameableUtils;
 
 import net.minecraft.core.BlockPos;
@@ -46,14 +46,14 @@ public class FollowOwner2Goal extends Goal {
     }
 
     public boolean canUse() {
-        LivingEntity livingentity = ((ModifedToBeTameable) this.tamable).getTameOwner();
+        LivingEntity livingentity = ((ModifiedToBeTameable) this.tamable).getTameOwner();
         if(tamable instanceof IComandableMob commandableMob && commandableMob.getCommand() != 2 && PetHomeConfig.trinaryCommandSystem) {
             return false;
         }else if (livingentity == null) {
             return false;
         } else if (livingentity.isSpectator()) {
             return false;
-        } else if (((ModifedToBeTameable) this.tamable).isStayingStill()) {
+        } else if (((ModifiedToBeTameable) this.tamable).isStayingStill()) {
             return false;
         } else if (this.tamable.distanceToSqr(livingentity) < (double) (this.startDistance * this.startDistance)) {
             return false;
@@ -68,7 +68,7 @@ public class FollowOwner2Goal extends Goal {
             return false;
         }else if (this.navigation.isDone()) {
             return false;
-        } else if (((ModifedToBeTameable) this.tamable).isStayingStill()) {
+        } else if (((ModifiedToBeTameable) this.tamable).isStayingStill()) {
             return false;
         } else {
             return !(this.tamable.distanceToSqr(this.owner) <= (double) (this.stopDistance * this.stopDistance));
@@ -88,7 +88,7 @@ public class FollowOwner2Goal extends Goal {
     }
 
     public void tick() {
-        if (TameableUtils.hasEnchant(tamable, ModEnchantments.AMPHIBIOUS) && tamable.isInWaterOrBubble() && this.tamable.distanceToSqr(this.owner) < 144.0D) {
+        if (TameableUtils.hasEnchant(tamable, PHEnchantments.AMPHIBIOUS) && tamable.isInWaterOrBubble() && this.tamable.distanceToSqr(this.owner) < 144.0D) {
             tamable.getNavigation().moveTo(owner, speedModifier);
         }
         this.tamable.getLookControl().setLookAt(this.owner, 10.0F, (float) this.tamable.getMaxHeadXRot());
@@ -134,7 +134,7 @@ public class FollowOwner2Goal extends Goal {
 
     private boolean canTeleportTo(BlockPos pos) {
         PathType blockpathtypes = WalkNodeEvaluator.getPathTypeStatic(this.tamable, pos);
-        if (TameableUtils.hasEnchant(tamable, ModEnchantments.AMPHIBIOUS) && level.isWaterAt(pos)) {
+        if (TameableUtils.hasEnchant(tamable, PHEnchantments.AMPHIBIOUS) && level.isWaterAt(pos)) {
             return true;
         }
         if (blockpathtypes != PathType.WALKABLE) {

@@ -6,5 +6,5 @@
       "loot_table_id": "minecraft:chests/end_city_treasure"
     }
   ],
-  "loot_type": 3
+  "loot_type": "share"
 }

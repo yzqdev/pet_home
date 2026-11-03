@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
@@ -27,7 +27,7 @@ public class ShootTongueMixin {
             cancellable = true
     )
     private void di_checkExtraStartConditions(ServerLevel level, Frog frog, CallbackInfoReturnable<Boolean> cir){
-        if(frog instanceof ModifedToBeTameable tameable && tameable.isTame()){
+        if(frog instanceof ModifiedToBeTameable tameable && tameable.isTame()){
             cir.setReturnValue(true);
         }
     }
@@ -39,7 +39,7 @@ public class ShootTongueMixin {
             cancellable = true
     )
     private void di_eatEntity(ServerLevel level, Frog frog, CallbackInfo ci) {
-        if(frog instanceof ModifedToBeTameable tameable && tameable.isTame()){
+        if(frog instanceof ModifiedToBeTameable tameable && tameable.isTame()){
             ci.cancel();
             frog.playSound(SoundEvents.FROG_TONGUE);
             Optional<Entity> optional = frog.getTongueTarget();

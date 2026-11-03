@@ -3,17 +3,23 @@ package com.github.yzqdev.pethome.server.event;
 import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.util.IComandableMob;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.LangDefinition;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.server.PHDataComponents;
+import com.github.yzqdev.pethome.server.item.DeedOfOwnershipItem;
 import com.github.yzqdev.pethome.server.item.NetItem;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 import com.github.yzqdev.pethome.server.item.Type;
 import com.github.yzqdev.pethome.server.misc.PHSoundRegistry;
+import com.github.yzqdev.pethome.server.misc.PHWorldData;
+import com.github.yzqdev.pethome.server.misc.PetCompassTracker;
 import com.github.yzqdev.pethome.util.TameableUtils;
+import net.minecraft.Util;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
@@ -28,7 +34,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.server.level.ServerLevel;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -36,7 +42,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.EventHooks;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 实体右键交互总入口（{@code EntityInteract}，HIGHEST 优先级）。
@@ -67,16 +75,27 @@ public class PlayerInteractEntityHandler {
 
             // 项圈逻辑
             if (handleCollarTag(event, living, itemstack)) return;
-
-            // 契约逻辑 (解除拥有关系)
-            if (handleDeedOfOwnership(event, player, hand, target, itemstack)) return;
         }
+
+        // 契约逻辑（绑定/转让，转让需非主人也能对绑定宠物使用）：放在 isPetOf 门槛之外，方法内自行判定
+        if (handleDeedOfOwnership(event, player, hand, target, itemstack)) return;
+
+        // 自由之铃放生（限自家宠物，二次确认）
+        if (handleFreedomBell(event, player, hand, target, itemstack)) return;
 
         // 兔子驯服/指令 (自 1.20 移植)——必须在 isPetOf 门之外：
         // 干草块驯服针对野兔（没有主人，isPetOf 恒 false），嵌进门内会导致驯服永远无法触发
         if (target instanceof Rabbit rabbit && PetHomeConfig.tameableRabbit) {
             if (handleRabbitHayBlock(event, player, rabbit, itemstack)) return;
-            if (TameableUtils.isTamed(rabbit) && TameableUtils.isPetOf(player, rabbit)) {
+            // 手持该宠物食物且原版会消费它时不拦——回血（不满血）/ 繁殖（成年可恋爱）/ 幼年加速成长；三态只接管「原版这次右键什么也不做」的情况
+            boolean vanillaFoodAction =
+                    rabbit.isFood(itemstack)
+                        && (rabbit.getHealth() < rabbit.getMaxHealth()
+                            || rabbit.isBaby()
+                            || (rabbit.getAge() == 0 && rabbit.canFallInLove()));
+            if (TameableUtils.isTamed(rabbit)
+                && TameableUtils.isPetOf(player, rabbit)
+                && !vanillaFoodAction) {
                 ((IComandableMob) rabbit).playerSetCommand(player, rabbit);
             }
         }
@@ -111,6 +130,12 @@ public class PlayerInteractEntityHandler {
                 if (!player.addItem(newerStack)) {
                     ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), newerStack);
                     player.level().addFreshEntity(itemEntity);
+                    // 罗盘档案标记「球中」：不接钩子档案仍指向已 discard 的实体 UUID，罗盘会误判「记录已失效」
+                    if (target instanceof LivingEntity capturedPet) {
+                        PetCompassTracker.onPetCapturedByNet(capturedPet, itemEntity);
+                    }
+                } else if (target instanceof LivingEntity capturedPet) {
+                    PetCompassTracker.onPetCapturedByNet(capturedPet, player);
                 }
                 target.discard();
                 player.getCooldowns().addCooldown(itemstack.getItem(), 5);
@@ -124,7 +149,7 @@ public class PlayerInteractEntityHandler {
      * 处理“贪婪”附魔的自动喂食愈合逻辑
      */
     private static boolean handleGluttonousFeeding(PlayerInteractEvent.EntityInteract event, LivingEntity living, ItemStack itemstack) {
-        if (TameableUtils.hasEnchant(living, ModEnchantments.GLUTTONOUS)) {
+        if (TameableUtils.hasEnchant(living, PHEnchantments.GLUTTONOUS)) {
             var foodProperty = itemstack.getItem().getFoodProperties(itemstack, living);
             if (foodProperty != null && living.getHealth() < living.getMaxHealth()) {
                 living.heal((float) Math.floor(foodProperty.nutrition() * 1.5F));
@@ -190,23 +215,146 @@ public class PlayerInteractEntityHandler {
         return false;
     }
 
+    /** 放生二次确认的待确认条目：宠物 UUID + 过期时间（Util.getMillis）；超时未确认自动失效 */
+    private record PendingRelease(UUID petId, long expireAt) {}
+
+    /** 自由之铃放生确认的存活窗口（毫秒） */
+    private static final long RELEASE_CONFIRM_WINDOW_MS = 10_000L;
+
+    /** 每个玩家的待确认放生（玩家 UUID → 待确认宠物），10s 内对同一宠物再次使用自由之铃才真正放生 */
+    private static final Map<UUID, PendingRelease> PENDING_RELEASES = new HashMap<>();
+
     /**
-     * 处理所有权契约（解除驯服）逻辑
+     * 宠物契约（deed_of_ownership）两段逻辑（对齐 26.3 语义；放生已拆分为自由之铃，见 {@link #handleFreedomBell}）：
+     *
+     * <ol>
+     *   <li>未绑定 + 对自家宠物使用 → 绑定该宠物（存 {@code BOUND_PET} 组件）；
+     *   <li>已绑定 + 对同一宠物使用 → 转让所有权给当前持有人（原主人在线则提示，5 tick 冷却，消耗契约）。
+     * </ol>
+     *
+     * 转让服务端校验归属，防伪造交互。
+     *
+     * @return true 表示已处理并取消事件（调用方应 return）
      */
     private static boolean handleDeedOfOwnership(PlayerInteractEvent.EntityInteract event, Player player, InteractionHand hand, Entity target, ItemStack itemstack) {
-        if (TameableUtils.isTamed(target) && itemstack.is(PHItemRegistry.DEED_OF_OWNERSHIP.get())) {
-            TamableAnimal tamableAnimal = (TamableAnimal) target;
-            TameableUtils.clearEnchants(tamableAnimal);
-            TameableUtils.removePetBedPos(tamableAnimal);
+        if (!TameableUtils.isTamed(target) || !itemstack.is(PHItemRegistry.DEED_OF_OWNERSHIP.get())) {
+            return false;
+        }
+
+        // 1. 未绑定 + 自家宠物 → 绑定
+        UUID boundPetId = DeedOfOwnershipItem.getBoundPetId(itemstack);
+        if (boundPetId == null) {
+            if (!TameableUtils.isPetOf(player, target)) {
+                return false;
+            }
+            DeedOfOwnershipItem.bind(itemstack, target.getUUID(), target.getName().getString());
+            player.displayClientMessage(Component.translatable(LangDefinition.MESSAGE_DEED_BOUND, target.getName()), true);
+            player.swing(hand);
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            return true;
+        }
+
+        // 2. 已绑定 + 同一宠物 → 转让所有权给当前持有人
+        if (!boundPetId.equals(target.getUUID())) {
+            return false;
+        }
+        player.getCooldowns().addCooldown(itemstack.getItem(), 5);
+        Entity previousOwner = TameableUtils.getOwnerOf(target);
+        setOwnerOf(target, player.getUUID());
+        player.displayClientMessage(Component.translatable(LangDefinition.MESSAGE_SET_OWNER, player.getName(), target.getName()), true);
+        if (previousOwner instanceof Player previousOwnerPlayer
+                && !previousOwnerPlayer.getUUID().equals(player.getUUID())) {
+            previousOwnerPlayer.displayClientMessage(Component.translatable(LangDefinition.MESSAGE_SET_OWNER, player.getName(), target.getName()), true);
+        }
+        itemstack.remove(PHDataComponents.BOUND_PET);
+        if (!player.isCreative()) {
+            itemstack.shrink(1);
+        }
+        player.swing(hand);
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.SUCCESS);
+        return true;
+    }
+
+    /**
+     * 自由之铃（freedom_bell）放生逻辑：
+     *
+     * <ol>
+     *   <li>对自家宠物首次使用 → 仅发送二次确认提示（10s 内有效）；
+     *   <li>10s 内对同一宠物再次使用 → 真正放生（{@link #releasePet}，消耗铃铛）。
+     * </ol>
+     *
+     * 服务端校验归属，防伪造交互；非自家宠物或未驯服实体不拦截，走原版逻辑。
+     *
+     * <p>仅服务端执行确认状态机：{@code EntityInteract} 客户端也会触发（{@code Player.interactOn} 双端
+     * 同一代码路径，客户端还会先本地执行再发包），而 {@link #PENDING_RELEASES} 是静态 Map，单 JVM （runClient/单人）下客户端先
+     * put、服务端随后命中同一窗口，会「一次右键即放生」。客户端侧只取消事件以阻断 原版交互预测（驯服宠物右键切坐姿/兔子切三指令、副手二次发包），不写确认状态。
+     *
+     * @return true 表示已处理并取消事件（调用方应 return）
+     */
+    private static boolean handleFreedomBell(PlayerInteractEvent.EntityInteract event, Player player, InteractionHand hand, Entity target, ItemStack itemstack) {
+        if (!TameableUtils.isTamed(target) || !itemstack.is(PHItemRegistry.FREEDOM_BELL.get())) {
+            return false;
+        }
+        if (!TameableUtils.isPetOf(player, target)) {
+            return false;
+        }
+        if (player.level().isClientSide()) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+            return true;
+        }
+        UUID petId = target.getUUID();
+        PendingRelease pending = PENDING_RELEASES.get(player.getUUID());
+        if (pending != null && pending.petId().equals(petId) && Util.getMillis() < pending.expireAt()) {
+            PENDING_RELEASES.remove(player.getUUID());
+            PetHomeMod.LOGGER.info("FreedomBell release player={} pet={}", player.getName().getString(), petId);
+            releasePet(player, hand, target, itemstack);
+        } else {
+            PENDING_RELEASES.put(player.getUUID(), new PendingRelease(petId, Util.getMillis() + RELEASE_CONFIRM_WINDOW_MS));
+            PetHomeMod.LOGGER.info("FreedomBell pending player={} pet={}", player.getName().getString(), petId);
+            player.displayClientMessage(Component.translatable(LangDefinition.MESSAGE_RELEASE_CONFIRM, target.getName()), true);
+        }
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.SUCCESS);
+        return true;
+    }
+
+    /** 放生：解除驯服（清附魔/宠物床/主人，起立），并同步删除罗盘档案（避免残留「失效」条目）。 自由之铃的二次确认已在调用方完成。仅服务端调用。 */
+    private static void releasePet(Player player, InteractionHand hand, Entity target, ItemStack itemstack) {
+        LivingEntity pet = (LivingEntity) target;
+        TameableUtils.clearEnchants(pet);
+        TameableUtils.removePetBedPos(pet);
+        if (pet instanceof TamableAnimal tamableAnimal) {
             tamableAnimal.setTame(false, false);
             tamableAnimal.setOwnerUUID(null);
             tamableAnimal.setOrderedToSit(false);
             tamableAnimal.setInSittingPose(false);
-            player.swing(hand);
-            event.setCanceled(true);
-            return true;
         }
-        return false;
+        if (pet instanceof ModifiedToBeTameable modified) {
+            modified.setTame(false);
+            modified.setTameOwnerUUID(null);
+        }
+        PHWorldData data = PHWorldData.get(pet.level());
+        if (data != null) {
+            data.removePetRecord(pet.getUUID());
+        }
+        player.displayClientMessage(Component.translatable(LangDefinition.MESSAGE_RELEASED, pet.getName()), true);
+        if (!player.isCreative()) {
+            itemstack.shrink(1);
+        }
+        player.swing(hand);
+    }
+
+    /** 设置宠物主人 UUID：本模组改造实体与原版 TamableAnimal 两类归属载体兼容。 */
+    private static void setOwnerOf(Entity pet, UUID ownerUuid) {
+        if (pet instanceof ModifiedToBeTameable modified) {
+            modified.setTame(true);
+            modified.setTameOwnerUUID(ownerUuid);
+        } else if (pet instanceof TamableAnimal tamableAnimal) {
+            tamableAnimal.setOwnerUUID(ownerUuid);
+        }
     }
 
     /**
@@ -361,8 +509,8 @@ public class PlayerInteractEntityHandler {
                         double d2 = rabbit.getRandom().nextGaussian() * 0.02D;
                         ((ServerLevel) rabbit.level()).sendParticles(ParticleTypes.HEART, rabbit.getRandomX(1.0D), rabbit.getRandomY() + 0.5D, rabbit.getRandomZ(1.0D), 3, d0, d1, d2, 0.02F);
                     }
-                    ((ModifedToBeTameable) rabbit).setTame(true);
-                    ((ModifedToBeTameable) rabbit).setTameOwnerUUID(player.getUUID());
+                    ((ModifiedToBeTameable) rabbit).setTame(true);
+                    ((ModifiedToBeTameable) rabbit).setTameOwnerUUID(player.getUUID());
                     ((IComandableMob) rabbit).setCommand(1);
                 } else {
                     for (int i = 0; i < 3; ++i) {

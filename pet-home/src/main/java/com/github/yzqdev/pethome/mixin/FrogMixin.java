@@ -8,7 +8,7 @@ import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.util.IComandableMob;
 import com.github.yzqdev.pethome.server.entity.IFrog;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import com.github.yzqdev.pethome.server.misc.PHTagRegistry;
 import net.minecraft.advancements.CriteriaTriggers;
@@ -46,7 +46,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Mixin(Frog.class)
-public abstract class FrogMixin extends Animal implements ModifedToBeTameable, IComandableMob, IFrog {
+public abstract class FrogMixin extends Animal implements ModifiedToBeTameable, IComandableMob, IFrog {
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(Frog.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(Frog.class, EntityDataSerializers.INT);

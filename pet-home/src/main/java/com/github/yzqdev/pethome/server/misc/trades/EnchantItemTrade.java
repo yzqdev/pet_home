@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.server.misc.trades;
 
-import com.github.yzqdev.pethome.datagen.ModTags;
+import com.github.yzqdev.pethome.datagen.PHTags;
 import com.google.common.collect.Lists;
 import net.minecraft.Util;
 import net.minecraft.core.Holder;
@@ -102,7 +102,7 @@ public class EnchantItemTrade implements VillagerTrades.ItemListing {
         var enchantRegistry = trader.level()
                 .registryAccess()
                 .registryOrThrow(Registries.ENCHANTMENT);
-        for (Holder<Enchantment> enchantmentHolder : enchantRegistry.getTagOrEmpty(ModTags.TradableEnchantmentKey)) {
+        for (Holder<Enchantment> enchantmentHolder : enchantRegistry.getTagOrEmpty(PHTags.TradableEnchantmentKey)) {
             var enchant = enchantmentHolder.value();
             for (int i = enchant.getMaxLevel(); i > enchant.getMinLevel() - 1; --i) {
                 if (levels >= enchant.getMinCost(i) && levels <= enchant.getMaxCost(i)) {

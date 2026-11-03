@@ -17,7 +17,7 @@ import org.joml.Quaternionf;
 
 public class RecallBallRender extends EntityRenderer<RecallBallEntity> {
 
-    private RecallBallModel recallBallModel = new RecallBallModel();
+    private RecallBallModel recallBallModel = new RecallBallModel(RecallBallModel.createBodyLayer().bakeRoot());
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(PetHomeMod.MODID, "textures/recall_ball.png");
 
     public RecallBallRender(EntityRendererProvider.Context renderManagerIn) {

@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
 
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityType;
@@ -30,7 +30,7 @@ public class AgeableMobMixin extends PathfinderMob {
             cancellable = true
     )
     private void di_isBaby(CallbackInfoReturnable<Boolean> cir) {
-        if (TameableUtils.isTamed(this) && TameableUtils.hasEnchant(this, ModEnchantments.IMMATURITY_CURSE)) {
+        if (TameableUtils.isTamed(this) && TameableUtils.hasEnchant(this, PHEnchantments.IMMATURITY_CURSE)) {
             cir.setReturnValue(true);
         }
     }

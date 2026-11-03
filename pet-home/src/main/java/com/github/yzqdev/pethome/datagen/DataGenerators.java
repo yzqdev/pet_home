@@ -28,29 +28,31 @@ public class DataGenerators {
         CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
 
         // 数据包资源（loot table / recipe / advancement 等由各 Provider 生成）
-        var datapack = new ModDatapackProvider(packOutput, lookupProvider);
+        var datapack = new PHDatapackProvider(packOutput, lookupProvider);
         var datapackLookProvider = datapack.getRegistryProvider();
         generator.addProvider(event.includeServer(), datapack);
 
-        var blockTagProvider = new ModBlockTagsProvider(packOutput, lookupProvider, PetHomeMod.MODID, existingFileHelper);
+        var blockTagProvider = new PHBlockTagsProvider(packOutput, lookupProvider, PetHomeMod.MODID, existingFileHelper);
         generator.addProvider(event.includeServer(), blockTagProvider);
-        generator.addProvider(event.includeServer(), new ModRecipeProvider(packOutput, lookupProvider));
-        // 方块状态/方块模型 provider 须先于 ModItemProvider 注册（鼓的物品模型引用其方块模型）
-        generator.addProvider(event.includeServer(), new ModBlockStateProvider(packOutput, existingFileHelper));
-        generator.addProvider(event.includeServer(), new ModItemProvider(packOutput, existingFileHelper));
-        generator.addProvider(event.includeServer(), new ModPoiTagProvider(packOutput, lookupProvider, existingFileHelper));
+        generator.addProvider(event.includeServer(), new PHRecipeProvider(packOutput, lookupProvider));
+        // 方块状态/方块模型 provider 须先于 PHItemProvider 注册（鼓的物品模型引用其方块模型）
+        generator.addProvider(event.includeServer(), new PHBlockStateProvider(packOutput, existingFileHelper));
+        generator.addProvider(event.includeServer(), new PHItemProvider(packOutput, existingFileHelper));
+        generator.addProvider(event.includeServer(), new PHPoiTagProvider(packOutput, lookupProvider, existingFileHelper));
 
 
-        generator.addProvider(event.includeServer(), new ModEntityTagsProvider(packOutput, lookupProvider, existingFileHelper));
-        generator.addProvider(event.includeServer(), new ModEnchantTagProvider(packOutput, lookupProvider, existingFileHelper));
+        generator.addProvider(event.includeServer(), new PHEntityTagsProvider(packOutput, lookupProvider, existingFileHelper));
+        generator.addProvider(event.includeServer(), new PHEnchantTagProvider(packOutput, lookupProvider, existingFileHelper));
 
         generator.addProvider(event.includeServer(), new GlobalLootModifier(packOutput, lookupProvider));
-        generator.addProvider(event.includeServer(), new ModItemTagProvider(packOutput, lookupProvider, blockTagProvider.contentsGetter(), PetHomeMod.MODID, existingFileHelper));
+        generator.addProvider(event.includeServer(), new PHItemTagProvider(packOutput, lookupProvider, blockTagProvider.contentsGetter(), PetHomeMod.MODID, existingFileHelper));
 
-        generator.addProvider(event.includeServer(), new ModEnLangProvider(packOutput, PetHomeMod.MODID, "en_us"));
-        generator.addProvider(event.includeServer(), new ModZhLangProvider(packOutput, PetHomeMod.MODID, "zh_cn"));
+        generator.addProvider(event.includeServer(), new PHEnLangProvider(packOutput, PetHomeMod.MODID, "en_us"));
+        generator.addProvider(event.includeServer(), new PHZhLangProvider(packOutput, PetHomeMod.MODID, "zh_cn"));
 
         generator.addProvider(event.includeServer(), new PHLootProvider(packOutput, datapackLookProvider));
+
+        generator.addProvider(event.includeClient(), new PHParticleProvider(packOutput, existingFileHelper));
 
     }
 }

@@ -18,7 +18,6 @@ import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
  * {@link #addToPool} 以元素实例判重兜底。
  */
 public class VillageHouseManager {
-    public static final List<ResourceLocation> VILLAGE_REPLACEMENT_POOLS = List.of(ResourceLocation.parse("minecraft:village/plains/houses"), ResourceLocation.parse("minecraft:village/desert/houses"), ResourceLocation.parse("minecraft:village/savanna/houses"), ResourceLocation.parse("minecraft:village/snowy/houses"), ResourceLocation.parse("minecraft:village/taiga/houses"));
 
     public static StructureTemplatePool addToPool(StructureTemplatePool pool, StructurePoolElement element, int weight) {
         if (weight > 0 && pool != null) {

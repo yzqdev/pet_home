@@ -30,8 +30,8 @@ public class RenderPsychicWall extends EntityRenderer<PsychicWallEntity> {
         float f = entity.getBlockWidth() * growth;
         poseStack.mulPose(entity.getWallDirection().getOpposite().getRotation());
         poseStack.scale(f * 0.5F, f * 0.5F, f * 0.5F);
-        renderWall(poseStack, 1, buffer, buffer.getBuffer(DIRenderTypes.PSYCHIC_WALL));
-        renderWall(poseStack, 1, buffer, buffer.getBuffer(DIRenderTypes.PSYCHIC_WALL_BORDER));
+        renderWall(poseStack, 1, buffer, buffer.getBuffer(PHRenderTypes.PSYCHIC_WALL));
+        renderWall(poseStack, 1, buffer, buffer.getBuffer(PHRenderTypes.PSYCHIC_WALL_BORDER));
         poseStack.popPose();
 
     }

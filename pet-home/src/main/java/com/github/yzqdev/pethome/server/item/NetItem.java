@@ -4,6 +4,7 @@ import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.datagen.LangDefinition;
 import com.github.yzqdev.pethome.server.PHDataComponents;
 import com.github.yzqdev.pethome.server.entity.NetEntity;
+import com.github.yzqdev.pethome.server.misc.PetCompassTracker;
 import com.github.yzqdev.pethome.util.ItemMobTooltip;
 import com.mojang.logging.LogUtils;
 import net.minecraft.ChatFormatting;
@@ -110,6 +111,10 @@ public class NetItem extends Item {
             if (!player.addItem(newerStack)) {
                 ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), newerStack);
                 player.level().addFreshEntity(itemEntity);
+                // 背包满→掉落物：罗盘按掉落物定位；直接进背包时退化为玩家位置
+                PetCompassTracker.onPetCapturedByNet(target, itemEntity);
+            } else {
+                PetCompassTracker.onPetCapturedByNet(target, player);
             }
             target.discard();
             player.getCooldowns().addCooldown(this, 5);

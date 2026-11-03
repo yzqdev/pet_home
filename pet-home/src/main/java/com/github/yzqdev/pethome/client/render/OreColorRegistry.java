@@ -37,7 +37,7 @@ public class OreColorRegistry {
                     Color texColour = getAverageColour(getTextureAtlas(stack));
                     color = texColour.getRGB();
                 } catch (NullPointerException e) {
-                    e.printStackTrace();
+                    PetHomeMod.LOGGER.error("Failed to read texture atlas for block {}: {}", blockName, e.toString());
                 }
             } else {
                 color = colorizer;

@@ -6,5 +6,5 @@
       "loot_table_id": "minecraft:chests/buried_treasure"
     }
   ],
-  "loot_type": 1
+  "loot_type": "bubbling"
 }

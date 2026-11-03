@@ -1,8 +1,8 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.server.entity.PHActivityRegistry;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import com.github.yzqdev.pethome.server.entity.ai.AmphibianFollowOwnerBehavior;
 import com.github.yzqdev.pethome.server.entity.ai.AmphibianStayBehavior;
@@ -50,7 +50,7 @@ public class AxolotlAiMixin {
     private static void di_updateActivity(Axolotl axolotl, CallbackInfo ci) {
         Brain<Axolotl> brain = axolotl.getBrain();
         Activity activity = brain.getActiveNonCoreActivity().orElse(null);
-        if (activity != Activity.PLAY_DEAD && !axolotl.isPlayingDead() && axolotl instanceof ModifedToBeTameable modifedToBeTameable) {
+        if (activity != Activity.PLAY_DEAD && !axolotl.isPlayingDead() && axolotl instanceof ModifiedToBeTameable modifedToBeTameable) {
             if (modifedToBeTameable.isStayingStill()) {
                 brain.setActiveActivityIfPossible(PHActivityRegistry.AXOLOTL_STAY.get());
                 ci.cancel();
@@ -85,7 +85,7 @@ public class AxolotlAiMixin {
             cancellable = true
     )
     private static void di_getSpeedModifierChasing(LivingEntity axolotl, CallbackInfoReturnable<Float> cir) {
-        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, ModEnchantments.SPEEDSTER);
+        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantments.SPEEDSTER);
         cir.setReturnValue(axolotl.isInWaterOrBubble() ? 0.6F + speedsterLevel * 0.05F : 0.15F + speedsterLevel * 0.1F);
     }
 
@@ -98,7 +98,7 @@ public class AxolotlAiMixin {
             cancellable = true
     )
     private static void di_getSpeedModifierFollowingAdult(LivingEntity axolotl, CallbackInfoReturnable<Float> cir) {
-        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, ModEnchantments.SPEEDSTER);
+        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantments.SPEEDSTER);
         cir.setReturnValue(axolotl.isInWaterOrBubble() ? 0.6F + speedsterLevel * 0.05F : 0.15F + speedsterLevel * 0.1F);
     }
 
@@ -111,7 +111,7 @@ public class AxolotlAiMixin {
             cancellable = true
     )
     private static void di_getSpeedModifier(LivingEntity axolotl, CallbackInfoReturnable<Float> cir) {
-        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, ModEnchantments.SPEEDSTER);
+        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantments.SPEEDSTER);
         cir.setReturnValue(axolotl.isInWaterOrBubble() ? 0.5F + speedsterLevel * 0.05F : 0.15F + speedsterLevel * 0.15F);
     }
 

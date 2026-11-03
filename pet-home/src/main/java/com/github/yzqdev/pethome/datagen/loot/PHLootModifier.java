@@ -1,10 +1,7 @@
 package com.github.yzqdev.pethome.datagen.loot;
 
 
-import com.github.yzqdev.pethome.PetHomeConfig;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
-import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -27,13 +24,13 @@ public class PHLootModifier extends LootModifier {
             RecordCodecBuilder.mapCodec(inst ->
                     inst.group(
                                     LOOT_CONDITIONS_CODEC.fieldOf("conditions").forGetter(lm -> lm.conditions),
-                                    Codec.INT.fieldOf("loot_type").orElse(0).forGetter((configuration) -> configuration.lootType)
+                                    PHLootType.CODEC.fieldOf("loot_type").orElse(PHLootType.SINISTER_CARROT).forGetter((configuration) -> configuration.lootType)
                             )
                             .apply(inst, PHLootModifier::new));
 
-    private final int lootType;
+    private final PHLootType lootType;
 
-    protected PHLootModifier(LootItemCondition[] conditionsIn, int lootType) {
+    protected PHLootModifier(LootItemCondition[] conditionsIn, PHLootType lootType) {
         super(conditionsIn);
         this.lootType = lootType;
     }
@@ -41,54 +38,13 @@ public class PHLootModifier extends LootModifier {
     @Nonnull
     @Override
     protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
-        switch (lootType) {
-            case 0 -> {
-                if (context.getRandom().nextFloat() < PetHomeConfig.sinisterCarrotLootChance) {
-                    generatedLoot.add(new ItemStack(PHItemRegistry.SINISTER_CARROT.get(), context.getRandom().nextInt(1, 2)));
-                }
+        if (context.getRandom().nextFloat() < this.lootType.chance()) {
+            if (this.lootType.isEnchantedBook()) {
+                generatedLoot.add(enchantedBook(this.lootType.enchantmentKey(), context.getRandom(), context));
+            } else {
+                // 阴森胡萝卜：林地府邸，1~2 根
+                generatedLoot.add(new ItemStack(PHItemRegistry.SINISTER_CARROT.get(), context.getRandom().nextInt(1, 2)));
             }
-            case 1 -> {
-                if (context.getRandom().nextFloat() < PetHomeConfig.bubblingLootChance) {
-                    generatedLoot.add(enchantedBook(ModEnchantments.BUBBLING, context.getRandom(), context));
-                }
-            }
-            case 2 -> {
-                if (context.getRandom().nextFloat() < PetHomeConfig.vampirismLootChance) {
-                    generatedLoot.add(enchantedBook(ModEnchantments.VAMPIRE, context.getRandom(), context));
-                }
-            }
-            case 3 -> {
-                if (context.getRandom().nextFloat() < PetHomeConfig.shareLootChance) {
-                    generatedLoot.add(enchantedBook(ModEnchantments.SHARE, context.getRandom(), context));
-                }
-            }
-            case 4 -> {
-                if (context.getRandom().nextFloat() < PetHomeConfig.oreScentingLootChance) {
-                    generatedLoot.add(enchantedBook(ModEnchantments.ORE_SCENTING, context.getRandom(), context));
-                }
-            }
-            case 5 -> {
-                if (context.getRandom().nextFloat() < PetHomeConfig.sonicBoomLootChance) {
-                    generatedLoot.add(enchantedBook(ModEnchantments.SonicBoom, context.getRandom(), context));
-                }
-            }
-            case 6 -> {
-                if (context.getRandom().nextFloat() < PetHomeConfig.blazingProtectionLootChance) {
-                    generatedLoot.add(enchantedBook(ModEnchantments.BLAZING_PROTECTION, context.getRandom(), context));
-                }
-            }
-            case 7 -> {
-                if (context.getRandom().nextFloat() < PetHomeConfig.paralysisLootChance) {
-                    generatedLoot.add(enchantedBook(ModEnchantments.PARALYSIS, context.getRandom(), context));
-                }
-            }
-            case 8 -> {
-                if (context.getRandom().nextFloat() < PetHomeConfig.toughLootChance) {
-                    generatedLoot.add(enchantedBook(ModEnchantments.TOUGH, context.getRandom(), context));
-                }
-            }
-
-            default -> throw new IllegalStateException("Unexpected value: " + lootType);
         }
         return generatedLoot;
     }

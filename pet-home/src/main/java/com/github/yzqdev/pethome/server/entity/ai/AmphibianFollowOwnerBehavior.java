@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.server.entity.ai;
 
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.core.BlockPos;
@@ -31,7 +31,7 @@ public class AmphibianFollowOwnerBehavior<T extends Animal> extends Behavior<T> 
    }
 
     protected boolean checkExtraStartConditions(ServerLevel level, T axolotl) {
-        if(axolotl instanceof ModifedToBeTameable tamed){
+        if(axolotl instanceof ModifiedToBeTameable tamed){
             owner = tamed.getTameOwner();
             if(owner != null && owner.isAlive() && !owner.isSpectator() && tamed.isFollowingOwner()){
                 return true;
@@ -43,7 +43,7 @@ public class AmphibianFollowOwnerBehavior<T extends Animal> extends Behavior<T> 
 
     protected boolean canStillUse(ServerLevel level, T axolotl, long gameTime) {
         if(!axolotl.getBrain().hasMemoryValue(MemoryModuleType.BREED_TARGET) && owner != null && owner.isAlive()){
-            return ((ModifedToBeTameable)axolotl).isFollowingOwner() && axolotl.distanceTo(owner) > STOP_DISTANCE;
+            return ((ModifiedToBeTameable)axolotl).isFollowingOwner() && axolotl.distanceTo(owner) > STOP_DISTANCE;
         }
         return false;
     }
@@ -56,7 +56,7 @@ public class AmphibianFollowOwnerBehavior<T extends Animal> extends Behavior<T> 
         if (axolotl.distanceToSqr(this.owner) >= 144.0D) {
             this.teleportToOwner(axolotl);
         } else{
-            int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, ModEnchantments.SPEEDSTER);
+            int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantments.SPEEDSTER);
             float speed = axolotl.isInWaterOrBubble() ? baseSpeedWater + speedsterLevel * 0.05F : baseSpeedLand + speedsterLevel * 0.1F;
             BehaviorUtils.lookAtEntity(axolotl, owner);
             BehaviorUtils.setWalkAndLookTargetMemories(axolotl, owner, speed, (int)STOP_DISTANCE);

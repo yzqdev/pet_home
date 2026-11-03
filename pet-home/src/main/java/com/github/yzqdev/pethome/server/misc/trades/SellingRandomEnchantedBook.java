@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.server.misc.trades;
 
 
-import com.github.yzqdev.pethome.datagen.ModTags;
+import com.github.yzqdev.pethome.datagen.PHTags;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.EnchantmentTags;
@@ -31,7 +31,7 @@ public class SellingRandomEnchantedBook implements VillagerTrades.ItemListing {
         Optional<Holder<Enchantment>> optional = trader.level()
                 .registryAccess()
                 .registryOrThrow(Registries.ENCHANTMENT)
-                .getRandomElementOf(ModTags.TradableEnchantmentKey, random);
+                .getRandomElementOf(PHTags.TradableEnchantmentKey, random);
         int i;
         ItemStack itemstack;
         if (!optional.isEmpty()) {

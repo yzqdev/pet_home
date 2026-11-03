@@ -1,11 +1,13 @@
 package com.github.yzqdev.pethome.client.render;
 
 import com.github.yzqdev.pethome.PetHomeMod;
+import com.github.yzqdev.pethome.compat.geckolib.GeoOverlayCompat;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
 
@@ -26,6 +28,8 @@ public class LayerManager {
             EntityRenderer<?> renderer = event.getRenderer(entityType);
             if (renderer instanceof LivingEntityRenderer<?, ?> livingEntityRenderer) {
                 livingEntityRenderer.addLayer(new LayerPetOverlays(livingEntityRenderer));
+            } else if (ModList.get().isLoaded("geckolib") && GeoOverlayCompat.tryApply(renderer)) {
+                // GeckoLib 渲染器直接继承 EntityRenderer，走 compat 适配层挂 GeoRenderLayer
             } else {
                 PetHomeMod.LOGGER.warn("Could not apply pet overlays layer to {}. Renderer is not a LivingEntityRenderer.",
                         BuiltInRegistries.ENTITY_TYPE.getKey(entityType));

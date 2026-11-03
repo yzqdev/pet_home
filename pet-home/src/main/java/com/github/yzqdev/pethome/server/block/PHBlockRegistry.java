@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.server.block;
 
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.server.item.DIBlockItem;
+import com.github.yzqdev.pethome.server.item.PHBlockItem;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 import com.github.yzqdev.pethome.server.item.PetbedItem;
 import net.minecraft.world.item.DyeColor;
@@ -26,7 +26,7 @@ public class PHBlockRegistry {
 
     public static DeferredHolder<Block, Block> registerBlockAndItem(String name, Supplier<Block> block) {
         DeferredHolder<Block, Block> blockObj = DEF_REG.register(name, block);
-        PHItemRegistry.DEF_REG.register(name, () -> new DIBlockItem(blockObj, new Item.Properties()));
+        PHItemRegistry.DEF_REG.register(name, () -> new PHBlockItem(blockObj, new Item.Properties()));
         return blockObj;
     }
 

@@ -39,6 +39,10 @@ public class PetHomeConfig {
     private static final ModConfigSpec.DoubleValue SONIC_BOOM_LOOT_CHANCE = BUILDER.comment("percent chance of woodland mansion loot table containing Sonic boom book:").defineInRange("sonic_boom_loot_chance", 0.6D, 0.0, 1.0D);
     private static final ModConfigSpec.DoubleValue PARALYSIS_LOOT_CHANCE = BUILDER.comment("percent chance of chest loot table containing paralysis book:").defineInRange("paralysis_loot_chance", 0.1D, 0.0, 1.0D);
     private static final ModConfigSpec.DoubleValue TOUGH_LOOT_CHANCE = BUILDER.comment("percent chance of chest loot table containing tough book:").defineInRange("tough_loot_chance", 0.1D, 0.0, 1.0D);
+    // muffled（自 1.20 移植）：远古城市箱子出安静附魔书的概率
+    private static final ModConfigSpec.DoubleValue MUFFLED_LOOT_CHANCE = BUILDER.comment("percent chance of ancient city loot table containing Muffled book:").defineInRange("muffled_loot_chance", 0.19D, 0.0, 1.0D);
+    // void_cloud（对齐 1.20 的 loot-only 定位）：末地城箱子出虚空之云附魔书的概率
+    private static final ModConfigSpec.DoubleValue VOID_CLOUD_LOOT_CHANCE = BUILDER.comment("percent chance of end city loot table containing Void Cloud book:").defineInRange("void_cloud_loot_chance", 0.19D, 0.0, 1.0D);
     private static final ModConfigSpec.DoubleValue SHARE_LOOT_CHANCE = BUILDER.comment("percent chance of ender city loot table containing share book:").defineInRange("share_loot_chance", 0.5D, 0.0, 1.0D);
 
     private static final ModConfigSpec.DoubleValue ORE_SCENTING_LOOT_CHANCE = BUILDER.comment("percent chance of mineshaft loot table containing Ore Scenting book:").defineInRange("ore_scenting_loot_chance", 0.15D, 0.0, 1.0D);
@@ -89,7 +93,178 @@ public class PetHomeConfig {
     private static final ModConfigSpec.BooleanValue PET_INFO_OVERLAY = BUILDER.comment("show the pet info panel at the top of the screen while looking at your own pet").define("petInfoOverlay", true);
     private static final ModConfigSpec.BooleanValue PET_INFO_OVERLAY_REQUIRE_SHIFT = BUILDER.comment("require holding the sneak key while looking at the pet to show the panel (off = just look at the pet)").define("petInfoOverlayRequireShift", false);
     private static final ModConfigSpec.BooleanValue PET_INFO_OVERLAY_IGNORE_JADE = BUILDER.comment("show the pet info panel even when Jade is installed (with Jade present the panel is hidden by default since its tooltip already shows pet info)").define("petInfoOverlayIgnoreJade", false);
-    static final ModConfigSpec SPEC = BUILDER.build();
+    private static final ModConfigSpec.BooleanValue DEBUG_MODE = BUILDER.comment("enable debug logs for troubleshooting (key systems print diagnostic info when on)").define("debugMode", false);
+    public static final ModConfigSpec SPEC = BUILDER.build();
+
+// —— 自研配置界面（client/gui）用的 spec 值访问器：返回 ModConfigSpec 值对象本身，
+// GUI 经 ConfigValue#get/set 改内存、关闭界面统一 SPEC.save() 落盘 ——
+public static ModConfigSpec.BooleanValue specRottenApple() {
+  return ROTTEN_APPLE;
+}
+
+public static ModConfigSpec.BooleanValue specMobcatcherOnlyTamable() {
+  return MOBCATCHER_ONLY_TAMABLE_ANIMAL;
+}
+
+public static ModConfigSpec.ConfigValue<List<? extends String>> specMobcatcherBlacklist() {
+  return MOBCATCHER_BLACKLIST;
+}
+
+public static ModConfigSpec.DoubleValue specBlazingProtection() {
+  return BLAZING_PROTECTION_LOOT_CHANCE;
+}
+
+public static ModConfigSpec.IntValue specPetstoreWeight() {
+  return PETSTORE_VILLAGE_WEIGHT;
+}
+
+public static ModConfigSpec.DoubleValue specSinisterCarrot() {
+  return SINISTER_CARROT_LOOT_CHANCE;
+}
+
+public static ModConfigSpec.DoubleValue specBubbling() {
+  return BUBBLING_LOOT_CHANCE;
+}
+
+public static ModConfigSpec.DoubleValue specVampirism() {
+  return VAMPIRISM_LOOT_CHANCE;
+}
+
+public static ModConfigSpec.DoubleValue specSonicBoom() {
+  return SONIC_BOOM_LOOT_CHANCE;
+}
+
+public static ModConfigSpec.DoubleValue specParalysis() {
+  return PARALYSIS_LOOT_CHANCE;
+}
+
+public static ModConfigSpec.DoubleValue specTough() {
+  return TOUGH_LOOT_CHANCE;
+}
+
+public static ModConfigSpec.DoubleValue specMuffled() {
+  return MUFFLED_LOOT_CHANCE;
+}
+
+public static ModConfigSpec.DoubleValue specVoidCloud() {
+  return VOID_CLOUD_LOOT_CHANCE;
+}
+
+public static ModConfigSpec.DoubleValue specShare() {
+  return SHARE_LOOT_CHANCE;
+}
+
+public static ModConfigSpec.DoubleValue specOreScenting() {
+  return ORE_SCENTING_LOOT_CHANCE;
+}
+
+public static ModConfigSpec.BooleanValue specProtectOwner() {
+  return PROTECT_PETS_FROM_OWNER;
+}
+
+public static ModConfigSpec.BooleanValue specProtectPets() {
+  return PROTECT_PETS_FROM_PETS;
+}
+
+public static ModConfigSpec.BooleanValue specProtectChildren() {
+  return PROTECT_CHILDREN;
+}
+
+public static ModConfigSpec.BooleanValue specReflectDamage() {
+  return REFLECT_DAMAGE;
+}
+
+public static ModConfigSpec.BooleanValue specDisplayWarning() {
+  return DISPLAY_HIT_WARNING;
+}
+
+public static ModConfigSpec.BooleanValue specProtectTeam() {
+  return PROTECT_TEAM_MEMBERS;
+}
+
+public static ModConfigSpec.BooleanValue specRespectTeam() {
+  return RESPECT_TEAM_RULES;
+}
+
+public static ModConfigSpec.ConfigValue<List<? extends String>> specCanHurtPetItems() {
+  return CAN_HURT_PET_ITEM;
+}
+
+public static ModConfigSpec.ConfigValue<List<? extends String>> specCanHurtAllItems() {
+  return CAN_HURT_ALL_ITEM;
+}
+
+public static ModConfigSpec.ConfigValue<List<? extends String>> specNoProtection() {
+  return NO_PROTECTION_ENTITY;
+}
+
+public static ModConfigSpec.ConfigValue<List<? extends String>> specExtraProtected() {
+  return OTHER_SHOULD_PROTECT_ENTITY;
+}
+
+public static ModConfigSpec.ConfigValue<List<? extends String>> specPlayerProtected() {
+  return PLAYER_CANT_HURT_ENTITY;
+}
+
+public static ModConfigSpec.BooleanValue specTameableAxolotl() {
+  return TAMEABLE_AXOLOTL;
+}
+
+public static ModConfigSpec.BooleanValue specTameableFox() {
+  return TAMEABLE_FOX;
+}
+
+public static ModConfigSpec.BooleanValue specTameableFrog() {
+  return TAMEABLE_FROG;
+}
+
+public static ModConfigSpec.BooleanValue specTameableHorse() {
+  return TAMEABLE_HORSE;
+}
+
+public static ModConfigSpec.BooleanValue specTameableRabbit() {
+  return TAMEABLE_RABBIT;
+}
+
+public static ModConfigSpec.BooleanValue specTrinaryCommand() {
+  return TRINARY_COMMAND_SYSTEM;
+}
+
+public static ModConfigSpec.BooleanValue specPetBedRespawns() {
+  return PET_BED_RESPAWNS;
+}
+
+public static ModConfigSpec.BooleanValue specRabbitsRavagers() {
+  return RABBITS_SCARE_RAVAGERS;
+}
+
+public static ModConfigSpec.BooleanValue specPetCompassEnable() {
+  return PET_COMPASS_ENABLE;
+}
+
+public static ModConfigSpec.BooleanValue specTeleportPlayerToPet() {
+  return PET_COMPASS_TELEPORT_PLAYER_TO_PET;
+}
+
+public static ModConfigSpec.BooleanValue specRecallPetToPlayer() {
+  return PET_COMPASS_TELEPORT_PET_TO_PLAYER;
+}
+
+public static ModConfigSpec.BooleanValue specPetInfoOverlay() {
+  return PET_INFO_OVERLAY;
+}
+
+public static ModConfigSpec.BooleanValue specPetInfoOverlayRequireShift() {
+  return PET_INFO_OVERLAY_REQUIRE_SHIFT;
+}
+
+public static ModConfigSpec.BooleanValue specPetInfoOverlayIgnoreJade() {
+  return PET_INFO_OVERLAY_IGNORE_JADE;
+}
+
+public static ModConfigSpec.BooleanValue specDebugMode() {
+  return DEBUG_MODE;
+}
 
     private static boolean validateEntityTypesName(Object obj) {
         return obj instanceof String itemName && BuiltInRegistries.ENTITY_TYPE.containsKey(ResourceLocation.parse(itemName));
@@ -109,6 +284,8 @@ public class PetHomeConfig {
     public static double blazingProtectionLootChance;
     public static double paralysisLootChance;
     public static double toughLootChance;
+    public static double muffledLootChance;
+    public static double voidCloudLootChance;
     public static boolean protectPetsFromOwner = true;
     public static int petstoreVillageWeight;
     public static boolean rottenApple;
@@ -146,6 +323,8 @@ public class PetHomeConfig {
     public static boolean petInfoOverlay = true;
     public static boolean petInfoOverlayRequireShift = false;
     public static boolean petInfoOverlayIgnoreJade = false;
+    // 调试日志总开关（PHModLogger.debugLog 门控）
+    public static boolean debugMode = false;
     public static Set<EntityType<?>> mobcatcherBlackList = Set.of();
 
     /**
@@ -174,6 +353,8 @@ public class PetHomeConfig {
         sonicBoomLootChance = SONIC_BOOM_LOOT_CHANCE.get();
         paralysisLootChance = PARALYSIS_LOOT_CHANCE.get();
         toughLootChance = TOUGH_LOOT_CHANCE.get();
+        muffledLootChance = MUFFLED_LOOT_CHANCE.get();
+        voidCloudLootChance = VOID_CLOUD_LOOT_CHANCE.get();
         tameableAxolotl = TAMEABLE_AXOLOTL.get();
         tameableFox = TAMEABLE_FOX.get();
         tameableFrog = TAMEABLE_FROG.get();
@@ -188,6 +369,7 @@ public class PetHomeConfig {
         petInfoOverlay = PET_INFO_OVERLAY.get();
         petInfoOverlayRequireShift = PET_INFO_OVERLAY_REQUIRE_SHIFT.get();
         petInfoOverlayIgnoreJade = PET_INFO_OVERLAY_IGNORE_JADE.get();
+        debugMode = DEBUG_MODE.get();
         blazingProtectionLootChance = BLAZING_PROTECTION_LOOT_CHANCE.get();
 
         noProtectionEntity = (NO_PROTECTION_ENTITY.get()).stream().map((entityTypeName) -> BuiltInRegistries.ENTITY_TYPE.get(ResourceLocation.parse(entityTypeName))).collect(Collectors.toSet());

@@ -1,9 +1,8 @@
 package com.github.yzqdev.pethome.server.item;
 
-import com.github.yzqdev.pethome.PHConstants;
 import com.github.yzqdev.pethome.datagen.LangDefinition;
+import com.github.yzqdev.pethome.network.PetCompassOpenPacket;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -30,8 +29,7 @@ public class PetCompassItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide) {
-            net.neoforged.neoforge.network.PacketDistributor.sendToServer(
-                    new com.github.yzqdev.pethome.network.PropertiesMessage(PHConstants.petCompassOpen, new CompoundTag(), 0));
+            net.neoforged.neoforge.network.PacketDistributor.sendToServer(PetCompassOpenPacket.INSTANCE);
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }

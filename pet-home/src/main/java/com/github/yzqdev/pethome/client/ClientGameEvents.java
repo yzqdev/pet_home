@@ -5,6 +5,7 @@ import com.github.yzqdev.pethome.client.particle.*;
 import com.github.yzqdev.pethome.client.render.OreColorRegistry;
 import com.github.yzqdev.pethome.server.entity.HighlightedBlockEntity;
 import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -14,8 +15,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 
-import java.util.WeakHashMap;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * 客户端杂项事件：粒子工厂注册、矿石高亮描边色、暗影手渲染数据。
@@ -37,6 +39,43 @@ public class ClientGameEvents {
         iEventBus.addListener(ClientGameEvents::setupParticles);
 
 
+    }
+
+    /**
+     * disc_jockey（唱片骑师，自 1.20 移植）随从点唱机音效登记表：实体 id → 循环音效实例。 仅
+     * FollowingJukeboxEntity#handleEntityEvent（66 播放中 / 67 空闲）在客户端调用。
+     */
+    public static final Map<Integer, DiscJockeySound> DISC_JOCKEY_SOUND_MAP = new HashMap<>();
+
+    /** 随从点唱机的音效状态更新，仅在实体事件包到达客户端时调用（66=开播 / 67=停播）。 */
+    public static void updateEntityStatus(Entity entity, byte updateKind) {
+        if (entity instanceof com.github.yzqdev.pethome.server.entity.FollowingJukeboxEntity jukebox) {
+            net.minecraft.sounds.SoundEvent record = jukebox.getRecordSound();
+            if (entity.isAlive() && updateKind == 66) {
+                DiscJockeySound sound;
+                if (record != null
+                        && (DISC_JOCKEY_SOUND_MAP.get(entity.getId()) == null
+                        || DISC_JOCKEY_SOUND_MAP.get(entity.getId()).getRecordSound() != record)) {
+                    sound = new DiscJockeySound(record, jukebox);
+                    DISC_JOCKEY_SOUND_MAP.put(entity.getId(), sound);
+                } else {
+                    sound = DISC_JOCKEY_SOUND_MAP.get(entity.getId());
+                }
+                if (sound != null
+                        && !Minecraft.getInstance().getSoundManager().isActive(sound)
+                        && sound.canPlaySound()
+                        && sound.isNearest()) {
+                    Minecraft.getInstance().getSoundManager().play(sound);
+                }
+            }
+            if (updateKind == 67 || record == null) {
+                if (DISC_JOCKEY_SOUND_MAP.containsKey(entity.getId())) {
+                    DiscJockeySound sound = DISC_JOCKEY_SOUND_MAP.get(entity.getId());
+                    DISC_JOCKEY_SOUND_MAP.remove(entity.getId());
+                    Minecraft.getInstance().getSoundManager().stop(sound);
+                }
+            }
+        }
     }
 
     /** 由 EntityTickHandler 客户端分支每 tick 写入（服务端勿调） */
