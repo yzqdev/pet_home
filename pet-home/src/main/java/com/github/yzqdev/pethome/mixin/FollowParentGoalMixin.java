@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/** 注入 {@code FollowParentGoal} 的 canUse/canContinueToUse：三态开启时非游走态（command!=0）不跟随父母。 */
 @Mixin(FollowParentGoal.class)
 public class FollowParentGoalMixin {
 

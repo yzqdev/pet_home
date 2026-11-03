@@ -1,5 +1,6 @@
 package com.github.yzqdev.pethome.client;
 
+import com.github.yzqdev.pethome.PHModLogger;
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.client.render.*;
 import com.github.yzqdev.pethome.server.entity.PHEntityRegistry;
@@ -38,6 +39,8 @@ public class EntityRegEvent {
         event.registerEntityRenderer(PHEntityRegistry.PSYCHIC_WALL.get(), RenderPsychicWall::new);
         event.registerEntityRenderer(PHEntityRegistry.HIGHLIGHTED_BLOCK.get(), RenderHighlightedBlock::new);
         event.registerEntityRenderer(PHEntityRegistry.FEATHER.get(), RenderFeather::new);
+        event.registerEntityRenderer(
+                PHEntityRegistry.FOLLOWING_JUKEBOX.get(), RenderJukeboxFollower::new);
     }
 
 
@@ -56,7 +59,7 @@ public class EntityRegEvent {
             if (key != null) {
                 String modId = key.getNamespace(); // 获取所属 Mod 的 ID（原版为 "minecraft"）
                 if (!modId.equals("minecraft")) {
-                    System.out.println("EntityType: " + key + " | Mod: " + modId);
+                    PHModLogger.debugLog("[layer-debug] EntityType: {} | Mod: {}", key, modId);
                 }
             }
             LayerManager.addLayerIfApplicable(entityType, event);

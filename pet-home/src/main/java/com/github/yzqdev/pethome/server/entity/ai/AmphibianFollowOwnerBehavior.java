@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.server.entity.ai;
 
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import com.google.common.collect.ImmutableMap;
@@ -48,15 +48,15 @@ public class AmphibianFollowOwnerBehavior<T extends Animal> extends Behavior<T> 
         return false;
     }
 
-    protected void stop(ServerLevel p_23492_, T axolotl, long gameTime) {
+    protected void stop(ServerLevel level, T axolotl, long gameTime) {
         axolotl.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
     }
 
-    protected void tick(ServerLevel p_23503_, T axolotl, long gameTime) {
+    protected void tick(ServerLevel level, T axolotl, long gameTime) {
         if (axolotl.distanceToSqr(this.owner) >= 144.0D) {
             this.teleportToOwner(axolotl);
         } else{
-            int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, ModEnchantments.SPEEDSTER);
+            int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantments.SPEEDSTER);
             float speed = axolotl.isInWaterOrRain() ? baseSpeedWater + speedsterLevel * 0.05F : baseSpeedLand + speedsterLevel * 0.1F;
             BehaviorUtils.lookAtEntity(axolotl, owner);
             BehaviorUtils.setWalkAndLookTargetMemories(axolotl, owner, speed, (int)STOP_DISTANCE);
@@ -64,46 +64,46 @@ public class AmphibianFollowOwnerBehavior<T extends Animal> extends Behavior<T> 
     }
 
 
-    private int randomIntInclusive(int p_25301_, int p_25302_) {
-        return this.owner.getRandom().nextInt(p_25302_ - p_25301_ + 1) + p_25301_;
+    private int randomIntInclusive(int min, int max) {
+        return this.owner.getRandom().nextInt(max - min + 1) + min;
     }
 
     private void teleportToOwner(T axolotl) {
-        BlockPos blockpos = this.owner.blockPosition();
+        BlockPos targetPos = this.owner.blockPosition();
 
-        for(int i = 0; i < 10; ++i) {
-            int j = this.randomIntInclusive(-3, 3);
-            int k = this.randomIntInclusive(-1, 1);
-            int l = this.randomIntInclusive(-3, 3);
-            boolean flag = this.maybeTeleportTo(axolotl, blockpos.getX() + j, blockpos.getY() + k, blockpos.getZ() + l);
-            if (flag) {
+        for(int attempt = 0; attempt < 10; ++attempt) {
+            int xd = this.randomIntInclusive(-3, 3);
+            int yd = this.randomIntInclusive(-1, 1);
+            int zd = this.randomIntInclusive(-3, 3);
+            boolean teleported = this.maybeTeleportTo(axolotl, targetPos.getX() + xd, targetPos.getY() + yd, targetPos.getZ() + zd);
+            if (teleported) {
                 return;
             }
         }
 
     }
 
-    private boolean maybeTeleportTo(T axolotl, int p_25304_, int p_25305_, int p_25306_) {
-        if (Math.abs((double)p_25304_ - this.owner.getX()) < 2.0D && Math.abs((double)p_25306_ - this.owner.getZ()) < 2.0D) {
+    private boolean maybeTeleportTo(T axolotl, int x, int y, int z) {
+        if (Math.abs((double)x - this.owner.getX()) < 2.0D && Math.abs((double)z - this.owner.getZ()) < 2.0D) {
             return false;
-        } else if (!this.canTeleportTo(axolotl, new BlockPos(p_25304_, p_25305_, p_25306_))) {
+        } else if (!this.canTeleportTo(axolotl, new BlockPos(x, y, z))) {
             return false;
         } else {
-            axolotl.snapTo((double)p_25304_ + 0.5D, (double)p_25305_, (double)p_25306_ + 0.5D, axolotl.getYRot(), axolotl.getXRot());
+            axolotl.snapTo((double)x + 0.5D, (double)y, (double)z + 0.5D, axolotl.getYRot(), axolotl.getXRot());
             axolotl.getBrain().eraseMemory(MemoryModuleType.WALK_TARGET);
             return true;
         }
     }
 
     private boolean canTeleportTo(T axolotl, BlockPos pos) {
-        PathType blockpathtypes = WalkNodeEvaluator.getPathTypeStatic(axolotl, pos);
+        PathType pathType = WalkNodeEvaluator.getPathTypeStatic(axolotl, pos);
         if(axolotl.level().getFluidState(pos).is(Fluids.WATER)){
             return true;
-        }else if (blockpathtypes != PathType.WALKABLE) {
+        }else if (pathType != PathType.WALKABLE) {
             return false;
         } else {
-            BlockPos blockpos = pos.subtract(axolotl.blockPosition());
-            return axolotl.level().noCollision(axolotl, axolotl.getBoundingBox().move(blockpos));
+            BlockPos delta = pos.subtract(axolotl.blockPosition());
+            return axolotl.level().noCollision(axolotl, axolotl.getBoundingBox().move(delta));
         }
     }
 }

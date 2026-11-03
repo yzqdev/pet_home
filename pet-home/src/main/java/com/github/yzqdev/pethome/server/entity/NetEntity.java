@@ -2,6 +2,7 @@ package com.github.yzqdev.pethome.server.entity;
 
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.PHDataComponents;
+import com.github.yzqdev.pethome.server.misc.PetCompassTracker;
 import com.github.yzqdev.pethome.server.item.NetItem;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 import net.minecraft.core.BlockPos;
@@ -9,6 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -91,6 +93,10 @@ public class NetEntity extends ThrowableItemProjectile {
                 newStack.set(PHDataComponents.ENTITY_HOLDER, nbt);
                 ItemEntity itemEntity = createDroppedItemAtEntity(target, newStack);
                 level().addFreshEntity(itemEntity);
+                // 宠物被收进球里：罗盘档案改按掉落物定位（否则停留在已 discard 的实体 UUID，显示「未加载」且召回必失败）
+                if (target instanceof LivingEntity capturedPet) {
+                    PetCompassTracker.onPetCapturedByNet(capturedPet, itemEntity);
+                }
                 target.discard();
             } else {
                 ItemEntity emptynet = createDroppedItemAtEntity(this, itemStack.copy());

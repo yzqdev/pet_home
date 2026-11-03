@@ -6,6 +6,10 @@ import org.joml.Vector4f;
 
 import java.util.*;
 
+/**
+ * 闪电链视觉效果的数据生成器（算法经原作者 aidancbrady 许可使用）。
+ * 由起点/终点构建分形主干与随机分支的四边形序列，供 LightningRender 绘制。
+ */
 public class LightningBoltData {
     private final Random random;
     private final BoltRenderInfo renderInfo;
@@ -186,21 +190,25 @@ public class LightningBoltData {
     }
 
     public interface SpreadFunction {
+        /** 垂直扰动随进度线性增大。 */
         SpreadFunction LINEAR_ASCENT = (progress) -> progress;
+        /** 垂直扰动先随进度线性增大，过半程后线性回落。 */
         SpreadFunction LINEAR_ASCENT_DESCENT = (progress) -> (progress - Math.max(0.0F, 2.0F * progress - 1.0F)) / 0.5F;
+        /** 0~π 的单位正弦波（半波），幅度随进度变化。 */
         SpreadFunction SINE = (progress) -> (float) Math.sin(Math.PI * (double) progress);
 
-        float getMaxSpread(float var1);
+        float getMaxSpread(float progress);
     }
 
     public interface RandomFunction {
         RandomFunction UNIFORM = Random::nextFloat;
         RandomFunction GAUSSIAN = (rand) -> (float) rand.nextGaussian();
 
-        float getRandom(Random var1);
+        float getRandom(Random random);
     }
 
     public interface SegmentSpreader {
+        /** 无记忆模式：不参考上一段的落点，直接相对主轴随机偏移。 */
         SegmentSpreader NO_MEMORY = (perpendicularDist, randVec, maxDiff, scale, progress) -> randVec.scale((double) maxDiff);
 
         static SegmentSpreader memory(float memoryFactor) {
@@ -215,7 +223,8 @@ public class LightningBoltData {
             };
         }
 
-        Vec3 getSegmentAdd(Vec3 var1, Vec3 var2, float var3, float var4, float var5);
+        Vec3 getSegmentAdd(
+        Vec3 perpendicularDist, Vec3 randomOrthogonal, float maxDiff, float maxSpread, float progress);
     }
 
     public interface SpawnFunction {
@@ -238,7 +247,7 @@ public class LightningBoltData {
             return (rand) -> Pair.of(delay - noise, delay + noise);
         }
 
-        Pair<Float, Float> getSpawnDelayBounds(Random var1);
+        Pair<Float, Float> getSpawnDelayBounds(Random random);
 
         default float getSpawnDelay(Random rand) {
             Pair<Float, Float> bounds = this.getSpawnDelayBounds(rand);
@@ -261,7 +270,7 @@ public class LightningBoltData {
             };
         }
 
-        Pair<Integer, Integer> getRenderBounds(int var1, float var2);
+        Pair<Integer, Integer> getRenderBounds(int totalBolts, float lifeScale);
     }
 
     public static class BoltRenderInfo {

@@ -1,6 +1,5 @@
 package com.github.yzqdev.pethome.worldgen;
 
-import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.datagen.loot.LootTableGen;
 import com.github.yzqdev.pethome.server.misc.PHTagRegistry;
 import com.mojang.datafixers.util.Either;
@@ -31,22 +30,41 @@ import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
 import net.minecraft.world.level.levelgen.structure.templatesystem.*;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 村庄宠物店的自定义结构池元素（注册于 {@code PHVillagePieceRegistry.PETSHOP}）：处理结构模板中的数据标记块——
+ * 鱼缸（随机水/海草/珊瑚 + 水生动物）、笼子 0-3（按 {@code pet_home} 实体标签随机刷宠物店动物，标记块置空气）、
+ * 战利品箱（写入宠物店 loot table）。刷怪列表在服务器启动时预热一次（volatile 不可变快照，多线程只读安全）。
+ */
 public class PetshopStructurePoolElement extends LegacySinglePoolElement {
 
-    public static final Identifier FISHTANK_MOBS = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "petstore_fishtank");
-    public static final Identifier CAGE_0_MOBS = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "petstore_cage_0");
-    public static final Identifier CAGE_1_MOBS = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "petstore_cage_1");
-    public static final Identifier CAGE_2_MOBS = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "petstore_cage_2");
-    public static final Identifier CAGE_3_MOBS = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "petstore_cage_3");
-    private static boolean initializedMobLists = false;
-    private static EntityType[] fishtankMobs = null;
-    private static EntityType[] cage0Mobs = null;
-    private static EntityType[] cage1Mobs = null;
-    private static EntityType[] cage2Mobs = null;
-    private static EntityType[] cage3Mobs = null;
+    /** 五组宠物店刷怪的不可变快照，经单一 volatile 引用发布（record 的 final 字段保证安全发布）。 */
+    private record MobLists(EntityType<?>[] fishtank, EntityType<?>[] cage0, EntityType<?>[] cage1, EntityType<?>[] cage2, EntityType<?>[] cage3) {}
+
+    private static volatile MobLists mobLists;
+
+    /**
+     * 在服务器启动（主线程）预热刷怪列表：handleDataMarker 运行在世界生成 worker 线程，
+     * 此方法保证进入生成阶段前缓存已就绪；volatile 引用 + 不可变 record 使双检锁安全，
+     * handleDataMarker 内的判空只是兜底。
+     */
+    public static void preloadMobLists() {
+        if (mobLists == null) {
+            synchronized (PetshopStructurePoolElement.class) {
+                if (mobLists == null) {
+                    mobLists = new MobLists(
+                            entitiesIn(PHTagRegistry.PETSTORE_FISHTANK),
+                            entitiesIn(PHTagRegistry.PETSTORE_CAGE_0),
+                            entitiesIn(PHTagRegistry.PETSTORE_CAGE_1),
+                            entitiesIn(PHTagRegistry.PETSTORE_CAGE_2),
+                            entitiesIn(PHTagRegistry.PETSTORE_CAGE_3));
+                }
+            }
+        }
+    }
 
     public static final MapCodec<PetshopStructurePoolElement> CODEC = RecordCodecBuilder.mapCodec((petshopStructurePoolElementInstance) -> {
         return petshopStructurePoolElementInstance.group(templateCodec(), processorsCodec(), projectionCodec(), overrideLiquidSettingsCodec()).apply(petshopStructurePoolElementInstance, PetshopStructurePoolElement::new);
@@ -60,18 +78,13 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
         super(Either.left(resourceLocation), processors, StructureTemplatePool.Projection.RIGID, Optional.empty());
     }
 
+    /** 结构生成期处理数据标记块（metadata 决定行为）：petshop_water 鱼缸 / petshop_chest 战利品箱 / petshop_cage_0..3 笼子刷怪；未知标记直接抛异常暴露模板错误。 */
     @Override
     public void handleDataMarker(LevelAccessor levelAccessor, StructureTemplate.StructureBlockInfo structureBlockInfo, BlockPos pos, Rotation rotation, RandomSource random, BoundingBox box) {
         String contents = structureBlockInfo.nbt().getStringOr("metadata", "");
 
-        if (!initializedMobLists) {
-            fishtankMobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_FISHTANK).toArray(new EntityType[0]);
-            cage0Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_0).toArray(EntityType[]::new);
-            cage1Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_1).toArray(EntityType[]::new);
-            cage2Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_2).toArray(EntityType[]::new);
-            cage3Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_3).toArray(EntityType[]::new);
-            initializedMobLists = true;
-        }
+        preloadMobLists();
+        MobLists lists = mobLists;
         switch (contents) {
             case "petshop_water" -> {
                 BlockState state = Blocks.WATER.defaultBlockState();
@@ -88,7 +101,7 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
                     };
                     state = coralBlock.defaultBlockState().setValue(BaseCoralPlantTypeBlock.WATERLOGGED, true);
                 }
-                spawnAnimalsAt(levelAccessor, structureBlockInfo.pos(), 2, random, fishtankMobs);
+                spawnAnimalsAt(levelAccessor, structureBlockInfo.pos(), 2, random, lists.fishtank());
                 levelAccessor.setBlock(structureBlockInfo.pos(), state, 2);
             }
             case "petshop_chest" -> {
@@ -97,37 +110,47 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
                 RandomizableContainer.setBlockEntityLootTable(levelAccessor, random, structureBlockInfo.pos().below(), LootTableGen.PET_LOOT_TABLE);
             }
             case "petshop_cage_0" -> {
-                spawnAnimalsAt(levelAccessor, structureBlockInfo.pos(), 1 + random.nextInt(2), random, cage0Mobs);
-                levelAccessor.setBlock(structureBlockInfo.pos(), Blocks.AIR.defaultBlockState(), 4);
+                spawnCage(levelAccessor, structureBlockInfo, 1 + random.nextInt(2), random, lists.cage0());
             }
             case "petshop_cage_1" -> {
-                spawnAnimalsAt(levelAccessor, structureBlockInfo.pos(), 2 + random.nextInt(2), random, cage1Mobs);
-                levelAccessor.setBlock(structureBlockInfo.pos(), Blocks.AIR.defaultBlockState(), 2);
+                spawnCage(levelAccessor, structureBlockInfo, 2 + random.nextInt(2), random, lists.cage1());
             }
             case "petshop_cage_2" -> {
-                spawnAnimalsAt(levelAccessor, structureBlockInfo.pos(), 1 + random.nextInt(2), random, cage2Mobs);
-                levelAccessor.setBlock(structureBlockInfo.pos(), Blocks.AIR.defaultBlockState(), 2);
+                spawnCage(levelAccessor, structureBlockInfo, 1 + random.nextInt(2), random, lists.cage2());
             }
             case "petshop_cage_3" -> {
-                spawnAnimalsAt(levelAccessor, structureBlockInfo.pos(), 1, random, cage3Mobs);
-                levelAccessor.setBlock(structureBlockInfo.pos(), Blocks.AIR.defaultBlockState(), 2);
+                spawnCage(levelAccessor, structureBlockInfo, 1, random, lists.cage3());
             }
             default -> throw new IllegalStateException("Unexpected value: " + contents);
         }
     }
 
-    private List<EntityType<?>> getAllMatchingEntities(TagKey<EntityType<?>> tag) {
-        return BuiltInRegistries.ENTITY_TYPE.stream().filter((type -> type.builtInRegistryHolder().is(tag))).toList();
+    /** 笼子标记块通用处理：随机刷 {@code count} 只 {@code types} 里的动物，随后把标记块置空气。 */
+    private static void spawnCage(LevelAccessor level, StructureTemplate.StructureBlockInfo info, int count, RandomSource random, EntityType<?>[] types) {
+        spawnAnimalsAt(level, info.pos(), count, random, types);
+        level.setBlock(info.pos(), Blocks.AIR.defaultBlockState(), 2);
     }
 
-    public void spawnAnimalsAt(LevelAccessor accessor, BlockPos at, int count, RandomSource random, EntityType... types) {
+    private static EntityType<?>[] entitiesIn(TagKey<EntityType<?>> tag) {
+        List<EntityType<?>> types = new ArrayList<>();
+        for (Holder<EntityType<?>> holder : BuiltInRegistries.ENTITY_TYPE.getTagOrEmpty(tag)) {
+            types.add(holder.value());
+        }
+        return types.toArray(EntityType<?>[]::new);
+    }
+
+    /** 在标记块位置随机刷 {@code count} 只 {@code types} 里的动物（Mob 设持久化 + finalizeSpawn），仅服务端且标记块仍为 structure_block 时执行；标签含不可生成实体时跳过该只（{@code create} 可返回 null）。 */
+    private static void spawnAnimalsAt(LevelAccessor accessor, BlockPos at, int count, RandomSource random, EntityType<?>[] types) {
         if (types.length > 0 && count > 0 && accessor.getBlockState(at).getBlock() == Blocks.STRUCTURE_BLOCK && accessor instanceof ServerLevelAccessor serverLevel) {
             for (int i = 0; i < count; i++) {
-                int index = types.length == 1 ? 0 : random.nextInt(types.length - 1);
-                Entity entity = types[index].create(serverLevel.getLevel(), EntitySpawnReason.STRUCTURE);
+                EntityType<?> type = types[random.nextInt(types.length)];
+                Entity entity = type.create(serverLevel.getLevel(), EntitySpawnReason.STRUCTURE);
+                if (entity == null) {
+                    continue;
+                }
                 entity.setPos(Vec3.atBottomCenterOf(at));
-                entity.setYRot(random.nextInt(360) - 180);
-                entity.setXRot(random.nextInt(360) - 180);
+                entity.setYRot(random.nextFloat() * 360.0F);
+                entity.setXRot(0.0F);
                 if (entity instanceof Mob mob) {
                     mob.setPersistenceRequired();
                     mob.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(mob.blockPosition()), EntitySpawnReason.STRUCTURE, null);
@@ -138,13 +161,13 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
     }
 
     @Override
-    protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox boundingBox, LiquidSettings p_352069_, boolean should) {
+    protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox boundingBox, LiquidSettings liquidSettings, boolean should) {
 
         StructurePlaceSettings structureplacesettings = new StructurePlaceSettings();
         structureplacesettings.setBoundingBox(boundingBox);
         structureplacesettings.setRotation(rotation);
         structureplacesettings.setKnownShape(true);
-        structureplacesettings.setLiquidSettings(p_352069_);
+        structureplacesettings.setLiquidSettings(this.overrideLiquidSettings.orElse(liquidSettings));
         structureplacesettings.setIgnoreEntities(false);
         structureplacesettings.setFinalizeEntities(true);
         if (!should) {

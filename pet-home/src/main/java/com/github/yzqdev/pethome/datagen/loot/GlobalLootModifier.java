@@ -28,26 +28,32 @@ public class GlobalLootModifier extends GlobalLootModifierProvider {
 //                new LootItemCondition[]{new ModLootTableTypeCondition("chests/")},
 //                LootTableGen.PET_LOOT_TABLE));
         add("sinister_carrot", new PHLootModifier(new LootItemCondition[]{new LootTableIdCondition.Builder(
-                BuiltInLootTables.WOODLAND_MANSION.identifier()).build()}, 0, 0));
+                BuiltInLootTables.WOODLAND_MANSION.identifier()).build()}, 0, PHLootType.SINISTER_CARROT));
         add("ore_scenting_enchanted_book", new PHLootModifier(new LootItemCondition[]{new LootTableIdCondition.Builder(
-                BuiltInLootTables.ABANDONED_MINESHAFT.identifier()).build()}, 0, 4));
+                BuiltInLootTables.ABANDONED_MINESHAFT.identifier()).build()}, 0, PHLootType.ORE_SCENTING));
         add("bubbling_enchanted_book", new PHLootModifier(new LootItemCondition[]{new LootTableIdCondition.Builder(
-                BuiltInLootTables.BURIED_TREASURE.identifier()).build()}, 0, 1));
+                BuiltInLootTables.BURIED_TREASURE.identifier()).build()}, 0, PHLootType.BUBBLING));
         add("vampirism_enchanted_book", new PHLootModifier(new LootItemCondition[]{new LootTableIdCondition.Builder(
-                BuiltInLootTables.WOODLAND_MANSION.identifier()).build()}, 0, 2));
+                BuiltInLootTables.WOODLAND_MANSION.identifier()).build()}, 0, PHLootType.VAMPIRISM));
+        // void_cloud（对齐 1.20 的 loot-only 定位）：末地城箱子出虚空之云附魔书
+        add("void_cloud_enchanted_book", new PHLootModifier(new LootItemCondition[]{new LootTableIdCondition.Builder(
+                BuiltInLootTables.END_CITY_TREASURE.identifier()).build()}, 0, PHLootType.VOID_CLOUD));
         add("blazing_protection_enchanted_book", new PHLootModifier(
                 new LootItemCondition[]{new LootTableIdCondition.Builder(
-                        BuiltInLootTables.NETHER_BRIDGE.identifier()).build()}, 0, 6));
+                        BuiltInLootTables.NETHER_BRIDGE.identifier()).build()}, 0, PHLootType.BLAZING_PROTECTION));
         add("share_enchanted_book", new PHLootModifier(new LootItemCondition[]{new LootTableIdCondition.Builder(
-                BuiltInLootTables.END_CITY_TREASURE.identifier()).build()}, 0, 3));
+                BuiltInLootTables.END_CITY_TREASURE.identifier()).build()}, 0, PHLootType.SHARE));
         add("sonic_boom_enchanted_book", new PHLootModifier(new LootItemCondition[]{new LootTableIdCondition.Builder(
-                BuiltInLootTables.ANCIENT_CITY.identifier()).build()}, 0, 5));
+                BuiltInLootTables.ANCIENT_CITY.identifier()).build()}, 0, PHLootType.SONIC_BOOM));
         add("paralysis_enchanted_book", new PHLootModifier(new LootItemCondition[]{AnyOfCondition.anyOf(
                 manyChests(BuiltInLootTables.ABANDONED_MINESHAFT, BuiltInLootTables.DESERT_PYRAMID,
-                          BuiltInLootTables.SPAWN_BONUS_CHEST)).build()}, 0, 7));
+                          BuiltInLootTables.SPAWN_BONUS_CHEST)).build()}, 0, PHLootType.PARALYSIS));
         add("tough_enchant_book", new PHLootModifier(new LootItemCondition[]{LootTableIdCondition.builder(
-                BuiltInLootTables.ABANDONED_MINESHAFT.identifier()).build()}, 0, 8));
-        // below using table but its chance is constant
+                BuiltInLootTables.ABANDONED_MINESHAFT.identifier()).build()}, 0, PHLootType.TOUGH));
+        // muffled（自 1.20 移植）：远古城市箱子出安静附魔书
+        add("muffled_enchanted_book", new PHLootModifier(new LootItemCondition[]{LootTableIdCondition.builder(
+                BuiltInLootTables.ANCIENT_CITY.identifier()).build()}, 0, PHLootType.MUFFLED));
+        // 下面注释掉的写法用 loot table，但概率是固定的，不如上面的随机附魔实现
 //        add("tough_enchant_book", new AddTableLootModifier(new LootItemCondition[]{LootTableIdCondition.builder(BuiltInLootTables.ABANDONED_MINESHAFT.identifier()).build()},LootTableGen.PET_PROTECTION_TABLE) );
     }
 

@@ -7,6 +7,11 @@ import net.minecraft.world.entity.OwnableEntity;
 import javax.annotation.Nullable;
 import java.util.UUID;
 
+/**
+ * 「改造为可驯服」duck 接口：由数据槽 mixin 挂到美西螈/狐狸/兔子/青蛙等原版动物上，
+ * 提供驯服状态与主人存储（实现走 mixin 注入的字段/数据槽）。所有"非 TamableAnimal 的可驯服实体"
+ * 判定都走 {@code TameableUtils} 的该接口分支。
+ */
 public interface ModifiedToBeTameable extends OwnableEntity {
     boolean isTame();
 

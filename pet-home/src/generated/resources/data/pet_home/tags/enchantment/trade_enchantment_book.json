@@ -113,10 +113,6 @@
       "required": false
     },
     {
-      "id": "pet_home:void_cloud",
-      "required": false
-    },
-    {
       "id": "pet_home:insight",
       "required": false
     },
@@ -130,6 +126,14 @@
     },
     {
       "id": "pet_home:violent",
+      "required": false
+    },
+    {
+      "id": "pet_home:charisma",
+      "required": false
+    },
+    {
+      "id": "pet_home:disc_jockey",
       "required": false
     }
   ]

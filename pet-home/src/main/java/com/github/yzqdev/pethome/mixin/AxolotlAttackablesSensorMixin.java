@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/** 注入 {@code AxolotlAttackablesSensor#isMatchingEntity}：已驯服美西螈的猎物判定改走 {@code isValidAttackTarget}（主人仇恨继承，排除同主人/结盟个体）。 */
 @Mixin(AxolotlAttackablesSensor.class)
 public class AxolotlAttackablesSensorMixin {
 

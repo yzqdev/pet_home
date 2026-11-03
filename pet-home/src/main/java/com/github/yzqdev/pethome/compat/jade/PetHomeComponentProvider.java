@@ -21,12 +21,16 @@ public enum PetHomeComponentProvider implements IEntityComponentProvider {
 
     @Override
     public void appendTooltip(ITooltip iTooltip, EntityAccessor entityAccessor, IPluginConfig iPluginConfig) {
+        // Jade 按 uid 自动生成 plugin_pet_home.collar_tag 开关，玩家关闭后整段不显示
+        if (!iPluginConfig.get(this)) {
+            return;
+        }
 
         if (entityAccessor.getEntity() instanceof LivingEntity livingEntity) {
             var enchants = TameableUtils.getEnchantDescriptions(livingEntity);
 
             if (livingEntity instanceof IComandableMob cmd && TameableUtils.isTamed(livingEntity)&& PetHomeConfig.trinaryCommandSystem) {
-                iTooltip.add(Component.translatable("message.pet_home.command_" + cmd.getCommand(),livingEntity.getDisplayName() ));
+                iTooltip.add(Component.translatable("message.pet_home.command_" + cmd.getCommand(),livingEntity.getDisplayName() ).withStyle(ChatFormatting.YELLOW));
             }
             var hasPetbed = TameableUtils.getPetBedPos(livingEntity);
             if (hasPetbed != null) {

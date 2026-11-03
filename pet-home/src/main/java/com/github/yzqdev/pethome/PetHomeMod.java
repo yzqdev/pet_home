@@ -38,7 +38,7 @@ public class PetHomeMod {
         PHEntityRegistry.DEF_REG.register(modEventBus);
         PHItemRegistry.DEF_REG.register(modEventBus);
         PHParticleRegistry.DEF_REG.register(modEventBus);
-        ModEffects.EFFECTS.register(modEventBus);
+        PHEffects.EFFECTS.register(modEventBus);
 
         PHCreativeTabRegistry.DEF_REG.register(modEventBus);
 

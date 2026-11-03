@@ -16,6 +16,10 @@ import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 
+/**
+ * 羽毛钓竿的投射物（复用 {@link FishingHook} 逻辑，{@code FishingHookMixin} 让它免受水影响）：
+ * 落地时锁定主人 21 格内最近的可移动宠物，引导它走向羽毛（近了导航停下），不造成任何伤害。
+ */
 public class FeatherEntity extends FishingHook {
 
     private static final EntityDataAccessor<Integer> OWNER_ID = SynchedEntityData.defineId(FeatherEntity.class, EntityDataSerializers.INT);
@@ -58,6 +62,7 @@ public class FeatherEntity extends FishingHook {
     }
 
 
+    /** 服务端：首次落地时选最近宠物，之后每 tick 减速自体并把宠物导航到羽毛位置（贴身时停住转向）。 */
     @Override
     public void tick() {
         super.tick();
@@ -130,6 +135,7 @@ public class FeatherEntity extends FishingHook {
         }
     }
 
+    /** 宠物是否"可以走动"（非停留/坐姿）：三态开启时停留态（command==1）与 TamableAnimal 坐下都排除。 */
     public boolean isPetAmbulatory(LivingEntity entity) {
         if (entity instanceof TamableAnimal && (((TamableAnimal) entity).isOrderedToSit() || ((TamableAnimal) entity).isInSittingPose())) {
             return false;

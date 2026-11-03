@@ -10,6 +10,10 @@ import net.minecraft.world.level.Level;
 
 import java.util.UUID;
 
+/**
+ * 迷途灯笼召回请求（PHWorldData 持久化）：宠物处于跟随态随区块卸载时由 ServerEvent.onEntityLeaveWorld 写入，
+ * WaywardLanternBlockEntity 按 64 格内玩家拉取，按 {@link #getDimensionKey()} 到宠物所在维度强载区块找实体并传回灯笼旁。
+ */
 public class LanternRequest {
     private String entityType;
     private long timestamp;
@@ -61,6 +65,7 @@ public class LanternRequest {
         return this.dimension;
     }
 
+    /** 把存档里的维度字符串解析回 {@code ResourceKey<Level>}（getServer().getLevel(...) 用）；字符串非法时抛异常，由调用方保证来源合法。 */
     public ResourceKey<Level> getDimensionKey() {
         return ResourceKey.create(Registries.DIMENSION, Identifier.parse(this.dimension));
     }
@@ -69,6 +74,7 @@ public class LanternRequest {
         return chunkPosition;
     }
 
+    /** 调试/消息用展示串：有自定义名时 {@code 名字|实体类型}，否则仅实体类型。 */
     public String toString() {
         if (getNametag() == null || getNametag().isEmpty()) {
             return this.entityType;

@@ -8,6 +8,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
+/**
+ * 注入 {@code Player}：@Redirect 横扫攻击里的 {@code isAlliedTo} 判定（26.1 从 attack 移入 doSweepAttack）——
+ * 横扫不再波及自家宠物。
+ */
 @Mixin(Player.class)
 public class PlayerMixin {
 

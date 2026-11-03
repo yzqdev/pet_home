@@ -6,6 +6,6 @@
       "loot_table_id": "minecraft:chests/woodland_mansion"
     }
   ],
-  "loot_type": 2,
+  "loot_type": "vampirism",
   "priority": 0
 }

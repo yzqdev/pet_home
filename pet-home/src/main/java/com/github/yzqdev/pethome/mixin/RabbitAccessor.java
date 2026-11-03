@@ -4,6 +4,7 @@ import net.minecraft.world.entity.animal.rabbit.Rabbit;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
+/** Invoker：暴露私有的 {@code Rabbit#setVariant}（阴森胡萝卜把兔子变成 EVIL 变种用）。 */
 @Mixin(Rabbit.class)
 public interface RabbitAccessor {
 

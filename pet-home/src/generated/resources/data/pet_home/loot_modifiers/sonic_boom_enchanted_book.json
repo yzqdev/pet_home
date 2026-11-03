@@ -6,6 +6,6 @@
       "loot_table_id": "minecraft:chests/ancient_city"
     }
   ],
-  "loot_type": 5,
+  "loot_type": "sonic_boom",
   "priority": 0
 }

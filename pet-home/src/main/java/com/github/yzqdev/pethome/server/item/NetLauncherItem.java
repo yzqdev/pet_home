@@ -23,6 +23,10 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nonnull;
 import java.util.function.Consumer;
 
+/**
+ * 捕网发射器：蓄力发射 {@link NetEntity} 投射物。潜行右键切换抓捕/发射模式
+ * （{@code RELEASE_MODE} 组件）：抓捕模式发空网抓怪，发射模式从背包找有实体的网发射（消耗该网）。
+ */
 public class NetLauncherItem extends Item {
 
     public NetLauncherItem(Properties properties) {
@@ -162,12 +166,14 @@ public class NetLauncherItem extends Item {
         return base.append(" (").append(isCaptureMode(stack) ? CAPTURE : RELEASE).append(")");
     }
 
-    //helpers
+    // 辅助方法
+    /** 当前是否为抓捕模式：无 {@code RELEASE_MODE} 组件或值为 false 时视为抓捕（默认模式）。 */
     public static boolean isCaptureMode(ItemStack stack) {
 
         return (!stack.has(PHDataComponents.RELEASE_MODE)) || Boolean.FALSE.equals(stack.get(PHDataComponents.RELEASE_MODE));
     }
 
+    /** 发射模式找"有实体的网"：主手→副手→遍历背包，找不到返回 EMPTY（releaseUsing 会提示失败）。 */
     protected ItemStack findNet(Player player) {
         ItemStack stack = player.getMainHandItem();
 

@@ -33,6 +33,12 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * total_recall（全面召回）附魔的召回宝盒实体：宠物濒死时（EntityHurtHandler）把其完整 NBT 收进
+ * SynchedEntityData 槽位（owner UUID/实体类型/内容 NBT/开合状态）并 discard 原实体。
+ * 落地后只有主人能右键打开，开合动画到位后在服务端重建宠物（保留 NBT 数据，血量为 25% 上限、至少 2 点），
+ * 完毕即自毁；{@code shouldBeSaved} 保证重建中的球随存档保留。
+ */
 public class RecallBallEntity extends Entity {
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(RecallBallEntity.class, PHAttachments.OPTIONAL_UUID.get());
@@ -57,6 +63,7 @@ public class RecallBallEntity extends Entity {
     }
 
 
+    /** 主人右键打开（置 OPENED=true，动画由 openProgress 驱动）；无主或未开时保留，重建完毕（FINISHED）后不再响应。 */
     // 26.1: 原 interact(Player, InteractionHand) 与 interactAt(Player, Vec3, InteractionHand) 已合并为本方法，
     // 旧签名不会被调用，必须用 @Override 确保签名正确
     @Override
@@ -83,6 +90,7 @@ public class RecallBallEntity extends Entity {
         return false;
     }
 
+    /** 旋转自体 + 漂浮（水中上浮、出界回弹）+ 粒子；打开动画到位后（服务端）重建内容宠物并标记 FINISHED，关闭动画播完自毁。 */
     public void tick() {
         super.tick();
         this.setYRot(this.getYRot() + 1);

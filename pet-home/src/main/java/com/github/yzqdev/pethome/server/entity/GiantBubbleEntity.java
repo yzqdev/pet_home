@@ -20,6 +20,10 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
 
+/**
+ * bubbling 附魔的巨泡实体：把受害生物装进泡内漂浮（缓升/水面浮起），到时或被投射物击中/坠出世界即破裂
+ * 弹出乘客；不可被其他方式伤害。服务端 {@code EntityMountEvent}（ServerEvent.onEntityMount）阻止骑乘者主动下潜。
+ */
 public class GiantBubbleEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> POPS_IN = SynchedEntityData.defineId(GiantBubbleEntity.class, EntityDataSerializers.INT);

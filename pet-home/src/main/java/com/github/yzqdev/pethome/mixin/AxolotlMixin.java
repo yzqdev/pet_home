@@ -41,6 +41,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import javax.annotation.Nullable;
 import java.util.UUID;
 
+/** 数据槽改造组：让美西螈实现 {@link ModifiedToBeTameable}/{@link IComandableMob}（喂热带鱼驯服、三态指令），受 {@code tameableAxolotl} 开关约束；含桶装保存/恢复驯服数据、主人仇恨继承、已驯服不自然消失。 */
 @Mixin(Axolotl.class)
 public abstract class AxolotlMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 

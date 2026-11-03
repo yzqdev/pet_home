@@ -24,6 +24,11 @@ import java.util.List;
 import java.util.Optional;
 
 
+/**
+ * 驯兽师村民（animal_tamer）1-5 级交易的数据生成：26.1 已无 VillagerTradesEvent，
+ * 改为 bootstrap {@code VillagerTrade} 注册表 + 按等级生成 {@code TradeSet}（引用 villager_trade 标签选交易）。
+ * 附魔书/附魔项圈交易用 {@code EnchantRandomlyFunction} 从可交易附魔标签（{@code PHTags.TradableEnchantmentKey}）随机取。
+ */
 public class PHVillagerTrade {
 
     // --- VillagerTrade keys ---
@@ -161,7 +166,7 @@ public class PHVillagerTrade {
                                  int emeralds, int maxUses, int xp) {
         List<LootItemFunction> modifiers = new ArrayList<>();
         modifiers.add(EnchantRandomlyFunction.randomEnchantment()
-                .withOneOf(context.lookup(Registries.ENCHANTMENT).getOrThrow(ModTags.TradableEnchantmentKey))
+                .withOneOf(context.lookup(Registries.ENCHANTMENT).getOrThrow(PHTags.TradableEnchantmentKey))
                 .allowingIncompatibleEnchantments()
                 .build());
         context.register(key, new VillagerTrade(
@@ -183,7 +188,7 @@ public class PHVillagerTrade {
         List<LootItemFunction> modifiers = new ArrayList<>();
         for (int i = 0; i < enchantmentCount; i++) {
             modifiers.add(EnchantRandomlyFunction.randomEnchantment()
-                    .withOneOf(context.lookup(Registries.ENCHANTMENT).getOrThrow(ModTags.TradableEnchantmentKey))
+                    .withOneOf(context.lookup(Registries.ENCHANTMENT).getOrThrow(PHTags.TradableEnchantmentKey))
                     .allowingIncompatibleEnchantments()
                     .build());
         }

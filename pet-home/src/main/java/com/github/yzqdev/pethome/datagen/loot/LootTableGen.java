@@ -1,8 +1,10 @@
 package com.github.yzqdev.pethome.datagen.loot;
 
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
-import com.github.yzqdev.pethome.datagen.ModTags;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
+import com.github.yzqdev.pethome.datagen.PHTags;
+import com.github.yzqdev.pethome.server.block.DyeColors;
+import com.github.yzqdev.pethome.server.block.PHBlockRegistry;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
@@ -53,7 +55,7 @@ public class LootTableGen {
                     .setRolls(ConstantValue.exactly(1))
                     .when(LootItemRandomChanceCondition.randomChance(0.05F))
 
-                    .add(enchantItem(Items.BOOK, ModEnchantments.TOUGH, 1, 4))
+                    .add(enchantItem(Items.BOOK, PHEnchantments.TOUGH, 1, 4))
 
             ));
 
@@ -73,15 +75,15 @@ public class LootTableGen {
                             .setRolls(ConstantValue.exactly(1))
                             .when(LootItemRandomChanceCondition.randomChance(0.15F))
 
-                            .add(enchantItem(Items.BOOK, ModEnchantments.BUBBLING, 1, 2))
-                            .add(enchantItem(Items.BOOK, ModEnchantments.AMPHIBIOUS, 1, 1))
-                            .add(enchantItem(Items.BOOK, ModEnchantments.VAMPIRE, 1, 2))
+                            .add(enchantItem(Items.BOOK, PHEnchantments.BUBBLING, 1, 2))
+                            .add(enchantItem(Items.BOOK, PHEnchantments.AMPHIBIOUS, 1, 1))
+                            .add(enchantItem(Items.BOOK, PHEnchantments.VAMPIRE, 1, 2))
 
                     ).withPool(LootPool.lootPool()
                             .name("petshop_chest_collars")
                             .setRolls(UniformGenerator.between(1, 2))
                             .when(LootItemRandomChanceCondition.randomChance(0.5f))
-                            .add(LootItem.lootTableItem(PHItemRegistry.COLLAR_TAG.get()).setWeight(1).apply(EnchantRandomlyFunction.randomEnchantment().withOneOf(provider.lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(ModTags.TradableEnchantmentKey))))
+                            .add(LootItem.lootTableItem(PHItemRegistry.COLLAR_TAG.get()).setWeight(1).apply(EnchantRandomlyFunction.randomEnchantment().withOneOf(provider.lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(PHTags.TradableEnchantmentKey))))
                             .add(LootItem.lootTableItem(PHItemRegistry.COLLAR_TAG.get()).setWeight(2))
 
                     )
@@ -131,8 +133,13 @@ public class LootTableGen {
 
         @Override
         public void generate() {
-
-
+            // 方块自掉落（对应原静态 data/pet_home/loot_table/blocks/*.json 的 18 张表）
+            this.add(PHBlockRegistry.DRUM.get(), this.createSingleItemTable(PHBlockRegistry.DRUM.get()));
+            for (var color : DyeColors.COLORS.keySet()) {
+                Block bed = PHBlockRegistry.PET_BED_BLOCKS.get(color).get();
+                this.add(bed, this.createSingleItemTable(bed));
+            }
+            this.add(PHBlockRegistry.WAYWARD_LANTERN.get(), this.createSingleItemTable(PHBlockRegistry.WAYWARD_LANTERN.get()));
         }
 
         @Override

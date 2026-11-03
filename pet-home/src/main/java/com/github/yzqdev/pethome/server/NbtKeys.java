@@ -47,4 +47,7 @@ public final class NbtKeys {
     public static final String X = "X";
     public static final String Y = "Y";
     public static final String Z = "Z";
+    // disc_jockey（唱片骑师）自 1.20 移植的 citadel tag 键
+    public static final String JUKEBOX_FOLLOWER_UUID = "PetJukeboxFollowerUUID";
+    public static final String JUKEBOX_FOLLOWER_DISC = "PetJukeboxFollowerDisc";
 }

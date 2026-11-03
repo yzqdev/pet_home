@@ -4,6 +4,7 @@ import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.datagen.LangDefinition;
 import com.github.yzqdev.pethome.server.PHDataComponents;
 import com.github.yzqdev.pethome.server.entity.NetEntity;
+import com.github.yzqdev.pethome.server.misc.PetCompassTracker;
 import com.github.yzqdev.pethome.util.ItemMobTooltip;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
@@ -47,6 +48,11 @@ import java.util.function.Consumer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
+/**
+ * 捕网物品（{@code type} 区分空网 {@code EMPTY} 与装了实体的网 {@code HAS_MOB}，是两个注册物品）。
+ * 空网右键生物：canCatchMob 校验后把完整实体 NBT 存进 {@code ENTITY_HOLDER} 组件并 discard 原实体；
+ * 有内容的网 useOn 在方块上方重建实体；抓到的实体不可再被抓（一网一物）。
+ */
 public class NetItem extends Item {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -61,6 +67,7 @@ public class NetItem extends Item {
         return type;
     }
 
+    /** 放出实体：仅服务端；在点击方块正上方生成存档实体并清空网内容（创造模式换回空网）。 */
     @Override
     @Nonnull
     public InteractionResult useOn(UseOnContext context) {
@@ -88,6 +95,7 @@ public class NetItem extends Item {
         return InteractionResult.SUCCESS;
     }
 
+    /** 抓捕实体：仅服务端，玩家/黑名单实体不可抓；抓捕后网放背包（放不下落地）并给 5 tick 冷却。PlayerInteractEntityHandler 有同逻辑的入口版本（HIGHEST 优先级先行）。 */
     @Override
     public @NotNull InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
         if (target.level().isClientSide() || target instanceof Player || !target.isAlive() || containsEntity(stack)) {
@@ -108,6 +116,10 @@ public class NetItem extends Item {
             if (!player.addItem(newerStack)) {
                 ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), newerStack);
                 player.level().addFreshEntity(itemEntity);
+                // 背包满→掉落物：罗盘按掉落物定位；直接进背包时退化为玩家位置
+                PetCompassTracker.onPetCapturedByNet(target, itemEntity);
+            } else {
+                PetCompassTracker.onPetCapturedByNet(target, player);
             }
             target.discard();
             player.getCooldowns().addCooldown(newStack, 5);
@@ -119,6 +131,7 @@ public class NetItem extends Item {
     // 已警告过的解析失败实体名，避免每帧 getName 刷日志；三侧原版均未初始化（NPE），此处补上
     static Set<String> warned = new HashSet<>();
 
+    /** 装了实体的网作为掉落物的逐 tick 更新：常亮 + 免疫（防被烧毁/炸毁丢实体），掉出世界底部时悬停在 minY 不消失。 */
     @Override
     public boolean onEntityItemUpdate(ItemStack stack, ItemEntity entity) {
         if (!entity.isCurrentlyGlowing()) {
@@ -212,7 +225,7 @@ public class NetItem extends Item {
         return new NetEntity(shooter.getX(), shooter.getY() + 1.25, shooter.getZ(), worldIn, newStack);
     }
 
-    //helper methods
+    // 辅助方法
 
     public static boolean containsEntity(ItemStack stack) {
         return stack != null && stack.has(PHDataComponents.ENTITY_HOLDER);
@@ -230,6 +243,7 @@ public class NetItem extends Item {
         return type == EntityType.PLAYER || PetHomeConfig.mobcatcherBlackList.contains(type);
     }
 
+    /** 抓捕资格：玩家永不可抓；{@code mobcatcherOnlyTamableAnimal} 开启时仅 TamableAnimal 可抓，关闭时仅黑名单排除。 */
     public static boolean canCatchMob(Entity livingEntity) {
         var type = livingEntity.getType();
         if (PetHomeConfig.mobcatcherOnlyTamableAnimal) {
@@ -249,6 +263,7 @@ public class NetItem extends Item {
 
     }
 
+    /** 从 NBT 构造实体（{@code withInfo} 时 load 完整数据，恢复血量/驯服状态等）；类型未知返回 {@code null}。 */
     public static Entity getEntityFromNBT(CompoundTag nbt, Level world, boolean withInfo) {
         Entity entity = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.parse(getEntityID(nbt))).create(world, EntitySpawnReason.COMMAND);
         if (withInfo && entity != null) {
@@ -262,6 +277,7 @@ public class NetItem extends Item {
         return getEntityFromNBT(stack.get(PHDataComponents.ENTITY_HOLDER), world, withInfo);
     }
 
+    /** 序列化实体为完整 NBT（save 而非 saveWithoutId，带 UUID/位置，放出时原样恢复）；ProblemReporter 记录问题不抛出。 */
     public static CompoundTag getNBTfromEntity(Entity entity) {
         try (ProblemReporter.ScopedCollector reporter = new ProblemReporter.ScopedCollector(entity.problemPath(), com.github.yzqdev.pethome.PHConstants.LOG)) {
             TagValueOutput output = TagValueOutput.createWithContext(reporter, entity.registryAccess());

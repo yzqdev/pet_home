@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 
+/** 注入青蛙舌头行为：已驯服青蛙解除 {@code canEat} 前置（改喂主人指定目标），吃下目标时不吞掉而是造成普通攻击伤害。 */
 @Mixin(ShootTongue.class)
 public class ShootTongueMixin {
 

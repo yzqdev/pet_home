@@ -22,6 +22,10 @@ public class PHDataComponents {
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> RELEASE_MODE = register("release_mode",
             builder -> builder.persistent(Codec.BOOL));
 
+    /** 契约绑定的宠物（UUID + 名字，NBT 形态）：空 = 未绑定；绑定后对同一宠物使用即转让所有权 */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<CompoundTag>> BOUND_PET = register("bound_pet",
+            builder -> builder.persistent(CompoundTag.CODEC));
+
 
     private static <T> DeferredHolder<DataComponentType<?>, DataComponentType<T>> register(String name,
                                                                                            UnaryOperator<DataComponentType.Builder<T>> builderOperator) {

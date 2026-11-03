@@ -43,6 +43,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import javax.annotation.Nullable;
 import java.util.UUID;
 
+/** 数据槽改造组：让青蛙实现 {@link ModifiedToBeTameable}/{@link IComandableMob}/{@link IFrog}（蜘蛛眼驯服），注入 defineSynchedData/序列化与 tick 内跟随逻辑。受 {@code tameableFrog} 开关约束。 */
 @Mixin(Frog.class)
 public abstract class FrogMixin extends Animal implements ModifiedToBeTameable, IComandableMob, IFrog {
 

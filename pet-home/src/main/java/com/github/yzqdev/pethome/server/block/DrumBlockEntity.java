@@ -11,6 +11,9 @@ import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.UUID;
 
+/**
+ * 指挥鼓方块实体：只负责持久化放置者 UUID（DrumBlock 右键时记录，issueCommand 广播三态指令时用于确定"鼓的主人"）。
+ */
 public class DrumBlockEntity extends BlockEntity {
 
     private UUID placerUUID;

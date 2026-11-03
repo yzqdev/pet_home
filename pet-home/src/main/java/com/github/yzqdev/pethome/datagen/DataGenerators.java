@@ -28,23 +28,24 @@ public class DataGenerators {
 
         CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
 
-        //datapack
-        var datapack = new ModDatapackProvider(packOutput, lookupProvider);
+        // 数据包资源（loot table / recipe / advancement 等由各 Provider 生成）
+        var datapack = new PHDatapackProvider(packOutput, lookupProvider);
         var datapackLookProvider = datapack.getRegistryProvider();
 
 
         event.createProvider(p -> datapack);
-        event.createProvider(p -> new ModBlockTagsProvider(packOutput, lookupProvider, PetHomeMod.MODID));
-        event.createProvider(p -> new ModRecipeProvider.Runner(packOutput, lookupProvider));
-        event.createProvider(p -> new ModItemProvider(packOutput, PetHomeMod.MODID));
-        event.createProvider(p -> new ModPoiTagProvider(packOutput, lookupProvider));
-        event.createProvider(p -> new ModEntityTagsProvider(packOutput, lookupProvider));
-        event.createProvider(p -> new ModEnchantTagProvider(packOutput, lookupProvider));
+        event.createProvider(p -> new PHBlockTagsProvider(packOutput, lookupProvider, PetHomeMod.MODID));
+        event.createProvider(p -> new PHRecipeProvider.Runner(packOutput, lookupProvider));
+        event.createProvider(p -> new PHItemProvider(packOutput, PetHomeMod.MODID));
+        event.createProvider(p -> new PHPoiTagProvider(packOutput, lookupProvider));
+        event.createProvider(p -> new PHEntityTagsProvider(packOutput, lookupProvider));
+        event.createProvider(p -> new PHEnchantTagProvider(packOutput, lookupProvider));
         event.createProvider(p -> new GlobalLootModifier(packOutput, lookupProvider));
-        event.createProvider(p -> new ModItemTagProvider(packOutput, lookupProvider, PetHomeMod.MODID));
-        event.createProvider(p -> new ModVillagerTradeTagProvider(packOutput, lookupProvider));
-        event.createProvider(p -> new ModEnLangProvider(packOutput, PetHomeMod.MODID, "en_us"));
-        event.createProvider(p -> new ModZhLangProvider(packOutput, PetHomeMod.MODID, "zh_cn"));
+        event.createProvider(p -> new PHItemTagProvider(packOutput, lookupProvider, PetHomeMod.MODID));
+        event.createProvider(p -> new PHVillagerTradeTagProvider(packOutput, lookupProvider));
+        event.createProvider(p -> new PHParticleProvider(packOutput));
+        event.createProvider(p -> new PHEnLangProvider(packOutput, PetHomeMod.MODID, "en_us"));
+        event.createProvider(p -> new PHZhLangProvider(packOutput, PetHomeMod.MODID, "zh_cn"));
         event.createProvider(p -> new PHLootProvider(packOutput, datapackLookProvider));
     }
 }

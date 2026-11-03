@@ -6,6 +6,6 @@
       "loot_table_id": "minecraft:chests/nether_bridge"
     }
   ],
-  "loot_type": 6,
+  "loot_type": "blazing_protection",
   "priority": 0
 }

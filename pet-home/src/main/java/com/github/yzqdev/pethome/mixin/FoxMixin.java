@@ -35,14 +35,15 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/** 数据槽改造组：让狐狸实现 {@link ModifiedToBeTameable}/{@link IComandableMob}（借原版 trust 槽存主人），并 registerGoals 换上三态 AI（FollowOwner2Goal/Sit2Goal 等）。受 {@code tameableFox} 开关约束。 */
 @Mixin(Fox.class)
 public abstract class FoxMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 
     @Shadow @Final private static EntityDataAccessor<Optional<EntityReference<LivingEntity>>> DATA_TRUSTED_ID_0;
     @Shadow @Final private static EntityDataAccessor<Optional<EntityReference<LivingEntity>>> DATA_TRUSTED_ID_1;
     @Shadow abstract void addTrustedEntity(EntityReference<LivingEntity> reference);
-    @Shadow public abstract void setSitting(boolean p_28611_);
-    @Shadow abstract void setSleeping(boolean p_28627_);
+    @Shadow public abstract void setSitting(boolean sitting);
+    @Shadow abstract void setSleeping(boolean sleeping);
 
     // 26.1：defineId 必须在 <clinit> 完成（实体构造时 Builder 容量=已注册访问器数，晚注册会 AIOOBE）；
     // 且调用者类必须是实体类、实体类上不能有 @MixinMerged 的访问器字段——

@@ -37,7 +37,7 @@ public class OreColorRegistry {
                     Color texColour = getAverageColour(getTextureAtlas(stack));
                     color = texColour.getRGB();
                 } catch (NullPointerException e) {
-                    e.printStackTrace();
+                    PetHomeMod.LOGGER.error("Failed to read texture atlas for block {}: {}", blockName, e.toString());
                 }
             } else {
                 color = colorizer;
@@ -71,7 +71,7 @@ public class OreColorRegistry {
                 blue += localBlue;
                 count++;
             }
-        //Average color
+        // 求平均颜色
         return new Color((int) (red / count), (int) (green / count), (int) (blue / count));
     }
 

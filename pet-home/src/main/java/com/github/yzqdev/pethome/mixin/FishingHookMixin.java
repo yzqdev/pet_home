@@ -17,6 +17,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 注入 {@code FishingHook} 服务 {@link com.github.yzqdev.pethome.server.entity.FeatherEntity}（羽毛钓竿）：
+ * @Redirect tick 里的 {@code getFluidState}——羽毛实体视水为空气（不入水判定）；
+ * Inject {@code shouldStopFishing}——手持羽毛钓竿且距离 32 格内不收钩，否则 discard。
+ */
 @Mixin(FishingHook.class)
 public abstract class FishingHookMixin extends Projectile {
 

@@ -21,6 +21,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/** 注入 {@code FrogAi}（Brain 型 AI 接入三态指令）：getActivities 追加 follow/stay 活动；updateActivity 按指令切换活动（跟随优先保留舌头攻击目标）。 */
 @Mixin(FrogAi.class)
 public class FrogAiMixin {
 

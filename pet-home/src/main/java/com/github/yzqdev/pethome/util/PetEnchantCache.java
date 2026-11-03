@@ -9,6 +9,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 
+/**
+ * 每实体附魔解析缓存（挂 {@link PHAttachments#ENCHANT_CACHE} 附件，非同步非持久化）。
+ * 失效策略是附件实例<b>引用比对</b>：写入路径必经 {@code setCitadelTag} 换实例，引用一致即缓存有效。
+ * 供 mixin/渲染/Jade tooltip 等每 tick、每帧的附魔查询免于重复扫描 NBT。
+ */
 public class PetEnchantCache {
 
     @Nullable

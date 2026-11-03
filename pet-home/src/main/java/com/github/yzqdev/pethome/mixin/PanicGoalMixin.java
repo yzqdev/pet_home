@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/** 注入 {@code PanicGoal} 的 canUse/canContinueToUse：已驯服的改造宠物不再惊慌逃跑。 */
 @Mixin(PanicGoal.class)
 public class PanicGoalMixin {
 

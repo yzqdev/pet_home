@@ -19,6 +19,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.players.OldUsersConverter;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.AvoidEntityGoal;
 import net.minecraft.world.entity.ai.goal.TemptGoal;
@@ -38,10 +39,12 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
 
+/** 数据槽改造组：让兔子实现 {@link ModifiedToBeTameable}/{@link IComandableMob}（干草块驯服，服务端入口在 PlayerInteractEntityHandler），并 registerGoals 换上三态 AI 与攻击目标改造。受 {@code tameableRabbit} 开关约束。 */
 @Mixin(Rabbit.class)
 public abstract class RabbitMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 
@@ -219,7 +222,9 @@ public abstract class RabbitMixin extends Animal implements ModifiedToBeTameable
         if(type == Rabbit.Variant.EVIL){
             this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(30.0D);
             this.getAttribute(Attributes.ARMOR).setBaseValue(8.0D);
-            this.heal(22.0F);
+            // 不在此处回血：原版 readAdditionalSaveData 会经 setVariant 走到这里，加载期
+            // （worldgen 线程、实体未入 level）发 LivingHealEvent 会让第三方监听器在离线实体上运行；
+            // 且每次 NBT 加载叠加回血等于无限回血。满血由 di_finalizeSpawn 在 spawn 场景补足。
             this.goalSelector.addGoal(4, new RabbitMeleeGoal(this));
             this.targetSelector.addGoal(1, (new HurtByTargetGoal(this)).setAlertOthers());
             if(!this.isTame()){
@@ -235,6 +240,24 @@ public abstract class RabbitMixin extends Animal implements ModifiedToBeTameable
             }
         }
         this.entityData.set(DATA_TYPE_ID, type.id());
+    }
+
+    /**
+     * 注入目标：{@code Rabbit#finalizeSpawn} RETURN。
+     *
+     * <p>spawn 场景（自然生成/刷怪蛋/summon 无 NBT/结构模板放置）补满血：实体构造时血量按普通兔 3 点，
+     * {@code setVariant(EVIL)} 把 MAX_HEALTH 提到 30 后需要覆盖为满血。直接 {@code setHealth} 不发
+     * LivingHealEvent；NBT 加载路径不走 finalizeSpawn，存档血量得以保留。
+     */
+    @Inject(
+            at = {@At("RETURN")},
+            remap = true,
+            method = {"finalizeSpawn(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/world/DifficultyInstance;Lnet/minecraft/world/entity/EntitySpawnReason;Lnet/minecraft/world/entity/SpawnGroupData;)Lnet/minecraft/world/entity/SpawnGroupData;"}
+    )
+    private void di_finalizeSpawn(CallbackInfoReturnable<SpawnGroupData> cir) {
+        if (this.getVariant() == Rabbit.Variant.EVIL) {
+            this.setHealth(this.getMaxHealth());
+        }
     }
 
     @Override

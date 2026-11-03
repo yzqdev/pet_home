@@ -18,6 +18,10 @@ import net.minecraft.world.level.saveddata.SavedDataType;
 import javax.annotation.Nullable;
 import java.util.*;
 
+/**
+ * 主世界 SavedData（存档键 {@code pet_home:pet_home_world_data}）：宠物床复活请求、迷途灯笼请求、宠物罗盘档案。
+ * {@link #get(Level)} 恒定路由到 OVERWORLD，三个列表跨维度共享；Codec 持久化，增删方法内部 {@code setDirty}、纯读不标脏。
+ */
 public class PHWorldData extends SavedData {
 
     private static final String NAME = "pet_home_world_data";
@@ -69,6 +73,10 @@ public class PHWorldData extends SavedData {
             CODEC
     );
 
+    /**
+     * 世界数据入口：只有 {@code ServerLevel} 才有数据存储；无论传入哪个维度，
+     * 都取 OVERWORLD 的数据存储（跨维度共享同一份数据）。客户端 level 恒返回 {@code null}。
+     */
     public static PHWorldData get(Level world) {
         if (world instanceof ServerLevel) {
             ServerLevel overworld = world.getServer().getLevel(Level.OVERWORLD);
@@ -78,16 +86,19 @@ public class PHWorldData extends SavedData {
         return null;
     }
 
+    /** 入队复活请求（宠物死亡时由 ServerEvent.onLivingDie 写入，含完整实体 NBT）；标记存档脏。 */
     public void addRespawnRequest(RespawnRequest request) {
         this.respawnRequestList.add(request);
         setDirty();
     }
 
+    /** 复活成功/床被拆时移除请求；标记存档脏。 */
     public void removeRespawnRequest(RespawnRequest request) {
         this.respawnRequestList.remove(request);
         setDirty();
     }
 
+    /** 按「请求维度 + 床坐标」过滤复活请求（PetBedBlockEntity.tick 复活时用；请求的维度须与床所在维度一致才会在该床复活）。 */
     public List<RespawnRequest> getRespawnRequestsFor(Level level, BlockPos pos) {
         List<RespawnRequest> list = new ArrayList<>();
         String dimension = level.dimension().toString();
@@ -99,21 +110,25 @@ public class PHWorldData extends SavedData {
         return list;
     }
 
+    /** 记录一条走失宠物（实体随区块卸载且处于跟随态时由 ServerEvent.onEntityLeaveWorld 写入）；标记存档脏。 */
     public void addLanternRequest(LanternRequest request) {
         this.lanternRequestList.add(request);
         setDirty();
     }
 
+    /** 删除单条灯笼请求；标记存档脏。 */
     public void removeLanternRequest(LanternRequest request) {
         this.lanternRequestList.remove(request);
         setDirty();
     }
 
+    /** 清除该宠物的全部灯笼请求（实体重新 join 世界时由 ServerEvent.onEntityJoinWorldEvent 调用，即使请求不存在也 setDirty）。 */
     public void removeMatchingLanternRequests(UUID reloaded) {
         this.lanternRequestList.removeIf(request -> request.getPetUUID().equals(reloaded));
         setDirty();
     }
 
+    /** 取某主人名下全部走失宠物的灯笼请求（灯笼 tick 按 64 格内玩家拉取）。 */
     public List<LanternRequest> getLanternRequestsFor(UUID uuid) {
         List<LanternRequest> list = new ArrayList<>();
         for (LanternRequest request : this.lanternRequestList) {
@@ -161,6 +176,7 @@ public class PHWorldData extends SavedData {
         }
     }
 
+    /** 只读；按显示名排序的该主人全部宠物档案（罗盘 GUI 列表数据源）。 */
     public List<PetRecord> getPetRecordsFor(UUID ownerId) {
         List<PetRecord> list = new ArrayList<>();
         for (PetRecord record : this.petRecords.values()) {

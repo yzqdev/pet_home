@@ -28,6 +28,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/** 数据槽改造组：给狼挂 {@link IComandableMob} 三态指令（驯服状态走 TamableAnimal 原生存储），注入 defineSynchedData/序列化、mobInteract 指令切换与按血量算尾巴角度。 */
 @Mixin(Wolf.class)
 public abstract class WolfMixin extends TamableAnimal implements IComandableMob {
 
@@ -74,15 +75,22 @@ public abstract class WolfMixin extends TamableAnimal implements IComandableMob 
         this.setCommand(compoundNBT.getIntOr(NbtKeys.DI_COMMAND, 0));
     }
 
-    // 26.1：Wolf.mobInteract 结构重构（原 setOrderedToSit INVOKE 点不存在），改为方法 HEAD 直接处理三态指令
+    // 注入点：mobInteract 里唯一一次 setOrderedToSit 调用之前（已用 javap 确认 26.1/26.3 该调用存在且唯一）。
+    // 原版所有会消耗物品 / 改变状态的分支（回血、繁殖、幼年加速成长、项圈染色、狼铠装备与修复）
+    // 都在到达本点之前已 return，因此这里天然只接管「原版这次右键什么也不做」的情况（与 1.20 / 1.21 侧同一注入点）。
     @Inject(
             method = {"mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"},
             remap = true,
-            at = @At("HEAD"),
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/entity/animal/wolf/Wolf;setOrderedToSit(Z)V"
+            ),
             cancellable = true
     )
     private void di_onInteract(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
-        if(PetHomeConfig.trinaryCommandSystem && this.isTame() && TameableUtils.isPetOf(player, this)){
+        // 手持该宠物食物且原版会消费它时不拦——回血（不满血）/ 繁殖（成年可恋爱）/ 幼年加速成长；三态只接管「原版这次右键什么也不做」的情况
+        boolean vanillaFoodAction = this.isFood(player.getItemInHand(hand)) && (this.getHealth() < this.getMaxHealth() || this.isBaby() || (this.getAge() == 0 && this.canFallInLove()));
+        if(PetHomeConfig.trinaryCommandSystem && this.isTame() && TameableUtils.isPetOf(player, this) && !vanillaFoodAction){
             this.jumping = false;
             this.navigation.stop();
             this.setTarget((LivingEntity)null);

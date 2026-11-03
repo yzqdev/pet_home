@@ -19,6 +19,6 @@
       ]
     }
   ],
-  "loot_type": 7,
+  "loot_type": "paralysis",
   "priority": 0
 }

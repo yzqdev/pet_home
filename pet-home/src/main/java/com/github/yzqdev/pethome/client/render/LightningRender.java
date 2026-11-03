@@ -20,7 +20,6 @@ public class LightningRender {
     private final Map<Object, BoltOwnerData> boltOwners = new Object2ObjectOpenHashMap();
 
     public void render(float partialTicks, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
-        Matrix4f matrix = poseStack.last().pose();
         Timestamp timestamp = new Timestamp(this.minecraft.level.getGameTime(), partialTicks);
         boolean refresh = timestamp.isPassed(this.refreshTimestamp, (double) 0.33333334F);
         if (refresh) {
@@ -42,6 +41,7 @@ public class LightningRender {
 
             // Render all bolts as a single submitCustomGeometry
             submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.lightning(), (pose, buffer) -> {
+                Matrix4f matrix = pose.pose();
                 data.bolts.forEach((bolt) -> bolt.render(matrix, buffer, timestamp));
             });
             if (data.bolts.isEmpty() && timestamp.isPassed(data.lastUpdateTimestamp, (double) 100.0F)) {
@@ -90,8 +90,8 @@ public class LightningRender {
             return;
         }
 
-        Matrix4f matrix = poseStack.last().pose();
         submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.lightning(), (pose, buffer) -> {
+            Matrix4f matrix = pose.pose();
             data.bolts.forEach((bolt) -> bolt.render(matrix, buffer, timestamp));
         });
     }

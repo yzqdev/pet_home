@@ -6,6 +6,6 @@
       "loot_table_id": "minecraft:chests/abandoned_mineshaft"
     }
   ],
-  "loot_type": 4,
+  "loot_type": "ore_scenting",
   "priority": 0
 }

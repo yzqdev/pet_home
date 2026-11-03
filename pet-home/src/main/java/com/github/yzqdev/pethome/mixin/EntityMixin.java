@@ -1,16 +1,24 @@
 package com.github.yzqdev.pethome.mixin;
 
 
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.server.entity.PsychicWallEntity;
 import com.github.yzqdev.pethome.util.TameableUtils;
+import net.minecraft.core.Holder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.gameevent.GameEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 注入 {@code Entity}（热路径组）：给宠物附魔扩展实体基础行为——
+ * {@code fireImmune}（fireproof）、{@code isPushedByFluid}/{@code dismountsUnderwater}（amphibious 水下骑乘不脱手）、
+ * {@code isAlliedTo}（同主人宠物互认友军）、{@code canCollideWith}（念力墙同队不碰撞）。均为 HEAD 可取消注入。
+ */
 @Mixin(Entity.class)
 public class EntityMixin {
 
@@ -24,7 +32,7 @@ public class EntityMixin {
     )
     private void di_isFireImmune(CallbackInfoReturnable<Boolean> cir) {
         Entity us = (Entity) ((Object) this);
-        if (TameableUtils.isTamed(us) && TameableUtils.hasEnchant((LivingEntity) us, ModEnchantments.FIREPROOF)) {
+        if (TameableUtils.isTamed(us) && TameableUtils.hasEnchant((LivingEntity) us, PHEnchantments.FIREPROOF)) {
             cir.setReturnValue(true);
         }
     }
@@ -36,7 +44,7 @@ public class EntityMixin {
             cancellable = true
     )
     protected void di_pushedByWater(CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity) (Object) this) && TameableUtils.hasEnchant((LivingEntity) (Object) this, ModEnchantments.AMPHIBIOUS)) {
+        if ((Object) this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity) (Object) this) && TameableUtils.hasEnchant((LivingEntity) (Object) this, PHEnchantments.AMPHIBIOUS)) {
             cir.setReturnValue(false);
         }
     }
@@ -72,8 +80,32 @@ public class EntityMixin {
             cancellable = true
     )
     protected void di_rideableInWater(CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity) (Object) this) && TameableUtils.hasEnchant((LivingEntity) (Object) this, ModEnchantments.AMPHIBIOUS)) {
+        if ((Object) this instanceof LivingEntity && TameableUtils.isTamed((LivingEntity) (Object) this) && TameableUtils.hasEnchant((LivingEntity) (Object) this, PHEnchantments.AMPHIBIOUS)) {
             cir.setReturnValue(true);
+        }
+    }
+
+    /** muffled（安静，自 1.20 移植）：移动不发出声响游戏事件（脚步声等，MovementEmission.NONE）。 */
+    @Inject(
+            method = {"getMovementEmission()Lnet/minecraft/world/entity/Entity$MovementEmission;"},
+            at = @At(value = "HEAD"),
+            cancellable = true
+    )
+    private void di_getMovementEmission(CallbackInfoReturnable<Entity.MovementEmission> cir) {
+        if ((Object) this instanceof LivingEntity living && TameableUtils.isTamed(living) && TameableUtils.hasEnchant(living, PHEnchantments.MUFFLED)) {
+            cir.setReturnValue(Entity.MovementEmission.NONE);
+        }
+    }
+
+    /** muffled（安静）：彻底阻断该实体的 gameEvent 传播（脚步/摔落等，sculk 系收不到）。 */
+    @Inject(
+            method = {"gameEvent(Lnet/minecraft/core/Holder;Lnet/minecraft/world/entity/Entity;)V"},
+            at = @At(value = "HEAD"),
+            cancellable = true
+    )
+    private void di_gameEvent(Holder<GameEvent> event, Entity sourceEntity, CallbackInfo ci) {
+        if ((Object) this instanceof LivingEntity living && TameableUtils.isTamed(living) && TameableUtils.hasEnchant(living, PHEnchantments.MUFFLED)) {
+            ci.cancel();
         }
     }
 

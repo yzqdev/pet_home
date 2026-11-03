@@ -26,12 +26,18 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.function.Predicate;
 
+/**
+ * 宠物床复活执行者：世界时间每天第 1 tick 检查本床的 {@link RespawnRequest}，
+ * 用完整实体 NBT 重建宠物（复用原 Entity UUID 与 PetId，满血+朝向放置，停留态），随后移除请求。
+ * 床被拆时由 ServerEvent.onBlockBreak 触发 {@link #removeAllRequestsFor}/{@link #resetBedsForNearbyPets}。
+ */
 public class PetBedBlockEntity extends BlockEntity {
 
     public PetBedBlockEntity(BlockPos pos, BlockState state) {
         super(PHTileEntityRegistry.PET_BED.get(), pos, state);
     }
 
+    /** 每 tick 调用（BlockEntityTicker）：只在白天第 1 tick（{@code time==1}）执行复活，复活成功才移除请求（失败留到次日重试）。 */
     public static void tick(Level level, BlockPos pos, BlockState state, PetBedBlockEntity blockEntity) {
         long time = level.getOverworldClockTime() % 24000L;
         if (time == 1) {
@@ -47,6 +53,7 @@ public class PetBedBlockEntity extends BlockEntity {
         }
     }
 
+    /** 床被拆/放生时清空本床全部复活请求；{@code message} 非空（拆床玩家）时逐条发 goodbye 消息。 */
     public void removeAllRequestsFor(@Nullable Player message) {
         PHWorldData data = PHWorldData.get(level);
         if (data != null) {
@@ -60,6 +67,7 @@ public class PetBedBlockEntity extends BlockEntity {
         }
     }
 
+    /** 单只宠物复活：create + load 完整 NBT（保住原 UUID/PetId/驯服数据）→ 满血/名字/按床朝向放置 → 停留态 → 生成实体并通知在线主人。类型不存在或非 LivingEntity 返回 false（请求保留）。 */
     private static boolean addAndRemoveEntity(Level level, BlockPos pos, Direction dir, RespawnRequest request) {
         EntityType type = request.getEntityType();
         if (type != null) {
@@ -106,6 +114,7 @@ public class PetBedBlockEntity extends BlockEntity {
         return false;
     }
 
+    /** 床被拆后重置周边 10×5×10 格内绑定到本床的宠物：解绑其床坐标并通知主人。 */
     public void resetBedsForNearbyPets() {
         Predicate<Entity> pet = (animal) -> TameableUtils.isTamed(animal) && TameableUtils.getPetBedPos((LivingEntity) animal) != null && TameableUtils.getPetBedPos((LivingEntity) animal).equals(this.getBlockPos());
         List<LivingEntity> list = level.getEntitiesOfClass(LivingEntity.class, new AABB(this.getBlockPos().offset(-10, -5, -10).getCenter(), this.getBlockPos().offset(10, 5, 10).getCenter()), EntitySelector.NO_SPECTATORS.and(pet));

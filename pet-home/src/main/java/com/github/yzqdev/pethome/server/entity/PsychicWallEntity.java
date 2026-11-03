@@ -30,6 +30,11 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 import java.util.*;
 
+/**
+ * psychic_wall 附魔的念力墙：由宠物在自身与目标之间生成（EntityTickHandler 控制组），
+ * 按方向与 blockWidth 撑开碰撞箱，把非同队的实体/投射物推向墙背（投射物反转弹回），
+ * 同队（同主人或结盟）不受影响。寿命归零自毁；创建者死亡则寿命缩短到 20 tick。
+ */
 public class PsychicWallEntity extends Entity {
 
     protected static final EntityDataAccessor<Direction> DIRECTION = SynchedEntityData.defineId(PsychicWallEntity.class, EntityDataSerializers.DIRECTION);
@@ -46,6 +51,7 @@ public class PsychicWallEntity extends Entity {
     }
 
 
+    /** 服务端推挤/反弹逻辑 + 寿命递减；前 10 tick（展开期）与最后 10 tick 只重算碰撞箱不做推挤。 */
     public void tick() {
         super.tick();
         if (this.tickCount <= 10 || this.getLifespan() <= 10) {
@@ -205,6 +211,7 @@ public class PsychicWallEntity extends Entity {
     }
 
 
+    /** 解析创建者实体：服务端按 UUID（跨维度稳定），客户端按同步的实体 id 槽位。 */
     public Entity getCreator() {
         if (!level().isClientSide()) {
             UUID id = getCreatorId();
@@ -259,8 +266,8 @@ public class PsychicWallEntity extends Entity {
         return new AABB(position.x + minX, position.y + minY, position.z + minZ, position.x + maxX, position.y + maxY, position.z + maxZ);
     }
 
-    public void setPos(double p_20210_, double p_20211_, double p_20212_) {
-        this.setPosRaw(p_20210_, p_20211_, p_20212_);
+    public void setPos(double x, double y, double z) {
+        this.setPosRaw(x, y, z);
         this.setBoundingBox(this.makeBoundingBox(this.position()));
     }
 

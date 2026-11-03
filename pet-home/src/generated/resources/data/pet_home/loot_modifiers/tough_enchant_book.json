@@ -6,6 +6,6 @@
       "loot_table_id": "minecraft:chests/abandoned_mineshaft"
     }
   ],
-  "loot_type": 8,
+  "loot_type": "tough",
   "priority": 0
 }

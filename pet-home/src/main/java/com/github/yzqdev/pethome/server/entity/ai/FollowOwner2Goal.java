@@ -3,7 +3,7 @@ package com.github.yzqdev.pethome.server.entity.ai;
 
 import com.github.yzqdev.pethome.util.IComandableMob;
 import com.github.yzqdev.pethome.PetHomeConfig;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.util.TameableUtils;
 
@@ -87,7 +87,7 @@ public class FollowOwner2Goal extends Goal {
     }
 
     public void tick() {
-        if (TameableUtils.hasEnchant(tamable, ModEnchantments.AMPHIBIOUS) && tamable.isInWaterOrRain() && this.tamable.distanceToSqr(this.owner) < 144.0D) {
+        if (TameableUtils.hasEnchant(tamable, PHEnchantments.AMPHIBIOUS) && tamable.isInWaterOrRain() && this.tamable.distanceToSqr(this.owner) < 144.0D) {
             tamable.getNavigation().moveTo(owner, speedModifier);
         }
         this.tamable.getLookControl().setLookAt(this.owner, 10.0F, (float) this.tamable.getMaxHeadXRot());
@@ -119,13 +119,13 @@ public class FollowOwner2Goal extends Goal {
 
     }
 
-    private boolean maybeTeleportTo(int p_25304_, int p_25305_, int p_25306_) {
-        if (Math.abs((double) p_25304_ - this.owner.getX()) < 2.0D && Math.abs((double) p_25306_ - this.owner.getZ()) < 2.0D) {
+    private boolean maybeTeleportTo(int x, int y, int z) {
+        if (Math.abs((double) x - this.owner.getX()) < 2.0D && Math.abs((double) z - this.owner.getZ()) < 2.0D) {
             return false;
-        } else if (!this.canTeleportTo(new BlockPos(p_25304_, p_25305_, p_25306_))) {
+        } else if (!this.canTeleportTo(new BlockPos(x, y, z))) {
             return false;
         } else {
-            this.tamable.snapTo((double) p_25304_ + 0.5D, (double) p_25305_, (double) p_25306_ + 0.5D, this.tamable.getYRot(), this.tamable.getXRot());
+            this.tamable.snapTo((double) x + 0.5D, (double) y, (double) z + 0.5D, this.tamable.getYRot(), this.tamable.getXRot());
             this.navigation.stop();
             return true;
         }
@@ -133,7 +133,7 @@ public class FollowOwner2Goal extends Goal {
 
     private boolean canTeleportTo(BlockPos pos) {
         PathType blockpathtypes = WalkNodeEvaluator.getPathTypeStatic(this.tamable, pos);
-        if (TameableUtils.hasEnchant(tamable, ModEnchantments.AMPHIBIOUS) && level.isWaterAt(pos)) {
+        if (TameableUtils.hasEnchant(tamable, PHEnchantments.AMPHIBIOUS) && level.isWaterAt(pos)) {
             return true;
         }
         if (blockpathtypes != PathType.WALKABLE) {
@@ -149,7 +149,7 @@ public class FollowOwner2Goal extends Goal {
         }
     }
 
-    private int randomIntInclusive(int p_25301_, int p_25302_) {
-        return this.tamable.getRandom().nextInt(p_25302_ - p_25301_ + 1) + p_25301_;
+    private int randomIntInclusive(int min, int max) {
+        return this.tamable.getRandom().nextInt(max - min + 1) + min;
     }
 }

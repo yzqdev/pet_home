@@ -19,6 +19,8 @@ public class PHItemRegistry {
     public static final DeferredItem<Item> MAGNET = DEF_REG.registerItem("magnet", InventoryOnlyItem::new, Item.Properties::new);
 
     public static final DeferredItem<Item> DEED_OF_OWNERSHIP = DEF_REG.registerItem("deed_of_ownership", DeedOfOwnershipItem::new, Item.Properties::new);
+    public static final DeferredItem<Item> WHISTLE = DEF_REG.registerItem("whistle", WhistleItem::new, () -> new Item.Properties().stacksTo(1));
+    public static final DeferredItem<Item> FREEDOM_BELL = DEF_REG.registerItem("freedom_bell", FreedomBellItem::new, () -> new Item.Properties().stacksTo(1));
     public static final DeferredItem<Item> PET_COMPASS = DEF_REG.registerItem("pet_compass", PetCompassItem::new, () -> new Item.Properties().stacksTo(1));
     public static final DeferredItem<Item> NET_ITEM = DEF_REG.registerItem("net", props -> new NetItem(Type.EMPTY, props), Item.Properties::new);
     public static final DeferredItem<Item> NET_HAS_ITEM = DEF_REG.registerItem("net_has_item", props -> new NetItem(Type.HAS_MOB, props), Item.Properties::new);

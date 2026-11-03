@@ -1,30 +1,32 @@
 package com.github.yzqdev.pethome.client.model;
 
-import com.google.common.collect.ImmutableList;
+import net.minecraft.client.model.Model;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.model.geom.PartPose;
+import net.minecraft.client.model.geom.builders.CubeListBuilder;
+import net.minecraft.client.model.geom.builders.LayerDefinition;
+import net.minecraft.client.model.geom.builders.MeshDefinition;
+import net.minecraft.client.model.geom.builders.PartDefinition;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.util.Unit;
 
-public class HighlightedBlockModel extends AdvancedEntityModel {
-    private final AdvancedModelBox box;
+/** 高亮方块实体模型。已从 Tabula 体系迁移到原版 ModelPart/LayerDefinition，静态几何无动画。 渲染走 submitModel（Unit 状态）。 */
+public class HighlightedBlockModel extends Model<Unit> {
 
-    public HighlightedBlockModel() {
-        texWidth = 64;
-        texHeight = 64;
+  public HighlightedBlockModel(ModelPart root) {
+    super(root, RenderTypes::entityCutout);
+  }
 
-        box = new AdvancedModelBox(this);
-        box.setPos(0.0F, 0.0F, 0.0F);
-        box.setTextureOffset(0, 0).addBox(-8, -8, -8, 16.0F, 16.0F, 16.0F, 0.0F, false);
+  public static LayerDefinition createBodyLayer() {
+    MeshDefinition mesh = new MeshDefinition();
+    PartDefinition root = mesh.getRoot();
+    root.addOrReplaceChild(
+        "box",
+        CubeListBuilder.create().texOffs(0, 0).addBox(-8.0F, -8.0F, -8.0F, 16, 16, 16),
+        PartPose.ZERO);
+    return LayerDefinition.create(mesh, 64, 64);
+  }
 
-        this.updateDefaultPose();
-    }
-
-    @Override
-    public Iterable<BasicModelPart> parts() {
-        return ImmutableList.of(box);
-    }
-
-    @Override
-    public Iterable<AdvancedModelBox> getAllParts() {
-        return ImmutableList.of(box);
-    }
-
-
+  @Override
+  public void setupAnim(Unit state) {}
 }

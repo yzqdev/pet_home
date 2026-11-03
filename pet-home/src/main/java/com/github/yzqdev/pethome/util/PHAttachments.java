@@ -21,6 +21,11 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 
+/**
+ * citadel 的替代数据层：挂在 LivingEntity 上的 {@link AttachmentType} 注册中心。
+ * 分层存储——大块状态（附魔/项圈/宠物床坐标/指令）走 {@link #PETHOME_DATA}（synced CompoundTag）；
+ * 高频计时器走 {@link #HEALING_AURA_TIME}/{@link #FROZEN_TIME}（synced int）；解析缓存走 {@link #ENCHANT_CACHE}（纯运行期）。
+ */
 public class PHAttachments {
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, PetHomeMod.MODID);
@@ -28,14 +33,22 @@ public class PHAttachments {
     public static final DeferredRegister<EntityDataSerializer<?>> ENTITY_DATA_SERIALIZERS =
             DeferredRegister.create(NeoForgeRegistries.Keys.ENTITY_DATA_SERIALIZERS, PetHomeMod.MODID);
 
+    /** 自定义 EntityDataSerializer：CompoundTag 槽位（RecallBallEntity 的内容 NBT 等用）。 */
     public static final Supplier<EntityDataSerializer<CompoundTag>> COMPOUND_TAG =
             ENTITY_DATA_SERIALIZERS.register("compound_tag", () -> EntityDataSerializer.forValueType(ByteBufCodecs.TRUSTED_COMPOUND_TAG));
 
+    /** 自定义 EntityDataSerializer：{@code Optional<UUID>} 槽位（召回球/念力墙的 owner 槽用）。 */
     public static final Supplier<EntityDataSerializer<Optional<UUID>>> OPTIONAL_UUID =
             ENTITY_DATA_SERIALIZERS.register("optional_uuid", () -> EntityDataSerializer.forValueType(
                     UUIDUtil.STREAM_CODEC.apply(ByteBufCodecs::optional)));
 
 
+    /**
+     * 主数据附件（注册名同 {@code PHConstants.entitySyncData}）：宠物附魔/项圈/宠物床坐标/指令状态等全存这里。
+     * serializer 即存档桥接——读档时把旧版内嵌在 {@code PetHomeData} 里高频计时器
+     * （{@link TameableUtils#HEALING_AURA_TIME} / {@code PetFrozenTime} 键）迁移到独立 int 附件并从 tag 中移除，
+     * 键名与 1.20/1.21 侧保持一致；写盘时空 tag 不落盘。
+     */
     public static final Supplier<AttachmentType<CompoundTag>> PETHOME_DATA =
             ATTACHMENT_TYPES.register(PHConstants.entitySyncData, () -> AttachmentType.builder(() -> new CompoundTag())
                     .serialize(new IAttachmentSerializer<CompoundTag>() {
@@ -105,6 +118,7 @@ public class PHAttachments {
                     .sync(ByteBufCodecs.VAR_INT)
                     .build());
 
+    /** 存档桥接：读档时若 {@code PetHomeData} 里还带着旧版高频计时器键，迁移到对应 int 附件并从主 tag 删除（一次性迁移动作）。 */
     private static void bridgeHotTimer(IAttachmentHolder holder, CompoundTag tag, String legacyKey, Supplier<AttachmentType<Integer>> target) {
         if (tag.contains(legacyKey)) {
             holder.setData(target.get(), tag.getIntOr(legacyKey, 0));

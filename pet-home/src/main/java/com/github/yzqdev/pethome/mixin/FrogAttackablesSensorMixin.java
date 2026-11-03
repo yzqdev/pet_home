@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/** 注入 {@code FrogAttackablesSensor#isMatchingEntity}：已驯服青蛙的猎物判定改走 {@code isValidAttackTarget}；美西螈（同类改造宠物）恒不作为猎物。 */
 @Mixin(FrogAttackablesSensor.class)
 public class FrogAttackablesSensorMixin {
 

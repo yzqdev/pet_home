@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -11,6 +11,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 注入 {@code LivingEntity}：TAIL 可取消改写 {@code getWaterSlowDown}——两栖附魔宠物在水中几乎不减速（0.98）。
+ */
 @Mixin({LivingEntity.class})
 public abstract class LivingEntityMixin extends Entity {
 
@@ -31,7 +34,7 @@ public abstract class LivingEntityMixin extends Entity {
     }
 
     private boolean isLandAndSea(){
-        return TameableUtils.hasEnchant(((LivingEntity) (Entity)this), ModEnchantments.AMPHIBIOUS);
+        return TameableUtils.hasEnchant(((LivingEntity) (Entity)this), PHEnchantments.AMPHIBIOUS);
     }
 
 }

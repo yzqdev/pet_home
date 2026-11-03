@@ -15,6 +15,7 @@
     "AxolotlMixin",
     "CatMixin",
     "EntityMixin",
+    "EntityInvoker",
     "FishingHookMixin",
     "FloatGoalMixin",
     "FollowOwnerGoalMixin",
@@ -31,8 +32,10 @@
     "RabbitAccessor",
     "RabbitMixin",
     "RavagerMixin",
+    "SculkSensorBlockMixin",
     "ShootTongueMixin",
     "TameableAnimalMixin",
+    "VillagerMixin",
     "WolfMixin"
   ],
   "refmap": "pet_home.refmap.json",

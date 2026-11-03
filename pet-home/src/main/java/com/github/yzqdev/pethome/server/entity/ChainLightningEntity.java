@@ -21,6 +21,11 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * chain_lightning 附魔的连锁闪电视觉/伤害实体（不可被选中伤害，短寿命不持久化——序列化方法为空实现）。
+ * 命中当前目标 3 点闪电伤害后，向 8 格内最近的非友军 Mob 派生子实体继续跳跃，
+ * chainsLeft 由附魔等级决定（3 + 3×等级）；owner 同主人/结盟/已电过的目标会被排除。
+ */
 public class ChainLightningEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> CREATOR_ID = SynchedEntityData.defineId(ChainLightningEntity.class, EntityDataSerializers.INT);
@@ -55,6 +60,7 @@ public class ChainLightningEntity extends Entity {
     }
 
 
+    /** 定位到当前目标身上、首次接触给目标上闪电伤害；随后找下一个跳跃目标派生子闪电；倒计时归零自毁。 */
     @Override
     public void tick() {
         super.tick();
@@ -175,12 +181,12 @@ public class ChainLightningEntity extends Entity {
     }
 
     @Override
-    protected void readAdditionalSaveData(ValueInput p_20052_) {
+    protected void readAdditionalSaveData(ValueInput input) {
 
     }
 
     @Override
-    protected void addAdditionalSaveData(ValueOutput p_20139_) {
+    protected void addAdditionalSaveData(ValueOutput output) {
 
     }
 }

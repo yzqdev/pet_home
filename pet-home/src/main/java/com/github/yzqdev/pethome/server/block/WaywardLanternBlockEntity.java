@@ -29,6 +29,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * 迷途灯笼召回执行者：周期性（200-600 tick 一次）拉取 64 格内玩家名下的 {@link LanternRequest} 快照，
+ * 每个请求按其记录的维度强载最后位置 3×3 区块找实体（耐心 200 tick），找到即传回灯笼旁并清请求；
+ * 连续 3 轮找不到则本地放弃（请求留存世界数据，等待实体 join 时自愈清除）。
+ */
 public class WaywardLanternBlockEntity extends BlockEntity {
 
     /** 一轮等待实体从强载区块中出现的耐心（tick） */
@@ -75,6 +80,11 @@ public class WaywardLanternBlockEntity extends BlockEntity {
         super.setRemoved();
     }
 
+    /**
+     * 灯笼主循环（每 tick）：先落地 finishedRequests（移出工作列表并从世界数据删除请求）；
+     * 无工作时倒计时到点重新拉取快照；有工作时逐请求强载来源维度区块找实体——找到传送回灯笼旁
+     * （同维度直传/跨维度走 TeleportTransition 重建，按 owner UUID 通知主人），超时计失败、3 轮放弃。
+     */
     public static void tick(Level level, BlockPos pos, BlockState state, WaywardLanternBlockEntity te) {
         if (!te.finishedRequests.isEmpty()) {
             te.workingRequests.removeIf(working -> te.finishedRequests.contains(working.request.getPetUUID()));
@@ -101,8 +111,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
                         }
                     }
                     if (!te.workingRequests.isEmpty()) {
-                        // TODO(临时调试): 灯笼链路诊断，定位后删除
-                        PHModLogger.getInstance().info("[lantern-debug] 灯笼 {} 拉取到 {} 条待处理请求", pos, te.workingRequests.size());
+                        PHModLogger.debugLog("[lantern-debug] 灯笼 {} 拉取到 {} 条待处理请求", pos, te.workingRequests.size());
                     }
                 }
             }
@@ -120,7 +129,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
                 loadChunksAround(targetLevel, request.getChunkPosition(), true);
                 Entity entityFromChunk = targetLevel.getEntity(request.getPetUUID());
                 working.ticksWaiting++;
-                //takes a while to load in entities from the forced chunk, be patient...
+                // 强载区块内的实体要等几个 tick 才加载完，需多等几拍再取
                 if (entityFromChunk != null || working.ticksWaiting > ENTITY_LOAD_TIMEOUT) {
                     working.ticksWaiting = 0;
                     if (entityFromChunk != null) {
@@ -141,16 +150,14 @@ public class WaywardLanternBlockEntity extends BlockEntity {
                         }
                         te.finishedRequests.add(request.getPetUUID());
                         te.abandonedRequests.remove(request.getPetUUID());
-                        // TODO(临时调试): 灯笼链路诊断，定位后删除
-                        PHModLogger.getInstance().info("[lantern-debug] 灯笼 {} 已把 {} 传送回来", pos, entityFromChunk.getName().getString());
+                        PHModLogger.debugLog("[lantern-debug] 灯笼 {} 已把 {} 传送回来", pos, entityFromChunk.getName().getString());
                     } else {
                         working.attempts++;
                         if (working.attempts >= MAX_ATTEMPTS) {
                             // 连续几轮找不到（宠物在别的维度未加载 / 已死等待复活 / 已被其他途径召回），本轮放弃
                             te.abandonedRequests.add(request.getPetUUID());
                             iterator.remove();
-                            // TODO(临时调试): 灯笼链路诊断，定位后删除
-                            PHModLogger.getInstance().info("[lantern-debug] 灯笼 {} 放弃请求 {}（{}/{} 轮未在 {} 找到实体，区块 {}）", pos, request.getPetUUID(), working.attempts, MAX_ATTEMPTS, request.getDimension(), request.getChunkPosition());
+                            PHModLogger.debugLog("[lantern-debug] 灯笼 {} 放弃请求 {}（{}/{} 轮未在 {} 找到实体，区块 {}）", pos, request.getPetUUID(), working.attempts, MAX_ATTEMPTS, request.getDimension(), request.getChunkPosition());
                         }
                     }
                     loadChunksAround(targetLevel, request.getChunkPosition(), false);
@@ -164,6 +171,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
         return anyLevel.getServer().getLevel(request.getDimensionKey());
     }
 
+    /** 按请求维度的区块坐标强载/卸载 3×3 区块（{@code load=false} 时释放）。 */
     private static void loadChunksAround(ServerLevel serverLevel, BlockPos center, boolean load) {
         // 26.1: ChunkPos 是 record（无 BlockPos 构造器、x/z 私有），直接用方块坐标算区块坐标
         int centerChunkX = center.getX() >> 4;
@@ -180,6 +188,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
         }
     }
 
+    /** 灯笼 64 格内的玩家（拉取其名下灯笼请求的范围判定）。 */
     private static List<Player> getPlayers(Level level, BlockPos pos) {
         double dist = 64 * 64;
         List<Player> withinDist = new ArrayList<>();
@@ -207,6 +216,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
     }
 
     /** targetLevel 是落点所在维度：碰撞检测必须查灯笼维度，而不是宠物来源维度 */
+    /** 灯笼旁随机找落点：下探至首个不卡实体的方块（碰撞检测查 targetLevel，即灯笼所在维度），10 次都失败回退灯笼正上方。 */
     private static BlockPos getPlaceFor(Entity entity, Level targetLevel, BlockPos lanternPos, RandomSource random) {
         int maxDist = (int) Math.max(entity.getBbWidth() + 1, 10);
         for (int i = 0; i < 10; i++) {

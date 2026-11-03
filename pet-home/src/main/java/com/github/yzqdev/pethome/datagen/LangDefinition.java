@@ -113,6 +113,9 @@ public interface LangDefinition {
     String petInfoOverlayRequireShift_conf_tooltip = configTooltip("petInfoOverlayRequireShift");
     String petInfoOverlayIgnoreJade_conf = config("petInfoOverlayIgnoreJade");
     String petInfoOverlayIgnoreJade_conf_tooltip = configTooltip("petInfoOverlayIgnoreJade");
+    // —— 调试日志 ——
+    String debugMode_conf = config("debugMode");
+    String debugMode_conf_tooltip = configTooltip("debugMode");
     String ore_scenting_loot_chance_conf = config("ore_scenting_loot_chance");
     String ore_scenting_loot_chance_conf_tooltip = configTooltip("ore_scenting_loot_chance");
     String bubbling_loot_chance_conf = config("bubbling_loot_chance");
@@ -139,6 +142,8 @@ public interface LangDefinition {
     String paralysis_loot_chance_conf_tooltip = configTooltip("paralysis_loot_chance");
     String tough_loot_chance_conf = config("tough_loot_chance");
     String tough_loot_chance_conf_tooltip = configTooltip("tough_loot_chance");
+    String muffled_loot_chance_conf = config("muffled_loot_chance");
+    String muffled_loot_chance_conf_tooltip = configTooltip("muffled_loot_chance");
 
     // NeoForge 配置界面（ConfigurationScreen）所需：新开关标签+tooltip、列表项编辑按钮、屏幕标题与分节键
     String tameable_axolotls_conf = config("tameable_axolotls");
@@ -169,6 +174,86 @@ public interface LangDefinition {
     String configuration_title = config("title");
     String configuration_section_common = config("section.pet.home.common.toml");
     String configuration_section_common_title = config("section.pet.home.common.toml.title");
+  // —— 自研配置界面（client/gui，Tab 单屏风格，与 1.20 侧界面同构）——
+  String GUI_TITLE = config("gui.title");
+  String GUI_RESET = config("gui.reset");
+  String GUI_ON = config("gui.on");
+  String GUI_OFF = config("gui.off");
+  String GUI_LIST_ADD = config("gui.list.add");
+  String GUI_LIST_ELEMENT_INDEX = config("gui.list.element_index");
+  // 分类（friendly_fire / general / tameable / loot 与 toml 分组对应）
+  String GUI_CAT_FRIENDLY_NAME = config("gui.category.friendly_fire");
+  String GUI_CAT_GENERAL_NAME = config("gui.category.general");
+  String GUI_CAT_TAMEABLE_NAME = config("gui.category.tameable");
+  String GUI_CAT_LOOT_NAME = config("gui.category.loot");
+  // 条目说明键后缀为 .tooltip（extractTooltip 按标签键 + ".tooltip" 运行时拼接），常量名 _DESC 仅沿用历史
+  String GUI_F_PROTECT_OWNER = config("gui.friendly.protect_owner");
+  String GUI_F_PROTECT_OWNER_DESC = configTooltip("gui.friendly.protect_owner");
+  String GUI_F_PROTECT_PETS = config("gui.friendly.protect_pets");
+  String GUI_F_PROTECT_PETS_DESC = configTooltip("gui.friendly.protect_pets");
+  String GUI_F_PROTECT_CHILDREN = config("gui.friendly.protect_children");
+  String GUI_F_PROTECT_CHILDREN_DESC = configTooltip("gui.friendly.protect_children");
+  String GUI_F_REFLECT_DAMAGE = config("gui.friendly.reflect_damage");
+  String GUI_F_REFLECT_DAMAGE_DESC = configTooltip("gui.friendly.reflect_damage");
+  String GUI_F_DISPLAY_WARNING = config("gui.friendly.display_warning");
+  String GUI_F_DISPLAY_WARNING_DESC = configTooltip("gui.friendly.display_warning");
+  String GUI_F_PROTECT_TEAM = config("gui.friendly.protect_team");
+  String GUI_F_PROTECT_TEAM_DESC = configTooltip("gui.friendly.protect_team");
+  String GUI_F_RESPECT_TEAM = config("gui.friendly.respect_team");
+  String GUI_F_RESPECT_TEAM_DESC = configTooltip("gui.friendly.respect_team");
+  String GUI_F_CAN_HURT_PET_ITEMS = config("gui.friendly.can_hurt_pet_items");
+  String GUI_F_CAN_HURT_PET_ITEMS_DESC = configTooltip("gui.friendly.can_hurt_pet_items");
+  String GUI_F_CAN_HURT_ALL_ITEMS = config("gui.friendly.can_hurt_all_items");
+  String GUI_F_CAN_HURT_ALL_ITEMS_DESC = configTooltip("gui.friendly.can_hurt_all_items");
+  String GUI_F_NO_PROTECTION = config("gui.friendly.no_protection");
+  String GUI_F_NO_PROTECTION_DESC = configTooltip("gui.friendly.no_protection");
+  String GUI_F_EXTRA_PROTECTED = config("gui.friendly.extra_protected");
+  String GUI_F_EXTRA_PROTECTED_DESC = configTooltip("gui.friendly.extra_protected");
+  String GUI_F_PLAYER_PROTECTED = config("gui.friendly.player_protected");
+  String GUI_F_PLAYER_PROTECTED_DESC = configTooltip("gui.friendly.player_protected");
+  // —— 通用分类条目 ——
+  String GUI_G_ROTTEN_APPLE = config("gui.general.rotten_apple");
+  String GUI_G_ROTTEN_APPLE_DESC = configTooltip("gui.general.rotten_apple");
+  String GUI_G_PET_BED_RESPAWN = config("gui.general.pet_bed_respawn");
+  String GUI_G_PET_BED_RESPAWN_DESC = configTooltip("gui.general.pet_bed_respawn");
+  String GUI_G_RABBITS_RAVAGERS = config("gui.general.rabbits_ravagers");
+  String GUI_G_RABBITS_RAVAGERS_DESC = configTooltip("gui.general.rabbits_ravagers");
+  String GUI_G_TRINARY_COMMAND = config("gui.general.trinary_command");
+  String GUI_G_TRINARY_COMMAND_DESC = configTooltip("gui.general.trinary_command");
+  String GUI_G_PETSTORE_WEIGHT = config("gui.general.petstore_weight");
+  String GUI_G_PETSTORE_WEIGHT_DESC = configTooltip("gui.general.petstore_weight");
+  String GUI_G_MOB_TAMABLE_ONLY = config("gui.general.mob_tamable_only");
+  String GUI_G_MOB_TAMABLE_ONLY_DESC = configTooltip("gui.general.mob_tamable_only");
+  String GUI_G_MOB_BLACKLIST = config("gui.general.mob_blacklist");
+  String GUI_G_MOB_BLACKLIST_DESC = configTooltip("gui.general.mob_blacklist");
+  String GUI_G_PET_COMPASS_ENABLE = config("gui.general.pet_compass_enable");
+  String GUI_G_PET_COMPASS_ENABLE_DESC = configTooltip("gui.general.pet_compass_enable");
+  String GUI_G_TELEPORT_PLAYER_TO_PET = config("gui.general.teleport_player_to_pet");
+  String GUI_G_TELEPORT_PLAYER_TO_PET_DESC = configTooltip("gui.general.teleport_player_to_pet");
+  String GUI_G_RECALL_PET_TO_PLAYER = config("gui.general.recall_pet_to_player");
+  String GUI_G_RECALL_PET_TO_PLAYER_DESC = configTooltip("gui.general.recall_pet_to_player");
+  String GUI_G_PET_INFO_OVERLAY = config("gui.general.pet_info_overlay");
+  String GUI_G_PET_INFO_OVERLAY_DESC = configTooltip("gui.general.pet_info_overlay");
+  String GUI_G_PET_INFO_OVERLAY_REQUIRE_SHIFT =
+      config("gui.general.pet_info_overlay_require_shift");
+  String GUI_G_PET_INFO_OVERLAY_REQUIRE_SHIFT_DESC =
+      configTooltip("gui.general.pet_info_overlay_require_shift");
+  String GUI_G_PET_INFO_OVERLAY_IGNORE_JADE = config("gui.general.pet_info_overlay_ignore_jade");
+  String GUI_G_PET_INFO_OVERLAY_IGNORE_JADE_DESC =
+      configTooltip("gui.general.pet_info_overlay_ignore_jade");
+  String GUI_G_DEBUG_MODE = config("gui.general.debug_mode");
+  String GUI_G_DEBUG_MODE_DESC = configTooltip("gui.general.debug_mode");
+  // —— 可驯化分类条目 ——
+  String GUI_T_AXOLOTL = config("gui.tameable.axolotl");
+  String GUI_T_AXOLOTL_DESC = configTooltip("gui.tameable.axolotl");
+  String GUI_T_FOX = config("gui.tameable.fox");
+  String GUI_T_FOX_DESC = configTooltip("gui.tameable.fox");
+  String GUI_T_FROG = config("gui.tameable.frog");
+  String GUI_T_FROG_DESC = configTooltip("gui.tameable.frog");
+  String GUI_T_HORSE = config("gui.tameable.horse");
+  String GUI_T_HORSE_DESC = configTooltip("gui.tameable.horse");
+  String GUI_T_RABBIT = config("gui.tameable.rabbit");
+  String GUI_T_RABBIT_DESC = configTooltip("gui.tameable.rabbit");
 
     // 以下自设置界面（GUI）与 8 个新附魔移植时新增
     String BLOCK_DRUM = block("drum");
@@ -217,6 +302,12 @@ public interface LangDefinition {
     String ITEM_FEATHER_ON_A_STICK = item("feather_on_a_stick");
     String ITEM_DEED_OF_OWNERSHIP = item("deed_of_ownership");
     String ITEM_DEED_OF_OWNERSHIP_DESC = item("deed_of_ownership.desc");
+    String ITEM_DEED_OF_OWNERSHIP_DESC2 = item("deed_of_ownership.desc2");
+    String ITEM_DEED_OF_OWNERSHIP_BOUND = item("deed_of_ownership.bound");
+    String ITEM_WHISTLE = item("whistle");
+    String TOOLTIP_WHISTLE_DESC = tooltips("whistle.desc");
+    String ITEM_FREEDOM_BELL = item("freedom_bell");
+    String TOOLTIP_FREEDOM_BELL_DESC = tooltips("freedom_bell.desc");
     String ITEM_NET = item("net");
     String ITEM_NET_HAS_ITEM = item("net_has_item");
     String ITEM_NET_LAUNCHER = item("net_launcher");
@@ -239,6 +330,9 @@ public interface LangDefinition {
     String MESSAGE_REMOVE_RESPAWN = message("remove_respawn");
     String MESSAGE_RESPAWN = message("respawn");
     String MESSAGE_SET_OWNER = message("set_owner");
+    String MESSAGE_DEED_BOUND = message("deed_bound");
+    String MESSAGE_RELEASE_CONFIRM = message("release_confirm");
+    String MESSAGE_RELEASED = message("released");
     String MESSAGE_WAYWARD_LANTERN_RETURN = message("wayward_lantern_return");
     String NOTIF_FRIENDLY_FIRE_PROTECTED = "notif.friendlyfire.protected";
     String JADE_COLLAR_TAG = "config.jade.plugin_pet_home.collar_tag";
@@ -250,7 +344,7 @@ public interface LangDefinition {
     String SOUND_SUBTITLE_GIANT_BUBBLE_INFLATE = soundSubtitle("giant_bubble_inflate");
     String SOUND_SUBTITLE_GIANT_BUBBLE_POP = soundSubtitle("giant_bubble_pop");
     String SOUND_SUBTITLE_MAGNET_LOOP = soundSubtitle("magnet_loop");
-    String SOUND_SUBTITLE_PET_BED_USES = soundSubtitle("pet_bed_uses");
+    String SOUND_SUBTITLE_PET_BED_USES = soundSubtitle("pet_bed_use");
     String SOUND_SUBTITLE_PSYCHIC_WALL = soundSubtitle("psychic_wall");
     String SOUND_SUBTITLE_PSYCHIC_WALL_DEFLECT = soundSubtitle("psychic_wall_deflect");
     String TOOLTIPS_SUBSTITUTE_COLLAR_DESC = tooltips("substitute_collar.desc");
