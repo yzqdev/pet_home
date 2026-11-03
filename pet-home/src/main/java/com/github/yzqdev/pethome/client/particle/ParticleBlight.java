@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.RandomSource;
 
+/** "枯萎"附魔的凋零尘粒（{`pet_home:blight`}）。 */
 public class ParticleBlight extends SimpleAnimatedParticle {
     private ParticleBlight(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet set) {
         super(world, x, y, z, set, 0.0F);

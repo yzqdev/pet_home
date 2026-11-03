@@ -23,6 +23,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.NotNull;
 import java.util.function.Consumer;
 
+/**
+ * 捕网发射器（60 耐久）：长按蓄力，松手按蓄力速度发射 {@link NetEntity}。
+ * 两种模式（{@code RELEASE_MODE} 组件，潜行右键切换）：抓捕模式射空网；
+ * 释放模式射出背包里找到的带宠物的网（{@link #findNet}，主手→副手→背包顺序，消耗该网）。
+ * 文件名沿用 DI；物品名后缀显示当前模式（copy 后拼接防逐帧污染组件）。
+ */
 public class NetLauncherItem extends Item {
 
     public NetLauncherItem(Properties properties) {
@@ -37,9 +43,7 @@ public class NetLauncherItem extends Item {
 
     }
 
-    /**
-     * Called when the player stops using an Item (stops holding the right mouse button).
-     */
+    /** 松开右键：蓄力达标（速度 ≥0.1）时按模式发射空网或背包中的带宠网，并扣 1 点耐久。仅服务端生成实体。 */
     @Override
     public boolean releaseUsing(ItemStack stack, Level worldIn, LivingEntity entityLiving, int timeLeft) {
         if (entityLiving instanceof Player player) {
@@ -110,9 +114,7 @@ public class NetLauncherItem extends Item {
         return stack;
     }
 
-    /**
-     * Gets the velocity of the net entity from the launcher's charge
-     */
+    /** 从蓄力 tick 数算初速（弓箭公式，上限 1.5）。 */
     public static float getNetVelocity(int charge) {
         float f = (float) charge / 20;
         f = (f * f + f * 2) / 3;
@@ -126,9 +128,7 @@ public class NetLauncherItem extends Item {
     }
 
 
-    /**
-     * Called when the equipped item is right clicked.
-     */
+    /** 右键：潜行时切换抓捕/释放模式（发提示），否则开始蓄力（{@code getUseDuration}=72000 tick 上限）。 */
     @Override
     @NotNull
     public InteractionResult use(Level worldIn, Player player, @NotNull InteractionHand hand) {
@@ -165,6 +165,7 @@ public class NetLauncherItem extends Item {
     }
 
     //helpers
+    /** 当前是否抓捕模式（组件缺失/为 false 时按抓捕处理）。 */
     public static boolean isCaptureMode(ItemStack stack) {
 
         return (!stack.has(PHDataComponents.RELEASE_MODE)) || Boolean.FALSE.equals(stack.get(PHDataComponents.RELEASE_MODE));

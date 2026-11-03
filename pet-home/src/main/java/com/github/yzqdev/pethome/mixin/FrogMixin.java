@@ -43,6 +43,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
+/**
+ * 青蛙完全驯服化（{@code ModifiedToBeTameable} + {@code IComandableMob} + {@code IFrog}）：
+ * 蜘蛛眼驯服；{@code <clinit>} 注入 owner/command/tamed 访问器（26.1 硬约束）。
+ */
 @Mixin(Frog.class)
 public abstract class FrogMixin extends Animal implements ModifiedToBeTameable, IComandableMob, IFrog {
 

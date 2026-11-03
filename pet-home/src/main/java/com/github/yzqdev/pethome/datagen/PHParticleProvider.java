@@ -14,6 +14,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
 
+/**
+ * 粒子描述文件生成：为 10 种贴图粒子输出 {@code assets/pet_home/particles/*.json}
+ * （贴图序列列表），与 {@code PHParticleRegistry} 的注册名一一对应；
+ * {@code deflection_shield} / {@code intimidation} 走 PhantomParticleGroup 自定义渲染，无贴图描述。
+ */
 public class PHParticleProvider extends FabricCodecDataProvider<PHParticleProvider.ParticleTextureList> {
 
     public record ParticleTextureList(List<Identifier> textures) {
@@ -34,9 +39,7 @@ public class PHParticleProvider extends FabricCodecDataProvider<PHParticleProvid
     @Override
     protected void configure(BiConsumer<Identifier, ParticleTextureList> provider, HolderLookup.Provider registries) {
         provider.accept(id("blight"), of("pet_home:blight"));
-        provider.accept(id("deflection_shield"), of());
         provider.accept(id("giant_pop"), of("pet_home:giant_pop"));
-        provider.accept(id("intimidation"), of());
         provider.accept(id("lantern_bugs"), of("minecraft:generic_0", "minecraft:generic_1"));
         provider.accept(id("magnet"), of("pet_home:magnet_0", "pet_home:magnet_1", "pet_home:magnet_2"));
         provider.accept(id("psychic_wall"), of("pet_home:psychic_wall_0", "pet_home:psychic_wall_1", "pet_home:psychic_wall_2", "pet_home:psychic_wall_3"));

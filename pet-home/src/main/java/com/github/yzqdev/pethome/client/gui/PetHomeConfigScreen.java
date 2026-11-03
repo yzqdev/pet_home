@@ -23,8 +23,15 @@ import java.util.List;
 import java.util.Map;
 
  
+/**
+ * 自研配置界面（Tab 单屏风格）：分类与 {@code PetHomeConfig} 的分组一致，每行 =
+ * 标签 + 值控件（开关/滑条/文本框）+ 重置按钮；滚动按整行显隐（不用裁剪）；
+ * 滑条拖拽由界面转发。入口：ModMenu 配置按钮 / {@code /pet_home_config}。
+ * 修改直接写 {@code ConfigValue.set}（标 dirty），{@link #onClose} 时统一刷缓存 + 落盘。
+ */
 @Environment(EnvType.CLIENT)
 public class PetHomeConfigScreen extends Screen {
+    /** 一个 Tab 分类：名称语言键 + 该分类下的全部条目（构建见 {@link #buildCategories}）。 */
     private record Category(String nameKey, List<ConfigEntry> entries) {
     }
 
@@ -77,6 +84,7 @@ public class PetHomeConfigScreen extends Screen {
         buildCategories();
     }
 
+    /** 构建 5 个分类（友好保护/通用/可驯服物种/战利品概率/逐附魔开关）；附魔分类按 {@code ENABLED_ENCHANTMENTS} 动态生成，标签复用附魔翻译键。 */
     private void buildCategories() {
         List<ConfigEntry> friendly = new ArrayList<>();
         friendly.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_F_PROTECT_OWNER, LangDefinition.GUI_F_PROTECT_OWNER_DESC, PetHomeConfig.PROTECT_PETS_FROM_OWNER));
@@ -125,6 +133,7 @@ public class PetHomeConfigScreen extends Screen {
         loot.add(new ConfigEntry.DoubleEntry(LangDefinition.enchantment("vampire"), LangDefinition.GUI_L_VAMPIRISM_DESC, PetHomeConfig.VAMPIRISM_LOOT_CHANCE, 0, 1, true));
         loot.add(new ConfigEntry.DoubleEntry(LangDefinition.enchantment("void_cloud"), LangDefinition.GUI_L_VOID_CLOUD_DESC, PetHomeConfig.VOID_CLOUD_LOOT_CHANCE, 0, 1, true));
         loot.add(new ConfigEntry.DoubleEntry(LangDefinition.enchantment("ore_scenting"), LangDefinition.GUI_L_ORE_SCENTING_DESC, PetHomeConfig.ORE_SCENTING_LOOT_CHANCE, 0, 1, true));
+        loot.add(new ConfigEntry.DoubleEntry(LangDefinition.enchantment("muffled"), LangDefinition.GUI_L_MUFFLED_DESC, PetHomeConfig.MUFFLED_LOOT_CHANCE, 0, 1, true));
         loot.add(new ConfigEntry.DoubleEntry(LangDefinition.enchantment("blazing_protection"), LangDefinition.GUI_L_BLAZING_DESC, PetHomeConfig.BLAZING_PROTECTION_LOOT_CHANCE, 0, 1, true));
         loot.add(new ConfigEntry.DoubleEntry(LangDefinition.enchantment("share"), LangDefinition.GUI_L_SHARE_DESC, PetHomeConfig.SHARE_LOOT_CHANCE, 0, 1, true));
         loot.add(new ConfigEntry.DoubleEntry(LangDefinition.enchantment("sonic_boom"), LangDefinition.GUI_L_SONIC_BOOM_DESC, PetHomeConfig.SONIC_BOOM_LOOT_CHANCE, 0, 1, true));
@@ -143,6 +152,7 @@ public class PetHomeConfigScreen extends Screen {
         categories.add(new Category(LangDefinition.GUI_CAT_ENCHANTS_NAME, enchants));
     }
 
+    /** 当前选中分类（越界钳制，防重建期间的瞬时越界）。 */
     private Category currentCategory() {
         return categories.get(Mth.clamp(selectedTab, 0, categories.size() - 1));
     }
@@ -397,6 +407,7 @@ public class PetHomeConfigScreen extends Screen {
         }
     }
 
+    /** 关闭界面：刷新静态缓存（热路径立即生效）并落盘 toml（dirty 才写、原子替换），随后返回父界面。 */
     @Override
     public void onClose() {
         PetHomeConfig.refreshCachedValues();

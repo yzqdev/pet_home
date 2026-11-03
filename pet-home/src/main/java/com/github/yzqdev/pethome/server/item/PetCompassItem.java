@@ -1,11 +1,9 @@
 package com.github.yzqdev.pethome.server.item;
 
-import com.github.yzqdev.pethome.PHConstants;
 import com.github.yzqdev.pethome.datagen.LangDefinition;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -41,7 +39,7 @@ public class PetCompassItem extends Item {
     @Environment(EnvType.CLIENT)
     private static void sendOpenRequest() {
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(
-                new com.github.yzqdev.pethome.network.PropertiesMessage(PHConstants.petCompassOpen, new CompoundTag(), 0));
+                com.github.yzqdev.pethome.network.PetCompassOpenPacket.INSTANCE);
     }
 
     @Override

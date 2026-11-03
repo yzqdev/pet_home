@@ -11,6 +11,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.RandomSource;
 
+/**
+ * 巨型气泡爆开粒子（{@code pet_home:giant_pop}）：巨型气泡破裂时的大号水花，
+ * 沿生成时的初速度飞散并受重力影响。
+ */
 public class ParticleGiantPop extends SimpleAnimatedParticle {
     private ParticleGiantPop(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet set) {
         super(world, x, y, z, set, 0.0F);

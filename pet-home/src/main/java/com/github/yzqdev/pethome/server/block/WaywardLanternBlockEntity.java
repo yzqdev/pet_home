@@ -27,6 +27,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * 迷途灯笼方块实体：方块本身无交互，收容/召回全靠 tick 自动处理。
+ * 每 200~600 tick 拉取一次"灯笼 64 格内玩家"的 {@code LanternRequest}，按请求记录的维度
+ * （宠物卸载时所在维度）临时强载宠物区块的 3×3 邻域，等实体出现后传送到灯笼旁并通知主人。
+ * 每请求独立的等待/尝试计数（{@code ENTITY_LOAD_TIMEOUT}=200 tick / {@code MAX_ATTEMPTS}=3 轮），
+ * 超限放弃并记入 {@code abandonedRequests}（本次加载期跳过），请求仍留在世界数据里等自愈。
+ * {@link #setRemoved} 兜底释放强载区块，防止 FORCED 票据持久化残留。
+ */
 public class WaywardLanternBlockEntity extends BlockEntity {
 
     /** 一轮等待实体从强载区块中出现的耐心（tick） */
@@ -73,6 +81,13 @@ public class WaywardLanternBlockEntity extends BlockEntity {
         super.setRemoved();
     }
 
+    /**
+     * 灯笼主循环（仅服务端挂 ticker）：① 收割 {@code finishedRequests}（从工作列表与世界数据移除）；
+     * ② 空闲期按 200~600 tick 周期重新拉取附近玩家的灯笼请求；③ 处理工作列表——强载 → 等实体
+     * → 同维度 {@code teleportTo(DDD)} / 跨维度 {@code teleportTo(ServerLevel,...)}（TeleportTransition
+     * 重建，传送前必须先清 {@code fallDistance}，因 {@code restoreFrom} 会复制旧值）→ 用主人 UUID
+     * 在灯笼维度解析玩家发通知。落点经 {@link #getPlaceFor}（碰撞检测一律查灯笼维度）。
+     */
     public static void tick(Level level, BlockPos pos, BlockState state, WaywardLanternBlockEntity te) {
         if (!te.finishedRequests.isEmpty()) {
             te.workingRequests.removeIf(working -> te.finishedRequests.contains(working.request.getPetUUID()));
@@ -170,6 +185,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
         }
     }
 
+    /** 灯笼 64 格（平方距离 {@code 64*64}）内的所有玩家——只有这些玩家的灯笼请求会被本灯笼处理。 */
     private static List<Player> getPlayers(Level level, BlockPos pos) {
         double dist = 64 * 64;
         List<Player> withinDist = new ArrayList<>();

@@ -4,6 +4,7 @@ import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.datagen.LangDefinition;
 import com.github.yzqdev.pethome.server.PHDataComponents;
 import com.github.yzqdev.pethome.server.entity.NetEntity;
+import com.github.yzqdev.pethome.server.misc.PetCompassTracker;
 import com.github.yzqdev.pethome.util.ItemMobTooltip;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
@@ -47,6 +48,12 @@ import java.util.function.Consumer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
+/**
+ * 捕网物品（{@code Type.EMPTY} 空网 / {@code Type.HAS_MOB} 带宠物的 {@code net_has_item} 两态）。
+ * 抓捕经 {@code interactLivingEntity} 与交互总入口 {@code handleNetCapture}（放在冷却/黑名单
+ * 校验后换物品并 discard 目标）；释放经 {@link #useOn} 对方块使用重建实体。
+ * 被 {@code ItemEntityNetMixin} 处理的掉落态：发光/免伤/防掉虚空。
+ */
 public class NetItem extends Item {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -61,6 +68,7 @@ public class NetItem extends Item {
         return type;
     }
 
+    /** 释放：对方块使用带宠物的网，按 {@code ENTITY_HOLDER} 里的完整 NBT 在方块上方重建实体，网退回空网（创造模式直接换新网）。 */
     @Override
     @NotNull
     public InteractionResult useOn(UseOnContext context) {
@@ -108,6 +116,10 @@ public class NetItem extends Item {
             if (!player.addItem(newerStack)) {
                 ItemEntity itemEntity = new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), newerStack);
                 player.level().addFreshEntity(itemEntity);
+                // 背包满→掉落物：罗盘按掉落物定位；直接进背包时退化为玩家位置
+                PetCompassTracker.onPetCapturedByNet(target, itemEntity);
+            } else {
+                PetCompassTracker.onPetCapturedByNet(target, player);
             }
             target.discard();
             player.getCooldowns().addCooldown(newStack, 5);
@@ -177,6 +189,7 @@ public class NetItem extends Item {
         return type.getDescription().copy().withStyle(ChatFormatting.AQUA);
     }
 
+    /** 物品名追加"（实体名）"；super.getName 返回栈上组件的同一实例，必须先 copy 再 append（否则逐帧 tooltip 污染组件）。 */
     @Override
     @NotNull
     public Component getName(@NotNull ItemStack stack) {
@@ -217,6 +230,7 @@ public class NetItem extends Item {
         return type == EntityType.PLAYER || PetHomeConfig.mobcatcherBlackList.contains(type);
     }
 
+    /** 抓捕资格：玩家/黑名单（配置 {@code mobcatcherBlacklist}）永远不可抓；开启"仅可驯服"时只放行 {@code TamableAnimal}。 */
     public static boolean canCatchMob(Entity livingEntity) {
         var type = livingEntity.getType();
         if (PetHomeConfig.mobcatcherOnlyTamableAnimal) {
@@ -236,6 +250,10 @@ public class NetItem extends Item {
 
     }
 
+    /**
+     * 从组件 NBT 重建实体（{@code withInfo} 时整份 {@code Entity#load}，含血量/主人/citadel 数据）。
+     * 类型 id 非法时会抛异常由调用方处理；返回 null 表示类型不存在。
+     */
     public static Entity getEntityFromNBT(CompoundTag nbt, Level world, boolean withInfo) {
         Entity entity = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.parse(getEntityID(nbt))).create(world, EntitySpawnReason.COMMAND);
         if (withInfo && entity != null) {

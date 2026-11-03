@@ -33,6 +33,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * 往生球（紧急收回/收容召回的宠物载体）：内部以同步数据保存被收容实体的类型 id 与
+ * 完整 NBT（{@code CONTAINED_ENTITY_DATA}，自定义 COMPOUND_TAG 序列化器）。只有主人能打开
+ * （{@code interact}，26.1 签名为三参 {@code interact(Player,InteractionHand,Vec3)}）；
+ * 开启动画结束后在服务端按 NBT 重建宠物（保底 25% 血量、至少 2 点），随后收拢消失。
+ * 无重力、仅创造玩家可伤；未完成时才参与存档。
+ */
 public class RecallBallEntity extends Entity {
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(RecallBallEntity.class, PHAttachments.OPTIONAL_UUID.get());
@@ -83,14 +90,21 @@ public class RecallBallEntity extends Entity {
         return false;
     }
 
+    /**
+     * 核心 tick：闲置自旋/水面浮起 → 开启动画进度（0~1）→ 传送门粒子 →
+     * 开启完成后服务端按 NBT 重建被收容宠物 → 收拢动画结束后消失。
+     */
     public void tick() {
         super.tick();
+        // 闲置自旋（客户端渲染按此角度旋转球体）
         this.setYRot(this.getYRot() + 1);
         this.setXRot(0);
         prevOpenProgress = openProgress;
+        // 掉入水/熔岩时上浮，防止球体沉底丢失
         if (this.isInWater() || this.isInLava()) {
             this.setPos(this.position().add(0, 0.08, 0));
         }
+        // 开启动画：进度以 0.1 步长向目标状态逼近（约 10 tick 全开/全闭）
         if (this.entityData.get(OPENED) && openProgress < 1F) {
             openProgress += 0.1F;
         }
@@ -100,9 +114,11 @@ public class RecallBallEntity extends Entity {
         if (random.nextFloat() < 0.4F) {
             this.level().addParticle(ParticleTypes.PORTAL, this.getRandomX(0.5D), this.getRandomY() - 0.25D, this.getRandomZ(0.5D), (this.random.nextDouble() - 0.5D) * 2.0D, -this.random.nextDouble(), (this.random.nextDouble() - 0.5D) * 2.0D);
         }
+        // 虚空护栏：拉回世界底界上方 1.2 格
         if (this.getY() < level().getMinY()) {
             this.setPos(this.getX(), level().getMinY() + 1.2F, this.getZ());
         }
+        // 开启动画完成且未释放：服务端按 NBT 重建被收容实体（保底 25% 血量）
         if (this.entityData.get(OPENED) && openProgress >= 1F && !this.isFinished()) {
             if (!level().isClientSide()) {
                 EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.parse(this.getContainedEntityType()));
@@ -113,6 +129,7 @@ public class RecallBallEntity extends Entity {
                             ValueInput input = TagValueInput.create(reporter, level().registryAccess(), this.getContainedData());
                             alive.load(input);
                         }
+                        // 释放保底：血量至少恢复到最大值的 25%，且不低于 2 点
                         alive.setHealth(Math.max(2, alive.getMaxHealth() * 0.25F));
                         alive.setYRot(random.nextFloat() * 360 - 180);
                         alive.copyPosition(this);
@@ -123,6 +140,7 @@ public class RecallBallEntity extends Entity {
                 }
             }
         }
+        // 释放完成且收拢动画结束 → 球体完成使命消失
         if (this.isFinished() && openProgress <= 0.01F) {
             this.discard();
         }
@@ -132,6 +150,7 @@ public class RecallBallEntity extends Entity {
         return true;
     }
 
+    /** 未释放完的球才参与存档（已释放的球随后即 discard，不应持久化）。 */
     public boolean shouldBeSaved() {
         return !this.isFinished() && super.shouldBeSaved();
     }

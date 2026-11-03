@@ -22,6 +22,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+/**
+ * 宠物信息 HUD（Jade 风格悬浮面板）：准星（{@code mc.crosshairPickEntity}）对准自己的宠物时
+ * 在屏幕顶部居中画"名字/生命值/三态指令/宠物床位置/项圈附魔"面板，数据直接读
+ * {@code PETHOME_DATA} 附件的客户端同步副本（不发包）。注册于
+ * {@code HudElementRegistry.addLast(pet_home:pet_info_overlay)}（26.1 新 hud 包 API）。
+ * 判定逐帧执行：Jade 在场让位（可配 {@code petInfoOverlayIgnoreJade}）、总开关、
+ * {@code petInfoOverlayRequireShift} 需按住 Shift。
+ */
 public final class PetInfoHudOverlay implements HudElement {
 
     private static final int LINE_HEIGHT = 11;
@@ -34,12 +42,14 @@ public final class PetInfoHudOverlay implements HudElement {
     private PetInfoHudOverlay() {
     }
 
+    /** 注册 HUD 元素（客户端入口调用；注册无条件，Jade/Shift 判定在逐帧绘制里做）。 */
     public static void init() {
         HudElementRegistry.addLast(
                 Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "pet_info_overlay"),
                 new PetInfoHudOverlay());
     }
 
+    /** 逐帧绘制入口：通过全部判定后收集面板行、按最长行居中绘制半透明面板。 */
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
         Minecraft mc = Minecraft.getInstance();

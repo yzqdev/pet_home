@@ -168,6 +168,7 @@ final class Toml {
         return result;
     }
 
+    /** 序列化为 TOML 数组字面量，每项经 {@link #quote} 加引号转义，如 {@code ["a", "b"]}。 */
     static String writeStringArray(List<String> values) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < values.size(); i++) {

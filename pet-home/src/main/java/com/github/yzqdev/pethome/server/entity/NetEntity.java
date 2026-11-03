@@ -2,6 +2,7 @@ package com.github.yzqdev.pethome.server.entity;
 
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.PHDataComponents;
+import com.github.yzqdev.pethome.server.misc.PetCompassTracker;
 import com.github.yzqdev.pethome.server.item.NetItem;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 import net.minecraft.core.BlockPos;
@@ -9,6 +10,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableItemProjectile;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -21,6 +23,12 @@ import net.minecraft.world.phys.HitResult;
 
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * 捕网投掷物（{@code NetLauncherItem} 发射 {@code NetItem} 生成）：命中即结算——
+ * 空网命中生物 → 经 {@code canCatchMob} 校验后把实体 NBT 收进 {@code net_has_item}
+ * 掉落物；带宠物的网命中任意位置 → 释放里面的实体；空网命中方块 → 掉回空网。
+ * 仅服务端结算（客户端直接返回）；自身随后 discard。
+ */
 public class NetEntity extends ThrowableItemProjectile {
 
     private String entityNbt = "itemNbt";
@@ -53,11 +61,7 @@ public class NetEntity extends ThrowableItemProjectile {
     }
 
 
-    /**
-     * Called when this EntityThrowable hits a block or entity.
-     *
-     * @param result
-     */
+    /** 命中结算（见类注释的四种分支）；命中后 {@code discard} 自身。 */
     @Override
     protected void onHit(@NotNull HitResult result) {
         if (level().isClientSide() || !this.isAlive()) {
@@ -91,6 +95,10 @@ public class NetEntity extends ThrowableItemProjectile {
                 newStack.set(PHDataComponents.ENTITY_HOLDER, nbt);
                 ItemEntity itemEntity = createDroppedItemAtEntity(target, newStack);
                 level().addFreshEntity(itemEntity);
+                // 宠物被收进球里：罗盘档案改按掉落物定位（否则停留在已 discard 的实体 UUID，显示「未加载」且召回必失败）
+                if (target instanceof LivingEntity capturedPet) {
+                    PetCompassTracker.onPetCapturedByNet(capturedPet, itemEntity);
+                }
                 target.discard();
             } else {
                 ItemEntity emptynet = createDroppedItemAtEntity(this, itemStack.copy());

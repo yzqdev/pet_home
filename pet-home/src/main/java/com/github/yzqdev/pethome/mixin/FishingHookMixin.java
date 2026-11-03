@@ -17,6 +17,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 羽毛钓竿的钓鱼钩行为（仅对 {@code FeatherEntity} 生效）：
+ * {@code tick} 里 @Redirect 掉流体查询（羽毛浮空，不进水）；{@code shouldStopFishing}
+ * HEAD 改判——玩家手持羽毛钓竿且羽毛在 32 格内就继续"垂钓"，否则丢弃羽毛。
+ */
 @Mixin(FishingHook.class)
 public abstract class FishingHookMixin extends Projectile {
 

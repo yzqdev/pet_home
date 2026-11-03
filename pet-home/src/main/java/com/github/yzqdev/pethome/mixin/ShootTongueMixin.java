@@ -14,6 +14,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 
+/**
+ * 青蛙吐舌行为（{@code ShootTongue}）宠物适配：已驯服青蛙跳过 {@code canEat}
+ * 的食物种类限制（宠物可对主人指定的攻击目标吐舌）；{@code eatEntity} 头部重写为
+ * "伤害目标而非原版吞掉"——宠物青蛙杀掉目标后不消失掉落物（原版会整个吃掉实体）。
+ */
 @Mixin(ShootTongue.class)
 public class ShootTongueMixin {
 

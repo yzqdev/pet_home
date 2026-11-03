@@ -35,6 +35,13 @@ import net.minecraft.world.phys.Vec3;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 宠物商店结构池元素（注册为 {@code petshop} 类型）：生成时处理结构模板里的数据标记方块——
+ * {@code petshop_water}（鱼缸：水/海草/珊瑚 + {@code petstore_fishtank} 标签动物）、
+ * {@code petshop_cage_0..3}（笼子：按 {@code petstore_cage_*} 标签随机刷动物）、
+ * {@code petshop_chest}（挂 {@code pet_home:chests/petshop_chest} 战利品表）。
+ * 动物名单按标签懒初始化一次（静态缓存）。
+ */
 public class PetshopStructurePoolElement extends LegacySinglePoolElement {
 
     public static final Identifier FISHTANK_MOBS = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "petstore_fishtank");
@@ -49,6 +56,26 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
     private static EntityType[] cage2Mobs = null;
     private static EntityType[] cage3Mobs = null;
 
+    /**
+     * 在服务器启动（主线程）预热刷怪列表：handleDataMarker 运行在世界生成 worker 线程，
+     * 惰性初始化在多线程下无同步不安全；此方法保证进入生成阶段前缓存已就绪，
+     * handleDataMarker 内的判空只是兜底。
+     */
+    public static void preloadMobLists() {
+        if (!initializedMobLists) {
+            synchronized (PetshopStructurePoolElement.class) {
+                if (!initializedMobLists) {
+                    fishtankMobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_FISHTANK).toArray(EntityType[]::new);
+                    cage0Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_0).toArray(EntityType[]::new);
+                    cage1Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_1).toArray(EntityType[]::new);
+                    cage2Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_2).toArray(EntityType[]::new);
+                    cage3Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_3).toArray(EntityType[]::new);
+                    initializedMobLists = true;
+                }
+            }
+        }
+    }
+
     public static final MapCodec<PetshopStructurePoolElement> CODEC = RecordCodecBuilder.mapCodec((petshopStructurePoolElementInstance) -> {
         return petshopStructurePoolElementInstance.group(templateCodec(), processorsCodec(), projectionCodec(), overrideLiquidSettingsCodec()).apply(petshopStructurePoolElementInstance, PetshopStructurePoolElement::new);
     });
@@ -61,18 +88,12 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
         super(Either.left(resourceLocation), processors, StructureTemplatePool.Projection.RIGID, Optional.empty());
     }
 
+    /** 结构生成期逐标记方块回调：按 metadata 分派鱼缸/笼子/箱子；同时把标记方块本身置掉（水/珊瑚/空气）。 */
     @Override
     public void handleDataMarker(LevelAccessor levelAccessor, StructureTemplate.StructureBlockInfo structureBlockInfo, BlockPos pos, Rotation rotation, RandomSource random, BoundingBox box) {
         String contents = structureBlockInfo.nbt().getStringOr("metadata", "");
 
-        if (!initializedMobLists) {
-            fishtankMobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_FISHTANK).toArray(new EntityType[0]);
-            cage0Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_0).toArray(EntityType[]::new);
-            cage1Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_1).toArray(EntityType[]::new);
-            cage2Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_2).toArray(EntityType[]::new);
-            cage3Mobs = getAllMatchingEntities(PHTagRegistry.PETSTORE_CAGE_3).toArray(EntityType[]::new);
-            initializedMobLists = true;
-        }
+        preloadMobLists();
         switch (contents) {
             case "petshop_water" -> {
                 BlockState state = Blocks.WATER.defaultBlockState();
@@ -119,14 +140,15 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
         }
     }
 
-    private List<EntityType<?>> getAllMatchingEntities(TagKey<EntityType<?>> tag) {
+    private static List<EntityType<?>> getAllMatchingEntities(TagKey<EntityType<?>> tag) {
         return BuiltInRegistries.ENTITY_TYPE.stream().filter((type -> type.builtInRegistryHolder().is(tag))).toList();
     }
 
+    /** 在标记位置刷 {@code count} 只随机动物（结构方块占位校验 + 仅服务端），Mob 设置持久化并 finalizeSpawn。 */
     public void spawnAnimalsAt(LevelAccessor accessor, BlockPos at, int count, RandomSource random, EntityType... types) {
         if (types.length > 0 && count > 0 && accessor.getBlockState(at).getBlock() == Blocks.STRUCTURE_BLOCK && accessor instanceof ServerLevelAccessor serverLevel) {
             for (int i = 0; i < count; i++) {
-                int index = types.length == 1 ? 0 : random.nextInt(types.length - 1);
+                int index = random.nextInt(types.length);
                 Entity entity = types[index].create(serverLevel.getLevel(), EntitySpawnReason.STRUCTURE);
                 entity.setPos(Vec3.atBottomCenterOf(at));
                 entity.setYRot(random.nextInt(360) - 180);
@@ -141,13 +163,13 @@ public class PetshopStructurePoolElement extends LegacySinglePoolElement {
     }
 
     @Override
-    protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox boundingBox, LiquidSettings p_352069_, boolean should) {
+    protected StructurePlaceSettings getSettings(Rotation rotation, BoundingBox boundingBox, LiquidSettings liquidSettings, boolean should) {
 
         StructurePlaceSettings structureplacesettings = new StructurePlaceSettings();
         structureplacesettings.setBoundingBox(boundingBox);
         structureplacesettings.setRotation(rotation);
         structureplacesettings.setKnownShape(true);
-        structureplacesettings.setLiquidSettings(p_352069_);
+        structureplacesettings.setLiquidSettings(this.overrideLiquidSettings.orElse(liquidSettings));
         structureplacesettings.setIgnoreEntities(false);
         structureplacesettings.setFinalizeEntities(true);
         if (!should) {

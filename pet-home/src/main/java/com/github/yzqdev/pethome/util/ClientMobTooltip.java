@@ -16,6 +16,11 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.TagValueInput;
 
+/**
+ * 捕网/物品 tooltip 里的实时生物渲染组件（客户端）：从 {@link ItemMobTooltip}
+ * 携带的实体 NBT 临时重建实体，用 {@code InventoryScreen.extractEntityInInventoryFollowsMouse}
+ * 按 25 tick/圈的速度在 tooltip 里旋转展示。
+ */
 public class ClientMobTooltip implements ClientTooltipComponent {
     private final Component name;
     private final CompoundTag entityTag;

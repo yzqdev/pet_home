@@ -36,6 +36,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;
 
+/**
+ * 宠物床方块（16 色，方块 + {@link PetBedBlockEntity}）。宠物进入方块时绑定重生点
+ * （{@code TameableUtils.setPetBedPos/Dimension} + ZZZ 粒子），死亡后次日清晨由
+ * 方块实体复活。含 WATERLOGGED 含水变体，{@code PushReaction.BLOCK} 防活塞推动。
+ */
 public class PetBedBlock extends BaseEntityBlock {
 
     private static final VoxelShape COLLIDE_SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 7.0D, 16.0D);
@@ -54,6 +59,10 @@ public class PetBedBlock extends BaseEntityBlock {
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, Boolean.valueOf(false)).setValue(FACING, Direction.NORTH));
     }
 
+    /**
+     * 宠物站进床里：已驯服、非 {@code refuses_pet_beds} 标签、配置开启且仅服务端时，
+     * 按 10 tick 随机概率把床坐标+维度写入宠物 citadel 数据（绑定重生点），并冒 ZZZ 粒子。
+     */
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity, InsideBlockEffectApplier effectApplier, boolean isPrecise) {
         if (TameableUtils.isTamed(entity) && !entity.getType().builtInRegistryHolder().is(PHTagRegistry.REFUSES_PET_BEDS) && !level.isClientSide() && PetHomeConfig.petBedRespawns) {
             if ((entity.tickCount + entity.getId()) % 10 == 0 && random.nextInt(6) == 0) {
@@ -92,11 +101,11 @@ public class PetBedBlock extends BaseEntityBlock {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 
-    public VoxelShape getShape(BlockState p_49038_, BlockGetter p_49039_, BlockPos p_49040_, CollisionContext p_49041_) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SELECT_SHAPE;
     }
 
-    public VoxelShape getCollisionShape(BlockState p_52357_, BlockGetter p_52358_, BlockPos p_52359_, CollisionContext p_52360_) {
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return COLLIDE_SHAPE;
     }
 
@@ -128,8 +137,8 @@ public class PetBedBlock extends BaseEntityBlock {
     }
 
     @org.jetbrains.annotations.Nullable
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level p_152180_, BlockState p_152181_, BlockEntityType<T> p_152182_) {
-        return p_152180_.isClientSide() ? null : createTickerHelper(p_152182_, PHTileEntityRegistry.PET_BED, PetBedBlockEntity::tick);
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        return level.isClientSide() ? null : createTickerHelper(type, PHTileEntityRegistry.PET_BED, PetBedBlockEntity::tick);
     }
 }
 

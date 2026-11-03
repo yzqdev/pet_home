@@ -19,10 +19,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Projectile.class)
 public abstract class ProjectileImpactMixin {
 
-    @Inject(method = "onHit(Lnet/minecraft/world/phys/HitResult;)V", at = @At("HEAD"), require = 0)
+    /**
+     * <p>注入目标：{@code Projectile#onHit} HEAD。handler 内 {@code setCanceled(true)}
+     * （玩家投射物保护 / 穿透箭 discard / 偏转反弹）时经 {@code ci.cancel()} 跳过原版命中——
+     * 对齐 NeoForge {@code ProjectileImpactEvent.setCanceled} 与 Forge 1.20
+     * {@code ImpactResult.SKIP_ENTITY} 的平台侧消费语义。</p>
+     * <p>{@code require = 0}：签名变化时只静默失效。</p>
+     */
+    @Inject(method = "onHit(Lnet/minecraft/world/phys/HitResult;)V", at = @At("HEAD"), require = 0, cancellable = true)
     private void pethome$onProjectileImpact(HitResult hitResult, CallbackInfo ci) {
         ServerEventContexts.ProjectileImpactEvent event =
                 new ServerEventContexts.ProjectileImpactEvent((Projectile) (Object) this, hitResult);
         ServerEvent.onProjectileImpactEvent(event);
+        if (event.isCanceled()) {
+            ci.cancel();
+        }
     }
 }

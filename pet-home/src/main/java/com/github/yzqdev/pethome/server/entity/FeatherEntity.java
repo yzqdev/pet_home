@@ -16,6 +16,12 @@ import net.minecraft.world.phys.Vec3;
 
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * 羽毛钓竿抛射物（{@code FeatherOnAStickItem} 右键抛出，{@code FishingHook} 子类）：
+ * 落地后找主人 21 格内最近的可移动宠物，把它导航/拉拽到羽毛位置（召回宠物用），
+ * 配合 {@code FishingHookMixin} 让钓线渲染与收回行为成立。命中判定关闭（{@code canHitEntity}
+ * 恒 false）；主人 id 经 OWNER_ID 同步供客户端解析。
+ */
 public class FeatherEntity extends FishingHook {
 
     private static final EntityDataAccessor<Integer> OWNER_ID = SynchedEntityData.defineId(FeatherEntity.class, EntityDataSerializers.INT);
@@ -130,6 +136,7 @@ public class FeatherEntity extends FishingHook {
         }
     }
 
+    /** 宠物是否可被羽毛召回：坐下的宠物（原版坐姿或指令==1 停留）不响应。 */
     public boolean isPetAmbulatory(LivingEntity entity) {
         if (entity instanceof TamableAnimal && (((TamableAnimal) entity).isOrderedToSit() || ((TamableAnimal) entity).isInSittingPose())) {
             return false;

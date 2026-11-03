@@ -5,6 +5,7 @@ import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
+/** 羽毛实体渲染状态：羽毛位置姿态 + 抛竿主人的手持物/身体朝向/挥杆进度（供手臂动画复刻）。 */
 public class FeatherRenderState extends EntityRenderState {
     public Player player;
     public HumanoidArm mainArm = HumanoidArm.RIGHT;

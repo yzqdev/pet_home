@@ -10,6 +10,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * {@code PanicGoal} 注入：已驯服宠物不再因受伤恐慌逃窜
+ * （受惊乱跑会破坏"停留"状态与主人间的位置关系）。
+ */
 @Mixin(PanicGoal.class)
 public class PanicGoalMixin {
 

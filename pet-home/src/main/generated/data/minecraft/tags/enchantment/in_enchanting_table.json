@@ -101,11 +101,11 @@
       "required": false
     },
     {
-      "id": "pet_home:void_cloud",
+      "id": "pet_home:insight",
       "required": false
     },
     {
-      "id": "pet_home:insight",
+      "id": "pet_home:disc_jockey",
       "required": false
     }
   ]

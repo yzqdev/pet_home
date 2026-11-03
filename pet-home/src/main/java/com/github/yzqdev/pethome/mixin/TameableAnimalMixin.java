@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
 
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
@@ -15,6 +15,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * {@code TamableAnimal} 注入（对狼/猫/鹦鹉等原版宠物生效）：
+ * {@code considersEntityAsAlly} 判同主人宠物互为友军（友军伤害保护）；
+ * {@code canTeleportTo} 尾部允许携带"两栖"附魔的宠物传送到水中位置
+ * （原版禁止，会导致水中跟随失败）。
+ */
 @Mixin(TamableAnimal.class)
 public abstract class TameableAnimalMixin extends Animal {
 
@@ -44,7 +50,7 @@ public abstract class TameableAnimalMixin extends Animal {
             cancellable = true
     )
     private void di_canTeleportTo(BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
-        if (TameableUtils.hasEnchant((LivingEntity) (Object) this, ModEnchantments.AMPHIBIOUS) && this.level().isWaterAt(pos)) {
+        if (TameableUtils.hasEnchant((LivingEntity) (Object) this, PHEnchantments.AMPHIBIOUS) && this.level().isWaterAt(pos)) {
             cir.setReturnValue(true);
         }
     }

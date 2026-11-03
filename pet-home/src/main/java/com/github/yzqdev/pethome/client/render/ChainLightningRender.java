@@ -15,6 +15,11 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import org.joml.Vector4f;
 
+/**
+ * 连锁闪电实体渲染器：从上一节点的眼睛位置到本节点画一段闪电（无延迟、2 tick 寿命），
+ * 视锥判定按"本节点+上一节点"的合并包围盒算（线段两端都要可见）；绘制走
+ * {@link LightningRender}（26.1 挪到 {@code submit}，按实体隔离 bolt 数据防串扰）。
+ */
 public class ChainLightningRender extends EntityRenderer<ChainLightningEntity, ChainLightningRenderState> {
 
     private LightningRender lightningRender = new LightningRender();

@@ -8,6 +8,11 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
 
+/**
+ * 标签键常量（实体/物品各一组，TagKey 不注册进注册表，实际内容在
+ * {@code data/pet_home/tags/} 数据包）：宠物商店鱼缸/各档笼子可放置的生物、
+ * 拒绝项圈标签/宠物床的生物类型、可用来驯服青蛙的物品。
+ */
 public class PHTagRegistry {
     public static final TagKey<EntityType<?>> PETSTORE_FISHTANK = registerEntity("petstore_fishtank");
     public static final TagKey<EntityType<?>> PETSTORE_CAGE_0 = registerEntity("petstore_cage_0");

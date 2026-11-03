@@ -20,6 +20,7 @@ public final class CollarTickManager {
     private CollarTickManager() {
     }
 
+    /** 该实体当前是否允许跑宠物附魔 tick（客户端恒 true；未登记的维度无抑制）。 */
     public static boolean canTickCollar(Entity entity) {
         if (entity.level().isClientSide()) {
             return true;
@@ -28,6 +29,7 @@ public final class CollarTickManager {
         return tracker == null || !tracker.isEntityBlocked(entity);
     }
 
+    /** 对实体施加 5 tick 抑制（项圈换装/取下时调用；仅服务端）。 */
     public static void blockCollarTick(Entity entity) {
         if (!entity.level().isClientSide()) {
             TRACKER_MAP.computeIfAbsent(entity.level(), k -> new CollarTickTracker())

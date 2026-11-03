@@ -8,6 +8,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 
+/**
+ * 实体交互上下文（对应 NeoForge {@code PlayerInteractEvent.EntityInteractSpecific}）：
+ * {@code UseEntityCallback} 构造、{@code PlayerInteractEntityHandler} 填写 result，
+ * 回调返回值即 {@link #result()}。
+ */
 public final class EntityInteractContext {
 
     private final Player player;

@@ -19,6 +19,8 @@ import net.minecraft.client.data.models.model.ModelTemplates;
 import net.minecraft.client.data.models.model.TextureMapping;
 import net.minecraft.client.data.models.model.TextureSlot;
 import net.minecraft.client.renderer.block.dispatch.VariantMutator;
+import net.minecraft.client.renderer.item.ItemModel;
+import net.minecraft.client.renderer.item.properties.numeric.UseDuration;
 import net.minecraft.client.resources.model.sprite.Material;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
@@ -29,6 +31,10 @@ import java.util.List;
 import java.util.Optional;
 
 
+/**
+ * 方块/物品模型数据生成：指令鼓三态顶面贴图、16 色宠物床（带朝向旋转）、
+ * 往生灯笼等方块状态与对应物品模型。
+ */
 public class PHModelProvider extends FabricModelProvider {
 
     public PHModelProvider(FabricPackOutput output) {
@@ -61,6 +67,13 @@ public class PHModelProvider extends FabricModelProvider {
             String name = "pet_bed_" + color.name().toLowerCase();
             Block bed = PHBlockRegistry.PET_BED_BLOCKS.get(color);
             var modelId = id("block/" + name);
+            // 色座模型：继承静态母模 pet_bed（5 元素手写），只覆写 bed 槽贴图
+            // （bed 槽不进模板 requiredSlots——requiredSlots 与 mapping.getForced() 会拼接出重复键；
+            //   只在 mapping 端 putForced 即可产出该槽）
+            new ModelTemplate(Optional.of(id("block/pet_bed")), Optional.empty())
+                    .create(modelId, new TextureMapping()
+                            .putForced(BED_SLOT, new Material(id("block/pet_bed_seat_" + color.name().toLowerCase()))),
+                            blockModels.modelOutput);
 
             blockModels.blockStateOutput.accept(MultiVariantGenerator.dispatch(bed)
                     .with(PropertyDispatch.initial(PetBedBlock.FACING)
@@ -71,15 +84,15 @@ public class PHModelProvider extends FabricModelProvider {
                                     .with(VariantMutator.Y_ROT.withValue(Quadrant.R180)))
                             .select(Direction.WEST, BlockModelGenerators.plainVariant(modelId)
                                     .with(VariantMutator.Y_ROT.withValue(Quadrant.R270)))));
-            // 宠物床物品模型：直接引用方块模型
-            new ModelTemplate(Optional.of(modelId), Optional.empty())
-                    .create(id("item/" + name), new TextureMapping(), blockModels.modelOutput);
         }
 
-        blockModels.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(
+    blockModels.blockStateOutput.accept(BlockModelGenerators.createSimpleBlock(
                 PHBlockRegistry.WAYWARD_LANTERN,
                 BlockModelGenerators.plainVariant(id("block/wayward_lantern"))));
     }
+
+    /** 宠物床色座贴图槽（自定义槽必须复用同一实例：TextureSlot.create 每次返回新对象）。 */
+    private static final TextureSlot BED_SLOT = TextureSlot.create("bed");
 
     @Override
     public void generateItemModels(ItemModelGenerators itemModels) {
@@ -92,9 +105,11 @@ public class PHModelProvider extends FabricModelProvider {
         itemModels.generateFlatItem(PHItemRegistry.PET_COMPASS, ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(PHItemRegistry.ROTTEN_APPLE, ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(PHItemRegistry.SINISTER_CARROT, ModelTemplates.FLAT_ITEM);
+        itemModels.generateFlatItem(PHItemRegistry.WHISTLE, ModelTemplates.FLAT_HANDHELD_ITEM);
+        itemModels.generateFlatItem(PHItemRegistry.FREEDOM_BELL, ModelTemplates.FLAT_ITEM);
 
         itemModels.declareCustomModelItem(PHItemRegistry.FEATHER_ON_A_STICK);
-        itemModels.declareCustomModelItem(PHItemRegistry.NET_LAUNCHER_ITEM);
+        registerNetLauncherItemModels(itemModels);
 
         itemModels.itemModelOutput.accept(
                 PHBlockRegistry.DRUM_ITEM,
@@ -108,5 +123,27 @@ public class PHModelProvider extends FabricModelProvider {
                 item,
                 ItemModelUtils.plainModel(id("block/pet_bed_" + color.name().toLowerCase()))
         ));
+    }
+
+    /**
+     * 捕网发射器的物品模型定义（原版 bow/trident 范式，与 1.20/1.21 对齐）：所有上下文
+     * （手持/GUI/地面/展示框/物品架）用 3D 模型（pet_home:item/net_launcher，模型自带各
+     * 视角展示段）；蓄力时按 use_duration 用 range_dispatch 切换能量核心贴图逐级点亮
+     * （charging_1 → charging_2）。
+     */
+    private static void registerNetLauncherItemModels(ItemModelGenerators itemModels) {
+        ItemModel.Unbaked handModel = ItemModelUtils.plainModel(id("item/net_launcher"));
+        ItemModel.Unbaked chargingModel =
+                ItemModelUtils.rangeSelect(
+                        new UseDuration(false),
+                        0.05F,
+                        handModel,
+                        ItemModelUtils.override(
+                                ItemModelUtils.plainModel(id("item/net_launcher_charging_1")), 0.5F),
+                        ItemModelUtils.override(
+                                ItemModelUtils.plainModel(id("item/net_launcher_charging_2")), 1.0F));
+        itemModels.itemModelOutput.accept(
+            PHItemRegistry.NET_LAUNCHER_ITEM,
+            ItemModelUtils.conditional(ItemModelUtils.isUsingItem(), chargingModel, handModel));
     }
 }

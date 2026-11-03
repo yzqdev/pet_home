@@ -11,6 +11,10 @@ import net.minecraft.world.level.storage.loot.LootTable;
 import java.util.concurrent.CompletableFuture;
 
 
+/**
+ * 方块掉落表数据生成：指令鼓、往生灯笼、16 色宠物床全部自身掉落
+ * （显式指定随机序列，保证掉落可复现）。
+ */
 public class PHBlockLootTableProvider extends FabricBlockLootSubProvider {
 
     protected PHBlockLootTableProvider(FabricPackOutput packOutput, CompletableFuture<HolderLookup.Provider> registriesFuture) {

@@ -19,6 +19,10 @@ import net.minecraft.world.level.gameevent.GameEvent;
 
 import java.util.function.Consumer;
 
+/**
+ * 羽毛钓竿（160 耐久）：右键抛出 {@link FeatherEntity}（借用钓鱼钩行为，见
+ * {@code FishingHookMixin}），落地后把主人最近的宠物拉回；再次右键收回（按收回量扣耐久）。
+ */
 public class FeatherOnAStickItem extends Item {
 
     public FeatherOnAStickItem(Item.Properties properties) {
@@ -31,6 +35,7 @@ public class FeatherOnAStickItem extends Item {
 
     }
 
+    /** 右键：已有羽毛在外面则收回（{@code retrieve} 按收回距离扣耐久），否则抛出新的羽毛实体。 */
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
         if (player.fishing != null && player.fishing.isAlive()) {

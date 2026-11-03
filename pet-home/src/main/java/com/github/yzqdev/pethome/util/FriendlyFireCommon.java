@@ -17,11 +17,18 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.scores.PlayerTeam;
+import net.minecraft.world.scores.Team;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
+/**
+ * 友军伤害保护判定链（{@code EntityHurtHandler.handleFriendlyFire} 与横扫 Mixin 共用）。
+ * 判定顺序见 {@link #isProtected}：实体白名单 → 潜行/物品白名单绕过 → 标签强制保护 →
+ * 主人打宠物 / 同主人宠物互打（可反伤）→ 队伍保护 → 幼崽保护。
+ * 26.1 取主人 UUID 走 {@code getOwnerReference()}（{@code OwnableEntity} 无 {@code getOwnerUUID}）。
+ * 配置白名单字段在读取前都有判空（配置未加载时为 null）。
+ */
 public class FriendlyFireCommon {
 
     public static final TagKey<Item> BYPASS_PET = TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "bypass_pet"));
@@ -39,6 +46,12 @@ public class FriendlyFireCommon {
         PHConstants.LOG.debug("Reflect damage = {}", PetHomeConfig.reflectDamage);
     }
 
+    /**
+     * 受击入口：命中保护规则返回 true（调用方应取消伤害）；命中方为玩家且开启
+     * {@code displayHitWarning} 时同步发一条保护提示。
+     *
+     * @return true = 本次攻击应被取消
+     */
     public static boolean preventAttack(Entity target, DamageSource source, float amount) {
 
         final Entity attacker = source.getEntity();
@@ -52,6 +65,13 @@ public class FriendlyFireCommon {
         return preventDamage;
     }
 
+    /**
+     * 完整保护判定链（顺序即优先级）：
+     * ① {@code noProtectionEntity} 白名单直接放行；② 空 victim/attacker 或潜行攻击者放行；
+     * ③ {@code can_hurt_all} 物品白名单放行；④ {@code other_should_protect_entity} 强制保护；
+     * ⑤ {@code player_cant_hurt_entity} 玩家不可伤；⑥ 主人打宠物（可配 {@code reflectDamage}
+     * 让攻击者自伤）与同主人宠物互打；⑦ 双向结盟队伍（尊重队伍友伤规则）；⑧ 非敌对幼崽。
+     */
     public static boolean isProtected(Entity victim, Entity attacker, float amount) {
 
         if (PetHomeConfig.noProtectionEntity != null && PetHomeConfig.noProtectionEntity.contains(victim.getType())) {
@@ -125,17 +145,19 @@ public class FriendlyFireCommon {
         return false;
     }
 
+    /** 双方队伍互相结盟即视为保护关系；{@code respectTeamRules} 开启时尊重原版"允许友伤"的队伍设置。类型按 Team 接口判定，兼容第三方模组自定义队伍（如 Goety 仆从的 DummyTeam），不假设原版 PlayerTeam。 */
     public static boolean isOnProtectedTeam(Entity attacker, Entity victim) {
 
-        final PlayerTeam attackerTeam = getEffectiveTeam(attacker);
-        final PlayerTeam victimTeam = getEffectiveTeam(victim);
+        final Team attackerTeam = getEffectiveTeam(attacker);
+        final Team victimTeam = getEffectiveTeam(victim);
         return attackerTeam != null && victimTeam != null && (attackerTeam.isAlliedTo(victimTeam) && victimTeam.isAlliedTo(attackerTeam)) && (!PetHomeConfig.respectTeamRules || !victimTeam.isAllowFriendlyFire());
     }
 
+    /** 有效队伍：优先实体自身队伍；无队伍的可驯服实体回退到主人（在线玩家优先）的队伍。 */
     @Nullable
-    public static PlayerTeam getEffectiveTeam(Entity entity) {
+    public static Team getEffectiveTeam(Entity entity) {
 
-        final PlayerTeam directTeam = entity.getTeam();
+        final Team directTeam = entity.getTeam();
 
         // 26.1: OwnableEntity 不再有 getOwnerUUID，改用 getOwnerReference
         if (directTeam == null && entity instanceof OwnableEntity ownable && ownable.getOwnerReference() != null) {
@@ -159,6 +181,7 @@ public class FriendlyFireCommon {
         return directTeam;
     }
 
+    /** 主人 UUID（{@code getOwnerReference}，26.1 已无 {@code getOwnerUUID}）；马类单独分支；无主返回 null。 */
     @Nullable
     public static UUID getOwner(Entity entity) {
 

@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.datagen.loot;
 
 import com.github.yzqdev.pethome.PetHomeConfig;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 import net.fabricmc.fabric.api.loot.v3.LootTableEvents;
 import net.fabricmc.fabric.api.loot.v3.LootTableSource;
@@ -26,6 +26,13 @@ import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
 import java.util.List;
 
 
+/**
+ * 运行时战利品注入（NeoForge 的 9 个 {@code loot_modifiers} JSON 在 Fabric 无对应机制，
+ * 改由 {@code LootTableEvents.MODIFY} 在每张表首次构建时重建）。{@code ENTRIES} 列出
+ * 11 条「原版宝箱表 → 物品/附魔书 + 配置概率」；附魔书等级取
+ * {@code UniformGenerator.between(1, maxLevel-1)}（不给满级）；被
+ * {@code enchantments.<name>_enabled} 禁用的附魔不注入。
+ */
 public final class PetHomeLootInjector {
 
     private static final String MINECRAFT = "minecraft";
@@ -35,26 +42,31 @@ public final class PetHomeLootInjector {
      * （注释里给出对应的 json 文件名）。
      */
     private static final List<Entry> ENTRIES = List.of(
-            new Entry("chests/woodland_mansion", Type.SINISTER_CARROT),
-            new Entry("chests/woodland_mansion", Type.VAMPIRISM),
-            new Entry("chests/buried_treasure", Type.BUBBLING),
-            new Entry("chests/end_city_treasure", Type.SHARE),
-            new Entry("chests/abandoned_mineshaft", Type.ORE_SCENTING),
-            new Entry("chests/ancient_city", Type.SONIC_BOOM),
-            new Entry("chests/nether_bridge", Type.BLAZING_PROTECTION),
-            new Entry("chests/abandoned_mineshaft", Type.PARALYSIS),
-            new Entry("chests/desert_pyramid", Type.PARALYSIS),
-            new Entry("chests/spawn_bonus_chest", Type.PARALYSIS),
-            new Entry("chests/abandoned_mineshaft", Type.TOUGH)
+            new Entry("chests/woodland_mansion", PHLootType.SINISTER_CARROT),
+            new Entry("chests/woodland_mansion", PHLootType.VAMPIRISM),
+            new Entry("chests/buried_treasure", PHLootType.BUBBLING),
+            new Entry("chests/end_city_treasure", PHLootType.SHARE),
+            new Entry("chests/end_city_treasure", PHLootType.VOID_CLOUD),
+            new Entry("chests/abandoned_mineshaft", PHLootType.ORE_SCENTING),
+            new Entry("chests/ancient_city", PHLootType.SONIC_BOOM),
+            new Entry("chests/nether_bridge", PHLootType.BLAZING_PROTECTION),
+            new Entry("chests/abandoned_mineshaft", PHLootType.PARALYSIS),
+            new Entry("chests/desert_pyramid", PHLootType.PARALYSIS),
+            new Entry("chests/spawn_bonus_chest", PHLootType.PARALYSIS),
+            new Entry("chests/abandoned_mineshaft", PHLootType.TOUGH),
+            // muffled：远古城市箱子出安静附魔书（此前该侧配置了 muffled_loot_chance 却没接进来，配置形同虚设）
+            new Entry("chests/ancient_city", PHLootType.MUFFLED)
     );
 
     private PetHomeLootInjector() {
     }
 
+    /** 注册 {@code LootTableEvents.MODIFY} 回调（由 {@code PetHomeMod.onInitialize} 调用）。 */
     public static void init() {
         LootTableEvents.MODIFY.register(PetHomeLootInjector::modifyLootTable);
     }
 
+    /** 只处理原版命名空间的表；命中 {@code ENTRIES} 的路径逐条 apply（同表可注入多条）。 */
     private static void modifyLootTable(ResourceKey<LootTable> key,
                                         LootTable.Builder builder,
                                         LootTableSource source,
@@ -71,27 +83,13 @@ public final class PetHomeLootInjector {
         }
     }
 
-    private static void apply(LootTable.Builder builder, HolderLookup.Provider registries, Type type) {
-        switch (type) {
-            case SINISTER_CARROT -> addItem(builder, PHItemRegistry.SINISTER_CARROT,
-                    PetHomeConfig.sinisterCarrotLootChance);
-            case BUBBLING -> addBook(builder, registries, ModEnchantments.BUBBLING,
-                    PetHomeConfig.bubblingLootChance);
-            case VAMPIRISM -> addBook(builder, registries, ModEnchantments.VAMPIRE,
-                    PetHomeConfig.vampirismLootChance);
-            case SHARE -> addBook(builder, registries, ModEnchantments.SHARE,
-                    PetHomeConfig.shareLootChance);
-            case ORE_SCENTING -> addBook(builder, registries, ModEnchantments.ORE_SCENTING,
-                    PetHomeConfig.oreScentingLootChance);
-            case SONIC_BOOM -> addBook(builder, registries, ModEnchantments.SonicBoom,
-                    PetHomeConfig.sonicBoomLootChance);
-            case BLAZING_PROTECTION -> addBook(builder, registries, ModEnchantments.BLAZING_PROTECTION,
-                    PetHomeConfig.blazingProtectionLootChance);
-            case PARALYSIS -> addBook(builder, registries, ModEnchantments.PARALYSIS,
-                    PetHomeConfig.paralysisLootChance);
-            case TOUGH -> addBook(builder, registries, ModEnchantments.TOUGH,
-                    PetHomeConfig.toughLootChance);
+    /** 按掉落类型分派：附魔书类走 {@link #addBook}，特殊物品类直接加物品池（概率读配置）。 */
+    private static void apply(LootTable.Builder builder, HolderLookup.Provider registries, PHLootType type) {
+        if (type.isEnchantedBook()) {
+            addBook(builder, registries, type.enchantmentKey(), type.chance());
+            return;
         }
+        addItem(builder, PHItemRegistry.SINISTER_CARROT, type.chance());
     }
 
     /** 按概率往表里加一个物品（独立一次 roll，对应一个 loot_modifier） */
@@ -130,18 +128,6 @@ public final class PetHomeLootInjector {
                 : ConstantValue.exactly(1.0F);
     }
 
-    private record Entry(String table, Type type) {
-    }
-
-    private enum Type {
-        SINISTER_CARROT,
-        BUBBLING,
-        VAMPIRISM,
-        SHARE,
-        ORE_SCENTING,
-        SONIC_BOOM,
-        BLAZING_PROTECTION,
-        PARALYSIS,
-        TOUGH
+    private record Entry(String table, PHLootType type) {
     }
 }

@@ -10,6 +10,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.RandomSource;
 
+/**
+ * 虹吸附魔粒子（{@code pet_home:vampire}）：目标生命值被吸取飞向宠物时的
+ * 血色光点，无重力的纯初速飞行。
+ */
 public class ParticleVampire extends SimpleAnimatedParticle {
     private ParticleVampire(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet set) {
         super(world, x, y, z, set, 0.0F);

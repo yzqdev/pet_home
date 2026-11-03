@@ -41,6 +41,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
+/**
+ * 美西螈完全驯服化（{@code ModifiedToBeTameable} + {@code IComandableMob}）：
+ * {@code <clinit>} 注入 owner/command/tamed 三个 {@code defineId}（26.1 硬约束），
+ * 驯服用热带鱼，跟随/停留走 {@code AmphibianFollowOwnerBehavior}/{@code AmphibianStayBehavior}。
+ */
 @Mixin(Axolotl.class)
 public abstract class AxolotlMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 

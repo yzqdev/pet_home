@@ -11,6 +11,11 @@ import org.joml.Matrix4f;
 
 import java.util.*;
 
+/**
+ * 连锁闪电的客户端渲染器：按 owner（实体/方块）缓存 {@code BoltOwnerData}，
+ * 每 0.33s 刷新闪电折线分形，以一次 {@code submitCustomGeometry} 批量提交全部电弧
+ * （{@code RenderTypes.lightning()}），空闲 100s 后清理 owner 缓存。
+ */
 public class LightningRender {
     private static final float REFRESH_TIME = 3.0F;
     private static final double MAX_OWNER_TRACK_TIME = (double) 100.0F;
@@ -20,7 +25,6 @@ public class LightningRender {
     private final Map<Object, BoltOwnerData> boltOwners = new Object2ObjectOpenHashMap();
 
     public void render(float partialTicks, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
-        Matrix4f matrix = poseStack.last().pose();
         Timestamp timestamp = new Timestamp(this.minecraft.level.getGameTime(), partialTicks);
         boolean refresh = timestamp.isPassed(this.refreshTimestamp, (double) 0.33333334F);
         if (refresh) {
@@ -42,6 +46,7 @@ public class LightningRender {
 
             // Render all bolts as a single submitCustomGeometry
             submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.lightning(), (pose, buffer) -> {
+                Matrix4f matrix = pose.pose();
                 data.bolts.forEach((bolt) -> bolt.render(matrix, buffer, timestamp));
             });
             if (data.bolts.isEmpty() && timestamp.isPassed(data.lastUpdateTimestamp, (double) 100.0F)) {
@@ -90,8 +95,8 @@ public class LightningRender {
             return;
         }
 
-        Matrix4f matrix = poseStack.last().pose();
         submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.lightning(), (pose, buffer) -> {
+            Matrix4f matrix = pose.pose();
             data.bolts.forEach((bolt) -> bolt.render(matrix, buffer, timestamp));
         });
     }

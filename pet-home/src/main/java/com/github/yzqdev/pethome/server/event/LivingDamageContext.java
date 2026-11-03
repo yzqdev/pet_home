@@ -4,6 +4,11 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 
 
+/**
+ * 对应 NeoForge {@code LivingDamageEvent.Post}：伤害已结算的上下文（newDamage 可继续改写，
+ * originalDamage/healthDamage 只读），由 {@code LivingEntityHurtMixin} 构造、
+ * {@code EntityHurtHandler.onEntityHurtPre/onEntityHurt} 消费。
+ */
 public final class LivingDamageContext {
 
     private final LivingEntity entity;

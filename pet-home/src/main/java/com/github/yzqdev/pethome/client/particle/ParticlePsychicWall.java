@@ -13,6 +13,10 @@ import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.RandomSource;
 import org.joml.Quaternionf;
 
+/**
+ * 念力墙粒子（{@code pet_home:psychic_wall}）：生成时用 xSpeed 传入墙面朝向，
+ * 在墙面上渲染正反两片随向旋转的贴图碎屑（固定全亮度 240）。
+ */
 public class ParticlePsychicWall extends SimpleAnimatedParticle {
     private final Direction direction;
 

@@ -6,7 +6,8 @@ import com.github.yzqdev.pethome.config.ConfigSpec;
 import com.github.yzqdev.pethome.config.DoubleValue;
 import com.github.yzqdev.pethome.config.IntValue;
 import com.github.yzqdev.pethome.config.StringListValue;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
+import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -22,6 +23,15 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+/**
+ * 全部配置项定义（文件 {@code config/pet_home.toml}，自研 ConfigSpec 框架）。
+ *
+ * <p>静态块按分组 {@code friendly_fire}/{@code general}/{@code loot}/{@code enchantments} 声明各
+ * {@code ConfigValue}；下层是公共 {@code static} 缓存字段（原始类型/集合），由
+ * {@link #refreshCachedValues()} 从 {@code ConfigValue.get()} 刷入——热路径（每 tick 判定）
+ * 直读缓存而非装箱查询。修改配置后必须调用 {@link #refreshCachedValues()}（启动时 {@link #load()}、
+ * GUI 关闭落盘时自动触发）。</p>
+ */
 public class PetHomeConfig {
 
     public static final ConfigSpec SPEC = new ConfigSpec();
@@ -59,6 +69,7 @@ public class PetHomeConfig {
     public static final BooleanValue PET_INFO_OVERLAY;
     public static final BooleanValue PET_INFO_OVERLAY_REQUIRE_SHIFT;
     public static final BooleanValue PET_INFO_OVERLAY_IGNORE_JADE;
+    public static final BooleanValue DEBUG_MODE;
 
     public static final BooleanValue PET_COMPASS_ENABLE;
     public static final BooleanValue PET_COMPASS_TELEPORT_PLAYER_TO_PET;
@@ -77,6 +88,7 @@ public class PetHomeConfig {
     public static final DoubleValue SONIC_BOOM_LOOT_CHANCE;
     public static final DoubleValue PARALYSIS_LOOT_CHANCE;
     public static final DoubleValue TOUGH_LOOT_CHANCE;
+    public static final DoubleValue MUFFLED_LOOT_CHANCE;
 
     // ===================== [enchantments] 逐个附魔开关 =====================
     /** 每个宠物附魔的启用开关，键为附魔注册名（不含命名空间），如 {@code blazing_protection} */
@@ -169,6 +181,10 @@ public class PetHomeConfig {
         PET_INFO_OVERLAY_IGNORE_JADE = BUILDER
                 .comment("true if the pet info overlay is shown even when Jade is installed")
                 .define("petInfoOverlayIgnoreJade", false);
+        // 调试日志总开关（PHModLogger.debugLog 门控）
+        DEBUG_MODE = BUILDER
+                .comment("enable debug logs for troubleshooting (key systems print diagnostic info when on)")
+                .define("debugMode", false);
         // 键名与 26.1（NeoForge）侧一致
         PET_COMPASS_ENABLE = BUILDER
                 .comment("master switch for the pet compass system")
@@ -218,6 +234,10 @@ public class PetHomeConfig {
         TOUGH_LOOT_CHANCE = BUILDER
                 .comment("percent chance of chest loot table containing tough book:")
                 .defineInRange("tough_loot_chance", 0.1D, 0.0, 1.0D);
+        // muffled（自 1.20 移植）：远古城市箱子出安静附魔书的概率
+        MUFFLED_LOOT_CHANCE = BUILDER
+                .comment("percent chance of ancient city loot table containing Muffled book:")
+                .defineInRange("muffled_loot_chance", 0.19D, 0.0, 1.0D);
         BUILDER.pop();
 
         BUILDER.push("enchantments");
@@ -233,9 +253,14 @@ public class PetHomeConfig {
     }
 
 
+    /**
+     * 反射收集 {@link PHEnchantments} 的全部 {@code ResourceKey<Enchantment>} 常量名（按字母序）。
+     * 26.1 附魔是数据驱动注册表，静态块构建配置项时注册表尚不可用，只能反射编译期常量；
+     * 结果用于生成 {@code enchantments} 节下逐附魔的 {@code <name>_enabled} 开关。
+     */
     private static Set<String> enchantmentNames() {
         Map<String, Boolean> names = new TreeMap<>();
-        for (Field field : ModEnchantments.class.getDeclaredFields()) {
+        for (Field field : PHEnchantments.class.getDeclaredFields()) {
             if (!ResourceKey.class.isAssignableFrom(field.getType())) {
                 continue;
             }
@@ -295,6 +320,7 @@ public class PetHomeConfig {
         petInfoOverlay = PET_INFO_OVERLAY.get();
         petInfoOverlayRequireShift = PET_INFO_OVERLAY_REQUIRE_SHIFT.get();
         petInfoOverlayIgnoreJade = PET_INFO_OVERLAY_IGNORE_JADE.get();
+        debugMode = DEBUG_MODE.get();
         petCompassEnable = PET_COMPASS_ENABLE.get();
         petCompassTeleportPlayerToPet = PET_COMPASS_TELEPORT_PLAYER_TO_PET.get();
         petCompassTeleportPetToPlayer = PET_COMPASS_TELEPORT_PET_TO_PLAYER.get();
@@ -311,6 +337,10 @@ public class PetHomeConfig {
         sonicBoomLootChance = SONIC_BOOM_LOOT_CHANCE.get();
         paralysisLootChance = PARALYSIS_LOOT_CHANCE.get();
         toughLootChance = TOUGH_LOOT_CHANCE.get();
+        muffledLootChance = MUFFLED_LOOT_CHANCE.get();
+
+        // 重算改造物种驯服开关表（TameableUtils.isTamed 门控用）
+        TameableUtils.refreshSpeciesGates();
     }
 
     /**
@@ -352,6 +382,7 @@ public class PetHomeConfig {
         return !enchantment.getNamespace().equals(PetHomeMod.MODID) || isEnchantEnabled(enchantment.getPath());
     }
 
+    /** {@link #isEnchantEnabled(Identifier)} 的 {@code ResourceKey} 重载。 */
     public static boolean isEnchantEnabled(ResourceKey<Enchantment> enchantment) {
         return isEnchantEnabled(enchantment.identifier());
     }
@@ -402,4 +433,8 @@ public class PetHomeConfig {
     public static double sonicBoomLootChance = 0.6D;
     public static double paralysisLootChance = 0.1D;
     public static double toughLootChance = 0.1D;
+    // muffled（自 1.20 移植）：远古城市箱子出安静附魔书的概率
+    public static double muffledLootChance = 0.19D;
+    // 调试日志总开关（PHModLogger.debugLog 门控）
+    public static boolean debugMode = false;
 }

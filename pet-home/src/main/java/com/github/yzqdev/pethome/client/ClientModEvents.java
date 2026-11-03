@@ -4,6 +4,7 @@ import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.client.render.ChainLightningRender;
 import com.github.yzqdev.pethome.client.render.LayerManager;
 import com.github.yzqdev.pethome.client.render.RecallBallRender;
+import com.github.yzqdev.pethome.client.render.RenderJukeboxFollower;
 import com.github.yzqdev.pethome.client.render.RenderFeather;
 import com.github.yzqdev.pethome.client.render.RenderGiantBubble;
 import com.github.yzqdev.pethome.client.render.RenderHighlightedBlock;
@@ -24,11 +25,17 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 
+/**
+ * 客户端注册中心（仅客户端，由 {@code EntityRegEvent} 分步调用）：
+ * 7 个实体渲染器 → 全生物宠物叠加层 → 捕网 tooltip 组件（物品栏内实体图）→
+ * 附魔书说明 tooltip（复用 {@code ServerEvent.onItemTooltip}）。
+ */
 public final class ClientModEvents {
 
     private ClientModEvents() {
     }
 
+    /** 注册 7 个自定义实体的渲染器（渔网投掷物用原版 {@code ThrownItemRenderer}）。 */
     public static void registerEntityRenderers() {
         EntityRendererRegistry.register(PHEntityRegistry.RECALL_BALL, RecallBallRender::new);
         EntityRendererRegistry.register(PHEntityRegistry.CHAIN_LIGHTNING, ChainLightningRender::new);
@@ -36,6 +43,7 @@ public final class ClientModEvents {
         EntityRendererRegistry.register(PHEntityRegistry.PSYCHIC_WALL, RenderPsychicWall::new);
         EntityRendererRegistry.register(PHEntityRegistry.HIGHLIGHTED_BLOCK, RenderHighlightedBlock::new);
         EntityRendererRegistry.register(PHEntityRegistry.FEATHER, RenderFeather::new);
+        EntityRendererRegistry.register(PHEntityRegistry.FOLLOWING_JUKEBOX, RenderJukeboxFollower::new);
         EntityRendererRegistry.register(PHEntityRegistry.NET_ENTITY, ThrownItemRenderer::new);
     }
 
@@ -55,6 +63,7 @@ public final class ClientModEvents {
                 });
     }
 
+    /** 注册捕网 tooltip 图像组件（{@code ItemMobTooltip} 数据 → {@code ClientMobTooltip} 渲染）。 */
     public static void registerTooltipComponents() {
         ClientTooltipComponentCallback.EVENT.register(data -> {
             if (data instanceof ItemMobTooltip itemMobTooltip) {

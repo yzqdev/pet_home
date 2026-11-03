@@ -9,6 +9,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 美西螈狩猎感知改造：已驯服的美西螈不再按原版规则锁定猎物，
+ * 改由 {@code ModifiedToBeTameable.isValidAttackTarget} 统一判定
+ * （停留状态下不选目标），防止宠物攻击主人的其他宠物/友军。
+ */
 @Mixin(AxolotlAttackablesSensor.class)
 public class AxolotlAttackablesSensorMixin {
 

@@ -5,6 +5,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 
+/** 效果小工具：在实体旁 10 格处召唤一道可视化闪电（连锁闪电附魔的表现层）。 */
 public class EffectUtils {
     public static void summonLightning(LivingEntity entity) {
         // 获取实体的坐标

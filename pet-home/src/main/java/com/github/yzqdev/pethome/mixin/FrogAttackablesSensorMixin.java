@@ -10,6 +10,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 青蛙狩猎感知改造：已驯服的青蛙不再按原版规则锁定猎物，改由
+ * {@code ModifiedToBeTameable.isValidAttackTarget} 统一判定（停留状态下不选目标）；
+ * 美西螈也走此传感器（{@code AxolotlAttackablesSensor} 继承它），未通过判定一律不攻击。
+ */
 @Mixin(FrogAttackablesSensor.class)
 public class FrogAttackablesSensorMixin {
 

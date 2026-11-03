@@ -11,6 +11,10 @@ import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.UUID;
 
+/**
+ * 指挥鼓方块实体：只持久化放置者 UUID（{@code NbtKeys.PLACER_UUID}），红石触发
+ * {@code DrumBlock.neighborChanged} 时用它作为指令的发行者（敲鼓玩家自己除外）。
+ */
 public class DrumBlockEntity extends BlockEntity {
 
     private UUID placerUUID;

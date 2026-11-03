@@ -21,6 +21,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 青蛙 AI 定制：{@code getActivities} 尾部追加跟随/停留两个自定义活动
+ * （跟随活动中附带 {@code ShootTongue} 捕猎）；{@code updateActivity} 头部按三态指令
+ * 切换活动——停留强制 FROG_STAY，跟随在有攻击目标时切 TONGUE 活动，否则优先 FROG_FOLLOW。
+ */
 @Mixin(FrogAi.class)
 public class FrogAiMixin {
 

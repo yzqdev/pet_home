@@ -4,7 +4,12 @@ import net.minecraft.world.item.DyeColor;
 
 import java.util.HashMap;
 
+/**
+ * 染料色 → 十六进制 RGB 的映射表：供 16 色宠物床 datagen 取各颜色底色，
+ * 也可用于客户端按染料色渲染（等价原版 {@code DyeColor.getTextColor()} 的自定义配色）。
+ */
 public class DyeColors {
+    /** 全部 16 种染料色的 RGB 值（int 0xRRGGBB）。 */
     public static final HashMap<DyeColor, Integer> COLORS = new HashMap<>() {{
         put(DyeColor.BLACK, 0x252525);
         put(DyeColor.RED, 0xeb4a39);
@@ -24,6 +29,7 @@ public class DyeColors {
         put(DyeColor.WHITE, 0xffffff);
     }};
 
+    /** 取染料色对应的 RGB 整数值。 */
     public static int fromDyeColor(DyeColor color) {
         return COLORS.get(color);
     }

@@ -4,6 +4,11 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 
 
+/**
+ * 对应 NeoForge {@code LivingIncomingDamageEvent}：{@code LivingEntity#hurtServer} HEAD
+ * 阶段的伤害上下文，可改写 {@code amount} 或取消（{@code LivingEntityHurtMixin} 构造，
+ * {@code EntityHurtHandler.onLivingDamage} 消费）。
+ */
 public final class IncomingDamage {
 
     private final LivingEntity entity;

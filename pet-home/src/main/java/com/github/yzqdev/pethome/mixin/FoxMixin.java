@@ -35,14 +35,19 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * 狐狸完全驯服化（{@code ModifiedToBeTameable} + {@code IComandableMob}）：
+ * 复用原版 trust 机制当主人；{@code <clinit>} 注入 command 访问器（26.1 硬约束）；
+ * AI 注入 {@code FollowOwner2Goal}/{@code Sit2Goal}/{@code OwnerHurtTarget2Goal}。
+ */
 @Mixin(Fox.class)
 public abstract class FoxMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 
     @Shadow @Final private static EntityDataAccessor<Optional<EntityReference<LivingEntity>>> DATA_TRUSTED_ID_0;
     @Shadow @Final private static EntityDataAccessor<Optional<EntityReference<LivingEntity>>> DATA_TRUSTED_ID_1;
     @Shadow abstract void addTrustedEntity(EntityReference<LivingEntity> reference);
-    @Shadow public abstract void setSitting(boolean p_28611_);
-    @Shadow abstract void setSleeping(boolean p_28627_);
+    @Shadow public abstract void setSitting(boolean sitting);
+    @Shadow abstract void setSleeping(boolean sleeping);
 
     // 26.1：defineId 必须在 <clinit> 完成（实体构造时 Builder 容量=已注册访问器数，晚注册会 AIOOBE）；
     // 且调用者类必须是实体类、实体类上不能有 @MixinMerged 的访问器字段——

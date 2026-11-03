@@ -10,6 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.RandomSource;
 
+/** 宠物/醉酒生物困惑时的问号粒子（{`pet_home:question_mark_particle`}）。 */
 public class ParticleQuestionMark extends SimpleAnimatedParticle {
     private ParticleQuestionMark(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet set) {
         super(world, x, y, z, set, 0.0F);

@@ -12,6 +12,10 @@ import net.minecraft.world.level.block.Block;
 import java.util.function.Consumer;
 
 
+/**
+ * 宠物床方块物品（16 色各自注册，见 {@code PHBlockRegistry} 静态块）：
+ * 销毁时不掉落自身，tooltip 附宠物床说明行。
+ */
 public class PetbedItem extends BlockItem {
     private final DyeColor color;
     private final Block block;

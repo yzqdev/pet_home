@@ -11,11 +11,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+/**
+ * 配置界面单条目（标签/tooltip/读写访问器/恢复默认），按值类型四个子类对应四种控件：
+ * 布尔=开关按钮、整数/双精度=滑条、字符串列表=逗号分隔文本框。写入直接落到
+ * {@code ConfigValue.set}（标 dirty，关闭界面时统一落盘）。
+ */
 public abstract class ConfigEntry {
     /** 每行高度 */
     public static final int ROW_HEIGHT = 24;
 
     public final String label;
+    /** 悬停 tooltip 的语言键（可空） */
     @Nullable
     public final String tooltip;
 
@@ -70,6 +76,7 @@ public abstract class ConfigEntry {
         private final DoubleValue value;
         private final double min;
         private final double max;
+        /** true 时按百分比显示（战利品概率类配置） */
         private final boolean percent;
 
         public DoubleEntry(String label, @Nullable String tooltip, DoubleValue value, double min, double max, boolean percent) {
@@ -163,6 +170,7 @@ public abstract class ConfigEntry {
             return list == null ? "" : String.join(", ", list);
         }
 
+        /** 列表 ↔ 文本框的双向转换（空段丢弃，非法项由 {@code StringListValue} 的 sanitize/validator 过滤）。 */
         public void fromText(String text) {
             List<String> list = new ArrayList<>();
             for (String part : text.split(",")) {

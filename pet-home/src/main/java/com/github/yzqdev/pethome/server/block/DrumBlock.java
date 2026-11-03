@@ -38,6 +38,12 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.function.Predicate;
 
+/**
+ * 指挥鼓：右键（非潜行）把方块状态 {@code command} 在 0/1/2 间循环（游走/停留/跟随），
+ * 并对 65×65×65 范围内放置者自己的宠物批量下达同一条指令（受影响的宠物发光 3 秒）。
+ * 支持红石触发（{@code neighborChanged}，按 {@code POWERED} 上升沿执行一次）；
+ * {@code fallOn} 踩踏只播音效不下指令。放置者 UUID 存在方块实体里供红石触发取用。
+ */
 public class DrumBlock extends BaseEntityBlock {
 
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
@@ -92,6 +98,12 @@ public class DrumBlock extends BaseEntityBlock {
         }
     }
 
+    /**
+     * 对 {@code issuer}（放置者/敲鼓玩家）的宠物批量下指令：{@code IComandableMob} 直接
+     * {@code setCommand}；原版 {@code TamableAnimal} 同步坐下/起立姿态（指令 0 不动原版宠物）。
+     *
+     * @return 实际受影响的宠物数（用于玩家提示）
+     */
     public int issueCommand(Level level, BlockPos pos, int command, UUID issuer) {
         int count = 0;
         if (issuer != null) {
@@ -119,6 +131,7 @@ public class DrumBlock extends BaseEntityBlock {
     }
 
     // 26.1：neighborChanged 新增 Orientation 参数
+    /** 红石上升沿：以放置者身份执行一次 {@link #issueCommand}（当前方块状态里的 command）并更新 POWERED。 */
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, @Nullable net.minecraft.core.Direction orientation, boolean movedByPiston) {
         boolean flag = level.hasNeighborSignal(pos);
         if (flag != state.getValue(POWERED)) {

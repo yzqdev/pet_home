@@ -20,6 +20,12 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
 
+/**
+ * 巨型泡泡（泡泡控制附魔的载体）：乘客被托在泡泡底部并整体上浮（水中更快），
+ * {@code popsIn} 倒计时结束或被投掷物/虚空伤害击中时 {@code pop()}（音效+GIANT_POP 粒子+
+ * 弹出乘客）。无重力、免伤（仅上述两类伤害有效）；"泡泡内不能下车"由
+ * {@code ServerEvent.onEntityMount}（EntityMountMixin 调入）取消下车实现。
+ */
 public class GiantBubbleEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> POPS_IN = SynchedEntityData.defineId(GiantBubbleEntity.class, EntityDataSerializers.INT);
@@ -42,6 +48,7 @@ public class GiantBubbleEntity extends Entity {
         }
     }
 
+    /** 乘客定位：坐在泡泡包围盒底部略下 0.1 格，跟随泡泡上浮。 */
     @Override
     public void positionRider(Entity entity, MoveFunction moveFunction) {
         moveFunction.accept(entity, this.getX(), this.getBoundingBox().minY - 0.1, this.getZ());

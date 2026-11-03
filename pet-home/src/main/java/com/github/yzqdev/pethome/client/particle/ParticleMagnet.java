@@ -10,6 +10,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.RandomSource;
 
+/**
+ * 磁力附魔粒子（{@code pet_home:magnet}）：掉落物被吸向宠物途中的吸附光点，
+ * 沿初速度飞行并受重力影响。
+ */
 public class ParticleMagnet extends SimpleAnimatedParticle {
     private ParticleMagnet(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet set) {
         super(world, x, y, z, set, 0.0F);

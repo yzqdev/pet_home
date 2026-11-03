@@ -23,6 +23,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+
+/**
+ * 驯兽师村民（animal_tamer）1-5 级交易的数据生成：26.1 已无 VillagerTradesEvent，
+ * 改为 bootstrap {@code VillagerTrade} 注册表 + 按等级生成 {@code TradeSet}（引用 villager_trade 标签选交易）。
+ * 附魔书/附魔项圈交易用 {@code EnchantRandomlyFunction} 从可交易附魔标签（{@code PHTags.TradableEnchantmentKey}）随机取。
+ */
 public class PHVillagerTrade {
 
     // --- VillagerTrade keys ---
@@ -77,7 +83,7 @@ public class PHVillagerTrade {
     }
 
     public static void bootstrapVillagerTrade(BootstrapContext<VillagerTrade> context) {
-        // 1.20/1.21 侧 SellingItemTrade：绿宝石价格 → N 件商品；默认 maxUses 12、priceMultiplier 0.05
+
         sell(context, TAMER_1_BONE, 3, Items.BONE, 6, 6, 1);
         sell(context, TAMER_1_EGG, 3, Items.EGG, 6, 6, 1);
         sell(context, TAMER_1_COD, 2, Items.COD, 6, 12, 1);
@@ -155,12 +161,12 @@ public class PHVillagerTrade {
         ));
     }
 
-    // 随机宠物附魔书：对齐原版图书匠 "enchant_randomly + filtered" 的写法，附魔池为驯兽师可售附魔 tag
+
     private static void sellBook(BootstrapContext<VillagerTrade> context, ResourceKey<VillagerTrade> key,
                                  int emeralds, int maxUses, int xp) {
         List<LootItemFunction> modifiers = new ArrayList<>();
         modifiers.add(EnchantRandomlyFunction.randomEnchantment()
-                .withOneOf(context.lookup(Registries.ENCHANTMENT).getOrThrow(ModTags.TradableEnchantmentKey))
+                .withOneOf(context.lookup(Registries.ENCHANTMENT).getOrThrow(PHTags.TradableEnchantmentKey))
                 .allowingIncompatibleEnchantments()
                 .build());
         context.register(key, new VillagerTrade(
@@ -176,13 +182,13 @@ public class PHVillagerTrade {
         ));
     }
 
-    // 附魔项圈：给项圈标签随机附上 N 条宠物附魔（对齐 1.20 EnchantItemTrade 的 enchantmentCount）
+
     private static void sellEnchantedCollar(BootstrapContext<VillagerTrade> context, ResourceKey<VillagerTrade> key,
                                             int emeralds, int enchantmentCount, int maxUses, int xp) {
         List<LootItemFunction> modifiers = new ArrayList<>();
         for (int i = 0; i < enchantmentCount; i++) {
             modifiers.add(EnchantRandomlyFunction.randomEnchantment()
-                    .withOneOf(context.lookup(Registries.ENCHANTMENT).getOrThrow(ModTags.TradableEnchantmentKey))
+                    .withOneOf(context.lookup(Registries.ENCHANTMENT).getOrThrow(PHTags.TradableEnchantmentKey))
                     .allowingIncompatibleEnchantments()
                     .build());
         }

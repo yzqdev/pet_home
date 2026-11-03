@@ -3,7 +3,12 @@
   "package": "com.github.yzqdev.pethome.mixin",
   "compatibilityLevel": "JAVA_25",
   "minVersion": "0.8",
-  "client": [],
+      "client": [
+    "ParticleEngineAccessor",
+    "SpriteContentsAccessor",
+    "client.ParticleEngineExtractMixin",
+    "client.ParticleEngineGroupMixin"
+  ],
   "mixins": [
     "AbstractHorseMixin",
     "AgeableMobMixin",
@@ -13,6 +18,7 @@
     "AxolotlAttackablesSensorMixin",
     "AxolotlMixin",
     "CatMixin",
+    "EntityInvoker",
     "EntityMixin",
     "EntityMountMixin",
     "EntityTeleportMixin",
@@ -38,8 +44,10 @@
     "RabbitAccessor",
     "RabbitMixin",
     "RavagerMixin",
+    "SculkSensorBlockMixin",
     "ShootTongueMixin",
     "TameableAnimalMixin",
+    "VillagerMixin",
     "WolfMixin"
   ],
   "injectors": {

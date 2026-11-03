@@ -25,12 +25,17 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.function.Predicate;
 
+/**
+ * 宠物床方块实体：tick 处理复活流。复活请求来自 {@code PHWorldData.respawnRequestList}
+ * （按本床维度+坐标过滤），次日清晨（主世界时钟 time==1）消费。
+ */
 public class PetBedBlockEntity extends BlockEntity {
 
     public PetBedBlockEntity(BlockPos pos, BlockState state) {
         super(PHTileEntityRegistry.PET_BED, pos, state);
     }
 
+    /** 方块实体 tick（仅服务端挂 ticker）：主世界时钟 {@code time == 1}（次日清晨第一 tick）时，取出本床的全部复活请求逐个 {@link #addAndRemoveEntity} 复活，成功的移除请求。 */
     public static void tick(Level level, BlockPos pos, BlockState state, PetBedBlockEntity blockEntity) {
         long time = level.getOverworldClockTime() % 24000L;
         if (time == 1) {
@@ -46,6 +51,7 @@ public class PetBedBlockEntity extends BlockEntity {
         }
     }
 
+    /** 清空本床的全部复活请求（主人拆床时由 {@code ServerEvent.onBlockBreak} 调用），每条给玩家发"永别"提示。 */
     public void removeAllRequestsFor(@Nullable Player message) {
         PHWorldData data = PHWorldData.get(level);
         if (data != null) {
@@ -59,6 +65,11 @@ public class PetBedBlockEntity extends BlockEntity {
         }
     }
 
+    /**
+     * 按存档 NBT 复活一只宠物：{@code EntityType.create} 新实体 → {@code Entity#load} 整份 NBT
+     * （26.1 走 {@code TagValueInput}，PetId 随之带回）→ 满血/自定义名/按床朝向转身/置停留坐姿
+     * → 生成并通知主人。失败（类型不存在等）返回 false，请求保留。
+     */
     private static boolean addAndRemoveEntity(Level level, BlockPos pos, Direction dir, RespawnRequest request) {
         EntityType type = request.getEntityType();
         if (type != null) {
@@ -105,6 +116,7 @@ public class PetBedBlockEntity extends BlockEntity {
         return false;
     }
 
+    /** 床被破坏时：清掉附近 10 格内绑定到本床的宠物的床绑定，并通知各主人。 */
     public void resetBedsForNearbyPets() {
         Predicate<Entity> pet = (animal) -> TameableUtils.isTamed(animal) && TameableUtils.getPetBedPos((LivingEntity) animal) != null && TameableUtils.getPetBedPos((LivingEntity) animal).equals(this.getBlockPos());
         List<LivingEntity> list = level.getEntitiesOfClass(LivingEntity.class, new AABB(this.getBlockPos().offset(-10, -5, -10).getCenter(), this.getBlockPos().offset(10, 5, 10).getCenter()), EntitySelector.NO_SPECTATORS.and(pet));

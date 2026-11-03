@@ -30,6 +30,14 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
+/**
+ * 念力墙实体（PSYCHIC_WALL 附魔生成）：一面 {@code blockWidth} 见方、朝向
+ * {@code wallDirection} 的可推挡墙，寿命 {@code lifespan}（等级×100 tick，创造者死亡后
+ * 压缩到 20 tick）。每 tick 把碰到的非友方实体沿法线推开；投射物被反转 180° 弹回
+ * （友方发射的 {@code isFiredByAlly} 不弹），同一实体 15 tick 内只触发一次特效。
+ * 包围盒由方向/宽度动态计算（出现/消失 10 tick 内按比例缩放）；免伤、无重力。
+ * 自定义序列化器：CREATOR_UUID 用 {@code OPTIONAL_UUID}，序列化见 read/addAdditionalSaveData。
+ */
 public class PsychicWallEntity extends Entity {
 
     protected static final EntityDataAccessor<Direction> DIRECTION = SynchedEntityData.defineId(PsychicWallEntity.class, EntityDataSerializers.DIRECTION);
@@ -46,16 +54,23 @@ public class PsychicWallEntity extends Entity {
     }
 
 
+    /**
+     * 核心 tick：出现/消失缩放包围盒 → 环境音循环 → 创造者状态同步（死亡则缩短寿命）→
+     * 推开/弹回碰撞实体（每实体 15 tick 冷却）→ 寿命倒数。
+     */
     public void tick() {
         super.tick();
+        // 出现/消失各 10 tick 内包围盒按比例缩放，做出"墙长出/消散"的视觉过渡
         if (this.tickCount <= 10 || this.getLifespan() <= 10) {
             this.setBoundingBox(this.makeBoundingBox(this.position()));
         } else {
+            // 每 15 tick 播放一次环境嗡鸣（随机音调 0.9~1.2）
             if (soundLoop % 15 == 0) {
                 this.playSound(PHSoundRegistry.PSYCHIC_WALL, 1, random.nextFloat() * 0.3F + 0.9F);
             }
             soundLoop++;
         }
+        // 服务端：把创造者实体 id 同步给客户端；创造者死亡后寿命压到 20 tick（墙随主人消散）
         if (!this.level().isClientSide() && this.getCreatorId() != null) {
             Entity creator = this.getCreator();
             if (creator != null) {
@@ -65,6 +80,7 @@ public class PsychicWallEntity extends Entity {
                 }
             }
         }
+        // 墙本体固定不动，只结算与它碰撞的实体
         this.setDeltaMovement(Vec3.ZERO);
         float wX = Math.abs(this.getWallDirection().getStepX());
         float wY = Math.abs(this.getWallDirection().getStepY());
@@ -73,14 +89,17 @@ public class PsychicWallEntity extends Entity {
         List<Entity> colliders = level().getEntities(this, collisionAABB);
         float backISay = this.getWallDirection().getAxis() == Direction.Axis.Y ? -0.6F : -0.1F;
         for (Entity collider : colliders) {
+            // 友方（同主人/同盟）直接穿墙，其余实体沿墙法线推开
             if (!isSameTeam(collider)) {
                 collider.push(getWallDirection().getStepX() * 0.25F, getWallDirection().getStepY() * 0.25F, getWallDirection().getStepZ() * 0.25F);
+                // 每实体只在首次接触时结算特效/弹回（冷却 15 tick 内不重复触发）
                 if (!deflectedEntities.containsKey(collider.getUUID())) {
                     boolean flag = true;
                     if (collider instanceof Projectile) {
                         if (isFiredByAlly((Projectile) collider)) {
                             flag = false;
                         } else {
+                            // 敌方投射物速度反转并翻转朝向，实现"弹回发射者"
                             collider.setDeltaMovement(collider.getDeltaMovement().scale(backISay));
                             collider.setYRot(collider.getYRot() + 180);
                             collider.setXRot(collider.getXRot() + 180);
@@ -107,6 +126,7 @@ public class PsychicWallEntity extends Entity {
                 }
             }
         }
+        // 弹回冷却逐 tick 衰减，过期后允许再次触发
         if (!deflectedEntities.isEmpty()) {
             for (UUID uuid : deflectedEntities.keySet()) {
                 deflectedEntities.put(uuid, deflectedEntities.get(uuid) - 1);
@@ -120,6 +140,7 @@ public class PsychicWallEntity extends Entity {
         }
     }
 
+    /** 投射物是否由墙的友方（同主人/同盟）发射——友方的投射物穿过，敌方的弹回。 */
     private boolean isFiredByAlly(Projectile projectile) {
         Entity owner = this.getCreator();
         if (owner instanceof LivingEntity && projectile.getOwner() != null) {
@@ -205,6 +226,7 @@ public class PsychicWallEntity extends Entity {
     }
 
 
+    /** 创造者解析：服务端按 UUID 从 {@code ServerLevel} 查；客户端用同步来的网络 id 查。 */
     public Entity getCreator() {
         if (!level().isClientSide()) {
             UUID id = getCreatorId();
@@ -223,6 +245,10 @@ public class PsychicWallEntity extends Entity {
         return !this.isSameTeam(entity);
     }
 
+    /**
+     * 按朝向与方块宽度动态计算包围盒：与墙面平行的两个轴各扩 half 宽度
+     * （half = blockWidth/2 × 出现/消失缩放系数），法线轴保持 0.3 厚度。
+     */
     protected AABB makeBoundingBox(Vec3 position) {
         Direction direction2 = this.getWallDirection().getOpposite();
         float scale = Math.min(10, Math.min(this.getLifespan(), this.tickCount)) / 10F;
@@ -259,8 +285,8 @@ public class PsychicWallEntity extends Entity {
         return new AABB(position.x + minX, position.y + minY, position.z + minZ, position.x + maxX, position.y + maxY, position.z + maxZ);
     }
 
-    public void setPos(double p_20210_, double p_20211_, double p_20212_) {
-        this.setPosRaw(p_20210_, p_20211_, p_20212_);
+    public void setPos(double x, double y, double z) {
+        this.setPosRaw(x, y, z);
         this.setBoundingBox(this.makeBoundingBox(this.position()));
     }
 
@@ -272,6 +298,7 @@ public class PsychicWallEntity extends Entity {
     }
 
 
+    /** 实体与墙的创造者是否友方（同主人或原版同盟）；友方单位可穿过念力墙。 */
     public boolean isSameTeam(Entity entity) {
         Entity owner = this.getCreator();
         return owner instanceof LivingEntity && (TameableUtils.hasSameOwnerAs((LivingEntity) owner, entity) || owner.isAlliedTo(entity));

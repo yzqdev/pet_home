@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.mixin;
 
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.server.entity.PHActivityRegistry;
 import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.util.TameableUtils;
@@ -21,6 +21,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 美西螈 AI 定制：{@code getActivities} 尾部追加跟随/停留两个自定义活动
+ * （{@code AmphibianFollowOwnerBehavior}/{@code AmphibianStayBehavior}）；
+ * {@code updateActivity} 头部按三态指令切换活动（原版 PLAY_DEAD/FIGHT 优先级保留）；
+ * 三个速度取值方法乘上"迅捷"附魔加成。
+ */
 @Mixin(AxolotlAi.class)
 public class AxolotlAiMixin {
 
@@ -77,7 +83,7 @@ public class AxolotlAiMixin {
             cancellable = true
     )
     private static void di_getSpeedModifierChasing(LivingEntity axolotl, CallbackInfoReturnable<Float> cir) {
-        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, ModEnchantments.SPEEDSTER);
+        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantments.SPEEDSTER);
         cir.setReturnValue(axolotl.isInWaterOrRain() ? 0.6F + speedsterLevel * 0.05F : 0.15F + speedsterLevel * 0.1F);
     }
 
@@ -90,7 +96,7 @@ public class AxolotlAiMixin {
             cancellable = true
     )
     private static void di_getSpeedModifierFollowingAdult(LivingEntity axolotl, CallbackInfoReturnable<Float> cir) {
-        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, ModEnchantments.SPEEDSTER);
+        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantments.SPEEDSTER);
         cir.setReturnValue(axolotl.isInWaterOrRain() ? 0.6F + speedsterLevel * 0.05F : 0.15F + speedsterLevel * 0.1F);
     }
 
@@ -103,7 +109,7 @@ public class AxolotlAiMixin {
             cancellable = true
     )
     private static void di_getSpeedModifier(LivingEntity axolotl, CallbackInfoReturnable<Float> cir) {
-        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, ModEnchantments.SPEEDSTER);
+        int speedsterLevel = TameableUtils.getEnchantLevel(axolotl, PHEnchantments.SPEEDSTER);
         cir.setReturnValue(axolotl.isInWaterOrRain() ? 0.5F + speedsterLevel * 0.05F : 0.15F + speedsterLevel * 0.15F);
     }
 

@@ -13,6 +13,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * {@code FollowParentGoal} 适配三态指令：处于停留（1）/跟随（2）状态的
+ * 幼年宠物不再追随父母（"游走"0 保持原版行为）。
+ */
 @Mixin(FollowParentGoal.class)
 public class FollowParentGoalMixin {
 

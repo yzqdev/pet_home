@@ -8,6 +8,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
+/**
+ * {@code Player.doSweepAttack} 注入（友军伤害保护）：横扫攻击的 {@code isAlliedTo}
+ * 判定扩为"目标也是我的宠物"——横扫不会误伤宠物；{@code require = 0} 保证
+ * 签名变化时只降级不崩溃。
+ */
 @Mixin(Player.class)
 public class PlayerMixin {
 

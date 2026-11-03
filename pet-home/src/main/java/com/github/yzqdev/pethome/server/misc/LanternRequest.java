@@ -10,6 +10,13 @@ import net.minecraft.world.level.Level;
 
 import java.util.UUID;
 
+/**
+ * 灯笼收容请求条目：宠物随区块卸载消失（{@code ServerEvent.onEntityLeaveWorld} 且
+ * {@code shouldUnloadToLantern} 为真）时写入 {@code PHWorldData}，由任意
+ * {@code WaywardLanternBlockEntity} 消费——按 {@link #dimension} 去宠物实际所在维度找回。
+ * Codec 里 Dimension 为可选字段（{@code PHWorldData.LANTERN_REQUEST_CODEC}），
+ * 旧档缺失时按主世界处理。
+ */
 public class LanternRequest {
     private String entityType;
     private long timestamp;
@@ -61,6 +68,7 @@ public class LanternRequest {
         return this.dimension;
     }
 
+    /** 收容时的维度 id → {@code ResourceKey<Level>}（灯笼跨维度找宠物用）。 */
     public ResourceKey<Level> getDimensionKey() {
         return ResourceKey.create(Registries.DIMENSION, Identifier.parse(this.dimension));
     }

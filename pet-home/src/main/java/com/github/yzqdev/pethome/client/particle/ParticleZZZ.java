@@ -10,6 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.RandomSource;
 
+/** 宠物进床睡觉的 ZZZ 粒子（{`pet_home:zzz`}，向上飘的动画贴图序列）。 */
 public class ParticleZZZ extends SimpleAnimatedParticle {
     private ParticleZZZ(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet set) {
         super(world, x, y, z, set, 0.0F);

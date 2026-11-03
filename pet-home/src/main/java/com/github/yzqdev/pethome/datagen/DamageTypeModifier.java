@@ -7,6 +7,10 @@ import net.minecraft.world.damagesource.DamageScaling;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.damagesource.DeathMessageType;
 
+/**
+ * 伤害类型数据生成：注册虹吸附魔专用的 {@code pet_home:siphon} 伤害类型
+ * （不受伤害缩放、无死亡消息附加）。
+ */
 public class DamageTypeModifier {
     public static void bootstrap(BootstrapContext<DamageType> bootstrap) {
 

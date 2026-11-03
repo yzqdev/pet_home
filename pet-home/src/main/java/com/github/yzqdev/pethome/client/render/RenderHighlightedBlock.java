@@ -12,13 +12,16 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
-import org.joml.Matrix4f;
+import net.minecraft.util.Unit;
+
+
 
 
 public class RenderHighlightedBlock extends EntityRenderer<HighlightedBlockEntity, EntityRenderState> {
 
     private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "textures/highlighted_block.png");
-    private final HighlightedBlockModel highlightedBlockModel = new HighlightedBlockModel();
+    private final HighlightedBlockModel highlightedBlockModel =
+            new HighlightedBlockModel(HighlightedBlockModel.createBodyLayer().bakeRoot());
 
     public RenderHighlightedBlock(EntityRendererProvider.Context context) {
         super(context);
@@ -42,13 +45,9 @@ public class RenderHighlightedBlock extends EntityRenderer<HighlightedBlockEntit
         super.submit(state, poseStack, submitNodeCollector, camera);
         poseStack.pushPose();
         poseStack.translate(0, 0.5F, 0);
-        // 26.1: renderToBuffer 只渲染空的占位根 ModelPart，Tabula 风格模型须走 renderParts
-        // submitCustomGeometry 回调延迟执行且只携带提交时的 Pose 快照，回调内不得使用外层 poseStack
-        submitNodeCollector.submitCustomGeometry(poseStack, RenderTypes.outline(TEXTURE), (pose, buffer) -> {
-            PoseStack snapshot = new PoseStack();
-            snapshot.mulPose(new Matrix4f(pose.pose()));
-            this.highlightedBlockModel.renderParts(snapshot, buffer, state.lightCoords, OverlayTexture.NO_OVERLAY);
-        });
+        // 原版 ModelPart 体系：submitModel 延迟绘制（setupAnim 由 ModelFeatureRenderer 调用，静态模型为空实现）
+        submitNodeCollector.submitModel(this.highlightedBlockModel, Unit.INSTANCE, poseStack,
+                RenderTypes.outline(TEXTURE), state.lightCoords, OverlayTexture.NO_OVERLAY, 0, null);
         poseStack.popPose();
     }
 }

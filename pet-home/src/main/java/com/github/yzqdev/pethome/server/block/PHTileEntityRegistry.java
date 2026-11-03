@@ -10,6 +10,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 
+/**
+ * 方块实体注册：宠物床（对应 16 个 {@code PET_BED_BLOCKS} 全集）、指挥鼓、往生灯笼三种，
+ * Fabric 原生 {@code Registry.register}（立即注册）。
+ */
 public class PHTileEntityRegistry {
 
     private static Identifier id(String name) {
@@ -24,6 +28,7 @@ public class PHTileEntityRegistry {
     public static final BlockEntityType<WaywardLanternBlockEntity> WAYWARD_LANTERN = Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, id("wayward_lantern"),
             new BlockEntityType<>(WaywardLanternBlockEntity::new, Set.of(PHBlockRegistry.WAYWARD_LANTERN)));
 
+    /** 空实现：仅用于触发本类静态初始化（注册发生在这时）。 */
     public static void init() {
     }
 }

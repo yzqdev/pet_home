@@ -10,6 +10,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.RandomSource;
 
+/**
+ * 简易气泡粒子（{@code pet_home:simple_bubble}）：宠物潜水等场景冒出的
+ * 通用小气泡，沿初速度上浮并受重力影响。
+ */
 public class ParticleSimpleBubble extends SimpleAnimatedParticle {
     private ParticleSimpleBubble(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet set) {
         super(world, x, y, z, set, 0.0F);

@@ -20,6 +20,14 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 为 NeoForge 事件提供<b>同名</b>上下文类（{@code ServerAboutToStartEvent}、{@code LevelTickEvent}、
+ * {@code EntityJoinLevelEvent}、{@code LivingDropsEvent}、{@code EntityTeleportEvent}、
+ * {@code ProjectileImpactEvent}、{@code EntityMountEvent}、{@code ExplosionEvent}、
+ * {@code ItemExpireEvent}、{@code ItemTooltipEvent}、{@code EntityTravelToDimensionEvent} 等）。
+ * {@code ServerEvent} 静态导入后，方法体与 NeoForge 版几乎一致——每个内部类的注释标明
+ * 由哪个 Fabric 回调或 Mixin 触发。
+ */
 public final class ServerEventContexts {
 
     private ServerEventContexts() {
@@ -82,11 +90,18 @@ public final class ServerEventContexts {
     public static final class EntityTravelToDimensionEvent {
         private final Entity entity;
         private final ResourceKey<Level> dimension;
+        /** 传送前的原维度：AFTER_ENTITY_CHANGE_LEVEL 触发时 entity.level() 已是新维度，携宠查询用此字段（known-issues 2026-11-03）。 */
+        private final Level fromLevel;
         private boolean canceled;
 
-        public EntityTravelToDimensionEvent(Entity entity, ResourceKey<Level> dimension) {
+        public EntityTravelToDimensionEvent(Entity entity, ResourceKey<Level> dimension, Level fromLevel) {
             this.entity = entity;
             this.dimension = dimension;
+            this.fromLevel = fromLevel;
+        }
+
+        public Level getFromLevel() {
+            return fromLevel;
         }
 
         public Entity getEntity() {

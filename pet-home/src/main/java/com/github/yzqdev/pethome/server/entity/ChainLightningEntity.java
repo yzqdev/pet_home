@@ -21,6 +21,13 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 链锁闪电效果实体（泡泡控制之外的攻击特效，由 {@code EntityHurtHandler} 在宠物攻击时生成）：
+ * 定位在 from→to 的目标身上并造成 3 点闪电伤害，随后在 8 格内寻找下一个"非创造者、
+ * 非同主人/同盟、未电过、有视线"的 Mob 生成子闪电（{@code chainsLeft} 递减，构成链式跳击），
+ * 倒计时 {@code DIES_IN}（默认 5 tick）后消失。免伤实体（{@code hurtServer} 恒 false）。
+ * 链路信息（creator/from/to/chainsLeft）走 SynchedEntityData 同步，客户端只画闪电。
+ */
 public class ChainLightningEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> CREATOR_ID = SynchedEntityData.defineId(ChainLightningEntity.class, EntityDataSerializers.INT);
@@ -110,6 +117,7 @@ public class ChainLightningEntity extends Entity {
         }
     }
 
+    /** 生成下一环子闪电：继承已电实体名单（防回跳）与剩余跳数，from 指向本实体。 */
     private void createLightningAt(Entity closestValid) {
         ChainLightningEntity child = PHEntityRegistry.CHAIN_LIGHTNING.create(this.level(), EntitySpawnReason.TRIGGERED);
         child.previouslyShocked = new ArrayList<>(previouslyShocked);
@@ -175,12 +183,12 @@ public class ChainLightningEntity extends Entity {
     }
 
     @Override
-    protected void readAdditionalSaveData(ValueInput p_20052_) {
+    protected void readAdditionalSaveData(ValueInput input) {
 
     }
 
     @Override
-    protected void addAdditionalSaveData(ValueOutput p_20139_) {
+    protected void addAdditionalSaveData(ValueOutput output) {
 
     }
 }

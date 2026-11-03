@@ -21,6 +21,10 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 
+/**
+ * 羽毛（羽毛钓竿钩）实体渲染器：渲染羽毛物品本体 + 抛竿主人的手臂/身体姿态
+ * （借钓鱼钩的动画逻辑，把主人动作同步进 {@code FeatherRenderState}）。
+ */
 public class RenderFeather extends EntityRenderer<FeatherEntity, FeatherRenderState> {
 
 
@@ -145,21 +149,21 @@ public class RenderFeather extends EntityRenderer<FeatherEntity, FeatherRenderSt
         }
     }
 
-    private static float fraction(int p_114691_, int p_114692_) {
-        return (float) p_114691_ / (float) p_114692_;
+    private static float fraction(int currentStep, int totalSteps) {
+        return (float) currentStep / (float) totalSteps;
     }
 
-    private static void stringVertex(float p_174119_, float p_174120_, float p_174121_, VertexConsumer p_174122_, PoseStack.Pose p_174123_, float p_174124_, float p_174125_, float width) {
-        float f = p_174119_ * p_174124_;
-        float f1 = p_174120_ * (p_174124_ * p_174124_ + p_174124_) * 0.5F + 0.25F;
-        float f2 = p_174121_ * p_174124_;
-        float f3 = p_174119_ * p_174125_ - f;
-        float f4 = p_174120_ * (p_174125_ * p_174125_ + p_174125_) * 0.5F + 0.25F - f1;
-        float f5 = p_174121_ * p_174125_ - f2;
+    private static void stringVertex(float lineOffsetX, float lineOffsetY, float lineOffsetZ, VertexConsumer stringBuffer, PoseStack.Pose stringPose, float fractionStart, float fractionEnd, float width) {
+        float f = lineOffsetX * fractionStart;
+        float f1 = lineOffsetY * (fractionStart * fractionStart + fractionStart) * 0.5F + 0.25F;
+        float f2 = lineOffsetZ * fractionStart;
+        float f3 = lineOffsetX * fractionEnd - f;
+        float f4 = lineOffsetY * (fractionEnd * fractionEnd + fractionEnd) * 0.5F + 0.25F - f1;
+        float f5 = lineOffsetZ * fractionEnd - f2;
         float f6 = Mth.sqrt(f3 * f3 + f4 * f4 + f5 * f5);
         f3 /= f6;
         f4 /= f6;
         f5 /= f6;
-        p_174122_.addVertex(p_174123_.pose(), f, f1, f2).setColor(0, 0, 0, 255).setNormal(p_174123_, f3, f4, f5).setLineWidth(width);
+        stringBuffer.addVertex(stringPose.pose(), f, f1, f2).setColor(0, 0, 0, 255).setNormal(stringPose, f3, f4, f5).setLineWidth(width);
     }
 }

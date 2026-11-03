@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.mixin;
 
 import com.github.yzqdev.pethome.PetHomeConfig;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
+import com.github.yzqdev.pethome.datagen.PHEnchantments;
 import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.util.TameableUtils;
 import net.minecraft.world.entity.EntityType;
@@ -21,6 +21,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
+/**
+ * 马类驯服化（{@code ModifiedToBeTameable} 接入 {@code AbstractHorse}）：
+ * 复用原版驯服状态与 {@code EntityReference} 主人存储（26.1 适配按 UUID 存取）；
+ * {@code tickRidden} 头部注入让携带"两栖"附魔的马可以驮主人在水下游（复刻原版陆地骑行控制，
+ * 跳跃蓄力换算成下沉量）；配置 {@code tameableHorse} 才视为"可驯服"。
+ */
 @Mixin(AbstractHorse.class)
 public abstract class AbstractHorseMixin extends Animal implements ModifiedToBeTameable {
 
@@ -65,7 +71,7 @@ public abstract class AbstractHorseMixin extends Animal implements ModifiedToBeT
             cancellable = true
     )
     private void di_tickRidden(Player rider, Vec3 vec3, CallbackInfo ci) {
-        if (this.isAlive() && this.isVehicle() && this.isInWaterOrRain() && TameableUtils.hasEnchant(this, ModEnchantments.AMPHIBIOUS)) {
+        if (this.isAlive() && this.isVehicle() && this.isInWaterOrRain() && TameableUtils.hasEnchant(this, PHEnchantments.AMPHIBIOUS)) {
             LivingEntity livingentity = (LivingEntity) this.getControllingPassenger();
             this.setYRot(livingentity.getYRot());
             this.yRotO = this.getYRot();

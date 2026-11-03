@@ -1,892 +1,419 @@
 package com.github.yzqdev.pethome.util;
 
-import com.github.yzqdev.pethome.PHConstants;
-import com.github.yzqdev.pethome.PetHomeConfig;
-import com.github.yzqdev.pethome.PetHomeMod;
-import net.minecraft.world.entity.animal.fox.Fox;
-import net.minecraft.world.entity.animal.rabbit.Rabbit;
-import net.minecraft.world.entity.animal.axolotl.Axolotl;
-import net.minecraft.world.entity.animal.frog.Frog;
-import com.github.yzqdev.pethome.datagen.ModEnchantments;
-import com.github.yzqdev.pethome.network.PropertiesMessage;
-import com.github.yzqdev.pethome.server.entity.HighlightedBlockEntity;
-import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
-import com.github.yzqdev.pethome.server.entity.PHEntityRegistry;
-import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
-import net.minecraft.ChatFormatting;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.util.Mth;
-import net.minecraft.util.ProblemReporter;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.util.LandRandomPos;
-import net.minecraft.world.entity.animal.Animal;
-import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.storage.TagValueOutput;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.tag.convention.v2.ConventionalBlockTags;
-
-import org.jetbrains.annotations.Nullable;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
- * @author yzqde
- * @date time 2025/1/9 7:52
- * @modified By:
+ * 全模组核心工具类（<b>门面</b>）：驯服判定与归属、附魔读写、宠物计时器、宠物床坐标、行为辅助（音波/嗅矿/威吓等）。
+ * 几乎所有 server 代码与 mixin 依赖它。
+ *
+ * <p><b>实现已按职责拆分，本类只做委托</b>：
+ *
+ * <ul>
+ *   <li>{@link PetOwnershipUtils}：归属、驯服状态、物种开关、项圈、安全血量、灯笼召回判定
+ *   <li>{@link PetEnchantmentUtils}：附魔缓存读取、列表写入、属性修饰符同步
+ *   <li>{@link PetStateUtils}：状态与计时器、宠物床坐标
+ *   <li>{@link PetEntityQueryUtils}：附近实体查询与传送筛选
+ *   <li>{@link PetEnchantmentBehaviorUtils}：附魔行为执行
+ *   <li>{@link PetJukeboxUtils}：唱片机数据与魅力折扣
+ *   <li>{@link PetDataKeys}：tag 键与属性修饰符常量；{@link PetDataSync}：citadel tag 写入唯一出口
+ * </ul>
+ *
+ * <p>本类不承载游戏逻辑——所有 public 方法一行转发，签名/参数/返回类型/可见性/静态调用方式与拆分前一致，
+ * 引用文件与 mixin 无需任何改动。Citadel tag 的写入仍然只经 {@link PetDataSync#sync}（包内可见，
+ * 不对外暴露第二条写入路径）。
+ *
+ * <p>方法分区沿用原顺序：一、归属与驯服判定 → 二、灯笼卸载判定 → 三、宠物床坐标 → 四、附魔读写与属性 →
+ * 五、计时器 → 六、行为辅助 → 七、传送与近距离查询 → 八、disc_jockey / charisma。
  */
 public class TameableUtils {
 
-    private static final String ENCHANTMENT_TAG = "StoredPetEnchantments";
-    private static final String COLLAR_TAG = "HasPetCollar";
-    private static final String IMMUNITY_TIME_TAG = "PetImmunityTimer";
-    private static final String FROZEN_TIME_TAG = "PetFrozenTime";
-    private static final String ATTACK_TARGET_ENTITY = "PetAttackTarget";
-    private static final String SHADOW_PUNCH_TIMES = "PetShadowPunchTimes";
-    private static final String SHADOW_PUNCH_COOLDOWN = "PetShadowPunchCooldown";
-    private static final String PSYCHIC_WALL_COOLDOWN = "PetPsychicWallCooldown";
-    private static final String INTIMIDATION_COOLDOWN = "PetIntimidationCooldown";
-    private static final String SHADOW_PUNCH_STRIKING = "PetShadowPunchStriking";
-    private static final String JUKEBOX_FOLLOWER_UUID = "PetJukeboxFollowerUUID";
-    private static final String JUKEBOX_FOLLOWER_DISC = "PetJukeboxFollowerDisc";
-    private static final String BLAZING_PROTECTION_BARS = "PetBlazingProtectionBars";
-    private static final String BLAZING_PROTECTION_COOLDOWN = "PetBlazingProtectionCooldown";
-    private static final String HEALING_AURA_TIME = "PetHealingAuraTime";
-    private static final String Sonic_boom_TIME = "PetSonicBoomTime";
-    private static final String HEALING_AURA_IMPULSE = "PetHealingAuraImpulse";
-    private static final String HAS_PET_BED = "HasPetBed";
-    private static final String PET_BED_X = "PetBedX";
-    private static final String PET_BED_Y = "PetBedY";
-    private static final String PET_BED_Z = "PetBedZ";
-    private static final String PET_BED_DIMENSION = "PetBedDimension";
-    private static final String FALL_DISTANCE_SYNC = "SyncedFallDistance";
-    private static final String ZOMBIE_PET = "ZombiePet";
-    private static final String SAFE_PET_HEALTH = "SafePetHealth";
-    private static final String COLLAR_SWAP_COOLDOWN = "CollarSwapCooldown";
-    private static final Identifier HEALTH_BOOST_UUID = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "health_boost");// UUID.fromString("556E1665-8B10-40C8-8F9D-CF9B166EEEEE");
-    private static final Identifier SPEED_BOOST_UUID = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "speed_boost");// UUID.fromString("ff465ded-9040-4eb5-93a1-7bbe97c31744");
-    private static final Identifier ARMOR_BOOST_UUID = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "armor_boost");// UUID.fromString("ff465ded-9040-4eb5-93a1-7bbe97c31744");
-    private static final Identifier RESISTANCE_BOOST_UUID = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "resistance_boost");// UUID.fromString("ff465ded-9040-4eb5-93a1-7bbe97c31744");
+    /** 附魔列表 tag 键（真值在 {@link PetDataKeys#ENCHANTMENT_TAG}，此处保留 public 别名供外部引用）。 */
+    public static final String ENCHANTMENT_TAG = PetDataKeys.ENCHANTMENT_TAG;
 
-    private static final Identifier SPEED_BOOST_AQUATIC_LAND_UUID = Identifier.fromNamespaceAndPath(PetHomeMod.MODID, "speed_boost_aqua");// UUID.fromString("ff465ded-9040-4eb5-93a1-7bbe97c31745");
+    /** 冻结计时 tag 键（真值在 {@link PetDataKeys#FROZEN_TIME_TAG}；现行存储为独立附件 {@link PHAttachments#FROZEN_TIME}）。 */
+    public static final String FROZEN_TIME_TAG = PetDataKeys.FROZEN_TIME_TAG;
 
+    /** 治愈光环相位 tag 键（真值在 {@link PetDataKeys#HEALING_AURA_TIME}；现行存储为独立附件 {@link PHAttachments#HEALING_AURA_TIME}）。 */
+    public static final String HEALING_AURA_TIME = PetDataKeys.HEALING_AURA_TIME;
+
+    // ==================== 一、归属与驯服判定 → PetOwnershipUtils ====================
+
+    /**
+     * 取实体的驯服主人 UUID，兼容两类归属载体：本模组改造实体（
+     * {@link com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable}）与原版 {@link net.minecraft.world.entity.TamableAnimal}。
+     *
+     * @return 无主人或非可驯服实体时为 {@code null}
+     * @see PetOwnershipUtils#getOwnerUUIDOf
+     */
     public static UUID getOwnerUUIDOf(Entity entity) {
-        if (entity instanceof ModifiedToBeTameable) {
-            return ((ModifiedToBeTameable) entity).getTameOwnerUUID();
-        }
-
-        if (entity instanceof TamableAnimal) {
-            var ownerReference = ((TamableAnimal) entity).getOwnerReference();
-            return ownerReference != null ? ownerReference.getUUID() : null;
-        }
-        return null;
+        return PetOwnershipUtils.getOwnerUUIDOf(entity);
     }
 
+    /** 宠物是否戴有项圈（citadel tag {@code HasPetCollar} 键，由附魔写入路径置位）。 */
     public static boolean hasCollar(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.contains(COLLAR_TAG) && tag.getBooleanOr(COLLAR_TAG, false);
+        return PetOwnershipUtils.hasCollar(enchanted);
     }
 
+    /** 是否属于「走失、应当被迷途灯笼召回」的宠物——只认跟随状态，停留/游走不召回。 */
     public static boolean shouldUnloadToLantern(LivingEntity tameable) {
-        if (PetHomeConfig.trinaryCommandSystem && tameable instanceof IComandableMob commandableMob) {
-            return commandableMob.getCommand() == 2;
-        } else {
-            // 26.1: addAdditionalSaveData 改为写入 ValueOutput
-            ProblemReporter problemReporter = ProblemReporter.DISCARDING;
-            TagValueOutput output = TagValueOutput.createWithContext(problemReporter, tameable.registryAccess());
-            tameable.saveWithoutId(output);
-            CompoundTag tag = output.buildResult();
-            int command = -1;
-            //compat with alexs mobs (26.1: contains(String,int) 已删，改用 NumericTag 判断)
-            for (String s : tag.keySet()) {
-                if (s.endsWith("Command") && tag.get(s) instanceof net.minecraft.nbt.NumericTag) {
-                    command = tag.getIntOr(s, 0);
-                }
-            }
-            if (command != -1) {
-                return command == 1;
-            } else if (tameable instanceof TamableAnimal animal) {
-                return !animal.isOrderedToSit();
-            }
-        }
-        return false;
+        return PetOwnershipUtils.shouldUnloadToLantern(tameable);
     }
 
+    /** 存档时记录的「安全血量」（含 health_boost 提升后的血上限），实体重载时用于恢复血量。 */
     public static double getSafePetHealth(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getDoubleOr(SAFE_PET_HEALTH, 0.0);
+        return PetOwnershipUtils.getSafePetHealth(enchanted);
     }
 
+    /** 重算物种开关表（{@link com.github.yzqdev.pethome.PetHomeConfig} 配置加载后调用）。 */
+    public static void refreshSpeciesGates() {
+        PetOwnershipUtils.refreshSpeciesGates();
+    }
+
+    /** 实体卸载进世界数据前记录当前血量（仅 health_boost 附魔触发），与 {@link #getSafePetHealth} 配对。 */
     public static void setSafePetHealth(LivingEntity enchanted, double health) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putDouble(SAFE_PET_HEALTH, health);
-        sync(enchanted, tag);
+        PetOwnershipUtils.setSafePetHealth(enchanted, health);
     }
 
+    /** 实体是否处于「已驯服」状态；改造物种额外受 {@code PetHomeConfig.tameable*} 开关约束。 */
     public static boolean isTamed(Entity entity) {
-        //sometimes these are not bound on runtime
-        if (entity instanceof Axolotl) {
-            if (entity instanceof ModifiedToBeTameable modifiedToBeTameable) {
-                return modifiedToBeTameable.isTame() && PetHomeConfig.tameableAxolotl;
-            }
-            return false;
-        }
-        if (entity instanceof Fox) {
-            if (entity instanceof ModifiedToBeTameable modifiedToBeTameable) {
-                return modifiedToBeTameable.isTame() && PetHomeConfig.tameableFox;
-            }
-            return false;
-        }
-        if (entity instanceof Rabbit) {
-            if (entity instanceof ModifiedToBeTameable modifiedToBeTameable) {
-                return modifiedToBeTameable.isTame() && PetHomeConfig.tameableRabbit;
-            }
-            return false;
-        }
-        if (entity instanceof Frog) {
-            if (entity instanceof ModifiedToBeTameable modifiedToBeTameable) {
-                return modifiedToBeTameable.isTame() && PetHomeConfig.tameableFrog;
-            }
-            return false;
-        }
-        return entity instanceof ModifiedToBeTameable && ((ModifiedToBeTameable) entity).isTame() || entity instanceof TamableAnimal && ((TamableAnimal) entity).isTame();
+        return PetOwnershipUtils.isTamed(entity);
     }
 
+    /** 玩家视角的「自家宠物」判定：结盟或主人即该玩家。网络包鉴权、交互分发、友好保护入口。 */
     public static boolean isPetOf(Player player, Entity entity) {
-        return entity != null && (entity.isAlliedTo(player) || hasSameOwnerAsOneWay(entity, player));
+        return PetOwnershipUtils.isPetOf(player, entity);
     }
 
-    private static boolean hasSameOwnerAsOneWay(Entity tameable, Entity target) {
-        if (tameable instanceof TamableAnimal tamed && tamed.getOwner() != null) {
-            if (target instanceof ModifiedToBeTameable axolotl && axolotl.getTameOwner() != null) {
-                if (tamed.getOwner().equals(axolotl.getTameOwner())) {
-                    return true;
-                }
-            }
-            if (target instanceof TamableAnimal otherPet && otherPet.getOwner() != null) {
-                if (tamed.getOwner().equals(otherPet.getOwner())) {
-                    return true;
-                }
-            }
-            return tamed.getOwner().equals(target);
-        } else if (tameable instanceof ModifiedToBeTameable axolotl && axolotl.getTameOwner() != null) {
-            if (tameable instanceof TamableAnimal tamed && tamed.getOwner() != null) {
-                if (tamed.getOwner().equals(axolotl.getTameOwner())) {
-                    return true;
-                }
-            }
-            if (target instanceof ModifiedToBeTameable otherPet && otherPet.getTameOwner() != null) {
-                if (axolotl.getTameOwner().equals(otherPet.getTameOwner())) {
-                    return true;
-                }
-            }
-            return axolotl.getTameOwner().equals(target);
-        }
-        return false;
+    /** 双向同主人判定（两方向任一成立即可），光环治疗、引力、敌对排除等团队逻辑用。 */
+    public static boolean hasSameOwnerAs(LivingEntity tameable, Entity target) {
+        return PetOwnershipUtils.hasSameOwnerAs(tameable, target);
     }
 
+    /** 实体是否属于「可被驯服改造/原版可驯服」的范畴（只看类型，不看是否已驯服），事件层用粗筛。 */
+    public static boolean couldBeTamed(Entity entity) {
+        return PetOwnershipUtils.couldBeTamed(entity);
+    }
+
+    /** 取实体主人的实体实例（在线/已加载才非 null），与 {@link #getOwnerUUIDOf} 对应。 */
+    public static Entity getOwnerOf(Entity entity) {
+        return PetOwnershipUtils.getOwnerOf(entity);
+    }
+
+    // ==================== 三、宠物床坐标 → PetStateUtils ====================
+
+    /** 宠物绑定的宠物床坐标（{@code HasPetBed=false} 或坐标缺失时返回 {@code null}）。 */
     @Nullable
     public static BlockPos getPetBedPos(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        if (tag.getBooleanOr(HAS_PET_BED, false) && tag.contains(PET_BED_X) && tag.contains(PET_BED_Y) && tag.contains(PET_BED_Z)) {
-            return new BlockPos(tag.getIntOr(PET_BED_X, 0), tag.getIntOr(PET_BED_Y, 0), tag.getIntOr(PET_BED_Z, 0));
-        }
-        return null;
+        return PetStateUtils.getPetBedPos(enchanted);
     }
 
+    /** 绑定宠物床（站上宠物床时调用）；只写坐标，维度由 {@link #setPetBedDimension} 单独写入。 */
     public static void setPetBedPos(LivingEntity enchanted, BlockPos petBed) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putBoolean(HAS_PET_BED, true);
-        tag.putInt(PET_BED_X, petBed.getX());
-        tag.putInt(PET_BED_Y, petBed.getY());
-        tag.putInt(PET_BED_Z, petBed.getZ());
-        sync(enchanted, tag);
+        PetStateUtils.setPetBedPos(enchanted, petBed);
     }
 
+    /** 解绑宠物床（床被拆/放生时调用）；只置 {@code HAS_PET_BED=false}。 */
     public static void removePetBedPos(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putBoolean(HAS_PET_BED, false);
-        sync(enchanted, tag);
+        PetStateUtils.removePetBedPos(enchanted);
     }
 
+    /** 宠物床所在维度的字符串形式；未写入时按主世界处理。 */
     public static String getPetBedDimension(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return !tag.contains(PET_BED_DIMENSION) ? "minecraft:overworld" : tag.getStringOr(PET_BED_DIMENSION, "");
+        return PetStateUtils.getPetBedDimension(enchanted);
     }
 
     public static void setPetBedDimension(LivingEntity enchanted, String dimension) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putString(PET_BED_DIMENSION, dimension);
-        sync(enchanted, tag);
+        PetStateUtils.setPetBedDimension(enchanted, dimension);
     }
 
-    public static Entity getOwnerOf(Entity entity) {
-        if (entity instanceof ModifiedToBeTameable) {
-            return ((ModifiedToBeTameable) entity).getTameOwner();
-        }
-        if (entity instanceof TamableAnimal) {
-            return ((TamableAnimal) entity).getOwner();
-        }
-        return null;
+    // ==================== 四、附魔读写与属性 → PetEnchantmentUtils ====================
+
+    /** 清空宠物全部附魔（顺带把项圈置为已戴上并触发属性重算）。 */
+    public static void clearEnchants(LivingEntity entity) {
+        PetEnchantmentUtils.clearEnchants(entity);
     }
 
+    /** {@link #getEnchantLevel} 的布尔形态。 */
+    public static boolean hasEnchant(LivingEntity entity, ResourceKey<Enchantment> enchantment) {
+        return PetEnchantmentUtils.hasEnchant(entity, enchantment);
+    }
+
+    /** 查宠物单个附魔等级（mixin/渲染/tick 热路径，走 {@link PetEnchantCache} 引用比对缓存）。 */
+    public static int getEnchantLevel(LivingEntity entity, ResourceKey<Enchantment> enchantment) {
+        return PetEnchantmentUtils.getEnchantLevel(entity, enchantment);
+    }
+
+    /** 组装宠物附魔列表的展示行（Jade tooltip 与宠物信息面板共用）。 */
+    public static List<Component> getEnchantDescriptions(LivingEntity entity) {
+        return PetEnchantmentUtils.getEnchantDescriptions(entity);
+    }
+
+    /** 取宠物全部附魔（{@code id → level}）；实体未挂 citadel 附件或无附魔键时返回 {@code null}（调用方需判空）。返回的 Map 不可修改。 */
+    @Nullable
+    public static Map<Identifier, Integer> getEnchants(LivingEntity entity) {
+        return PetEnchantmentUtils.getEnchants(entity);
+    }
+
+    /** 构造附魔列表的单个条目 tag：{@code id} 存字符串、{@code lvl} 存 short（三侧同格式）。 */
+    public static CompoundTag storeEnchantment(@Nullable Identifier pId, int pLevel) {
+        return PetEnchantmentUtils.storeEnchantment(pId, pLevel);
+    }
+
+    /** 把 {@link ItemEnchantments}（附魔书内容）整表写入宠物附魔列表——覆盖旧列表而非追加。 */
+    public static void addEnchant(LivingEntity entity, ItemEnchantments itemEnchantments) {
+        PetEnchantmentUtils.addEnchant(entity, itemEnchantments);
+    }
+
+    // ==================== 五、计时器与状态槽 → PetStateUtils ====================
+
+    /** 烈焰保护的剩余护盾格数（0..2×等级）。 */
     public static int getBlazingProtectionBars(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getIntOr(BLAZING_PROTECTION_BARS, 0);
+        return PetStateUtils.getBlazingProtectionBars(enchanted);
     }
 
+    /** 烈焰保护下一格护盾的充能倒计时（tick）。 */
     public static int getBlazingProtectionCooldown(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getIntOr(BLAZING_PROTECTION_COOLDOWN, 0);
+        return PetStateUtils.getBlazingProtectionCooldown(enchanted);
     }
 
     public static void setBlazingProtectionCooldown(LivingEntity enchanted, int time) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putInt(BLAZING_PROTECTION_COOLDOWN, time);
-        sync(enchanted, tag);
+        PetStateUtils.setBlazingProtectionCooldown(enchanted, time);
     }
 
     public static void setBlazingProtectionBars(LivingEntity enchanted, int time) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putInt(BLAZING_PROTECTION_BARS, time);
-        sync(enchanted, tag);
+        PetStateUtils.setBlazingProtectionBars(enchanted, time);
     }
 
-    private static void sync(LivingEntity entity, CompoundTag tag) {
-        // server->client sync is handled by NeoForge itself: setData on a synced attachment
-        // is broadcast to every player tracking the entity (plus initial sync for new
-        // viewers), so the previous PropertiesMessage broadcast to ALL players was redundant.
-        CitadelEntityData.setCitadelTag(entity, tag);
-        if (entity.level().isClientSide()) {
-            ClientPlayNetworking.send(new PropertiesMessage(PHConstants.entityDataTagUpdate, tag.copy(), entity.getId()));
-        }
-    }
-
-    public static void clearEnchants(LivingEntity entity) {
-        setEnchantmentTag(entity, new ListTag());
-    }
-
-    private static void setEnchantmentTag(LivingEntity enchanted, ListTag enchants) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        Map<Identifier, Integer> prevEnchants = getEnchants(enchanted);
-        tag.put(ENCHANTMENT_TAG, enchants);
-        tag.putInt(COLLAR_SWAP_COOLDOWN, 20);
-        tag.putBoolean(COLLAR_TAG, true);
-        sync(enchanted, tag);
-        onUpdateEnchants(prevEnchants, enchanted);
-    }
-
-    private static boolean isWaterCreature(LivingEntity enchanted) {
-        return enchanted.getType().getCategory() == MobCategory.WATER_CREATURE || enchanted.getType().getCategory() == MobCategory.UNDERGROUND_WATER_CREATURE || enchanted.getType().getCategory() == MobCategory.WATER_AMBIENT;
-    }
-
-    private static void onUpdateEnchants(@Nullable Map<Identifier, Integer> prevEnchants, LivingEntity enchanted) {
-        int healthExtra = getEnchantLevel(enchanted, ModEnchantments.HEALTH_BOOST);
-        int speedExtra = getEnchantLevel(enchanted, ModEnchantments.SPEEDSTER);
-        int toughExtra = getEnchantLevel(enchanted, ModEnchantments.TOUGH);
-        boolean amphib = hasEnchant(enchanted, ModEnchantments.AMPHIBIOUS) && !enchanted.isInWater() && isWaterCreature(enchanted);
-        AttributeInstance health = enchanted.getAttribute(Attributes.MAX_HEALTH);
-        AttributeInstance speed = enchanted.getAttribute(Attributes.MOVEMENT_SPEED);
-        var armor = enchanted.getAttribute(Attributes.ARMOR);
-        var resistance = enchanted.getAttribute(Attributes.KNOCKBACK_RESISTANCE);
-        var enchantReg = enchanted.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
-        if (hasEnchant(enchanted, ModEnchantments.IMMATURITY_CURSE) || prevEnchants != null && prevEnchants.containsKey(ModEnchantments.IMMATURITY_CURSE.registry())) {
-            //change pose to update client
-            enchanted.setPose(Pose.FALL_FLYING);
-            AgeableMob ageable = (AgeableMob) enchanted;
-            ageable.setBaby(true); // 直接设为幼年
-            enchanted.refreshDimensions();
-
-        }
-        if (armor != null && resistance != null) {
-            AttributeModifier armorBoost = new AttributeModifier(ARMOR_BOOST_UUID, toughExtra * 3, AttributeModifier.Operation.ADD_VALUE);
-            AttributeModifier resBoost = new AttributeModifier(RESISTANCE_BOOST_UUID, toughExtra * 3, AttributeModifier.Operation.ADD_VALUE);
-            if (toughExtra > 0) {
-                if (armor.hasModifier(armorBoost.id())) {
-                    armor.removeModifier(armorBoost);
-                    armor.addPermanentModifier(armorBoost);
-                } else {
-                    armor.addPermanentModifier(armorBoost);
-                }
-                if (resistance.hasModifier(resBoost.id())) {
-                    resistance.removeModifier(resBoost);
-                    resistance.addPermanentModifier(resBoost);
-                } else {
-                    resistance.addPermanentModifier(resBoost);
-                }
-            } else {
-                armor.removeModifier(ARMOR_BOOST_UUID);
-                resistance.removeModifier(RESISTANCE_BOOST_UUID);
-            }
-        }
-        if (health != null) {
-            AttributeModifier healthBoostPetUpgrade = new AttributeModifier(HEALTH_BOOST_UUID, healthExtra * 10, AttributeModifier.Operation.ADD_VALUE);
-
-            if (healthExtra > 0) {
-                if (health.hasModifier(healthBoostPetUpgrade.id())) {
-                    health.removeModifier(healthBoostPetUpgrade);
-                    health.addPermanentModifier(healthBoostPetUpgrade);
-                } else {
-                    health.addPermanentModifier(healthBoostPetUpgrade);
-                }
-            } else {
-
-                health.removeModifier(healthBoostPetUpgrade);
-            }
-        }
-        if (speed != null) {
-            AttributeModifier speedsterPetUpgrade = new AttributeModifier(SPEED_BOOST_UUID, speedExtra * 0.075F, AttributeModifier.Operation.ADD_VALUE);
-
-            if (speedExtra > 0) {
-                if (speed.hasModifier(speedsterPetUpgrade.id())) {
-                    speed.removeModifier(speedsterPetUpgrade);
-                    speed.addPermanentModifier(speedsterPetUpgrade);
-                } else {
-                    speed.addPermanentModifier(speedsterPetUpgrade);
-                }
-            } else {
-                speed.removeModifier(speedsterPetUpgrade);
-            }
-            AttributeModifier speed_aqua = new AttributeModifier(SPEED_BOOST_AQUATIC_LAND_UUID, 0.13F, AttributeModifier.Operation.ADD_VALUE);
-
-            if (amphib) {
-                if (speed.hasModifier(speed_aqua.id())) {
-                    speed.removeModifier(speed_aqua);
-                    speed.addPermanentModifier(speed_aqua);
-                } else {
-                    speed.addPermanentModifier(speed_aqua);
-                }
-            } else {
-                speed.removeModifier(speed_aqua);
-            }
-        }
-    }
-    public static boolean hasEnchant(LivingEntity entity, ResourceKey<Enchantment> enchantment) {
-        return getEnchantLevel(entity, enchantment) > 0;
-    }
-    public static int getEnchantLevel(LivingEntity entity, ResourceKey<Enchantment> enchantment) {
-        ListTag listtag = getEnchantmentList(entity);
-
-        // 被配置禁用的附魔一律视为未生效（enchantments.<name>_enabled = false）
-        if (listtag != null && PetHomeConfig.isEnchantEnabled(enchantment)) {
-            for (int i = 0; i < listtag.size(); ++i) {
-
-                CompoundTag compoundtag = listtag.getCompoundOrEmpty(i);
-                var location = Identifier.parse(compoundtag.getStringOr("id", ""));
-
-                if (enchantment.identifier().equals(location)) {
-                    return compoundtag.getIntOr("lvl", 0);
-                }
-
-            }
-
-        }
-        return 0;
-    }
-
-    @Nullable
-    private static ListTag getEnchantmentList(LivingEntity entity) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(entity);
-        if (tag.contains(ENCHANTMENT_TAG)) {
-            return tag.getListOrEmpty(ENCHANTMENT_TAG);
-        }
-        return null;
-    }
-
-    public static List<Component> getEnchantDescriptions(LivingEntity entity) {
-        List<Component> list = new ArrayList<>();
-        list.add(Component.literal("   ").append(Component.translatable("message.pet_home.enchantments").withStyle(ChatFormatting.GOLD)));
-        Map<Identifier, Integer> map = getEnchants(entity);
-        if (map != null) {
-            for (Map.Entry<Identifier, Integer> entry : map.entrySet()) {
-
-                boolean isCurse = entry.getKey().getPath().contains("curse");
-                list.add(Component.translatable("enchantment." + entry.getKey().getNamespace() + "." + entry.getKey().getPath()).append(Component.literal(" ")).append(Component.translatable("enchantment.level." + entry.getValue())).withStyle(isCurse ? ChatFormatting.RED : ChatFormatting.AQUA));
-
-            }
-        }
-        return list;
-    }
-
-    public static Map<Identifier, Integer> getEnchants(LivingEntity entity) {
-        ListTag listtag = getEnchantmentList(entity);
-        if (listtag == null) {
-            return null;
-        }
-        Map<Identifier, Integer> enchants = new HashMap<>();
-        for (int i = 0; i < listtag.size(); ++i) {
-            CompoundTag compoundtag = listtag.getCompoundOrEmpty(i);
-            Identifier res = Identifier.parse(compoundtag.getStringOr("id", ""));
-
-            enchants.put(res, compoundtag.getIntOr("lvl", 0));
-
-        }
-        return enchants;
-    }
-
-    public static CompoundTag storeEnchantment(@Nullable Identifier pId, int pLevel) {
-        CompoundTag compoundtag = new CompoundTag();
-        compoundtag.putString("id", String.valueOf((Object) pId));
-        compoundtag.putShort("lvl", (short) pLevel);
-        return compoundtag;
-    }
-
-    public static void addEnchant(LivingEntity entity, ItemEnchantments itemEnchantments) {
-        ListTag listTag = new ListTag();
-
-
-        for (var entry : itemEnchantments.entrySet()) {
-            var en = entry.getKey().unwrapKey().orElseThrow().identifier();
-            var compound = storeEnchantment(en, entry.getIntValue());
-            listTag.add(compound);
-        }
-        setEnchantmentTag(entity, listTag);
-
-    }
-
-    public static boolean hasSameOwnerAs(LivingEntity tameable, Entity target) {
-        return hasSameOwnerAsOneWay(tameable, target) || hasSameOwnerAsOneWay(target, tameable);
-    }
-
-    public static void xpTransfer(LivingEntity living) {
-        for (ExperienceOrb experienceorb : living.level().getEntitiesOfClass(ExperienceOrb.class, living.getBoundingBox().inflate(3D))) {
-
-            Vec3 vec3 = new Vec3(living.getX() - experienceorb.getX(), living.getY() + (double) living.getEyeHeight() / 2.0D - experienceorb.getY(), living.getZ() - experienceorb.getZ());
-            double d0 = vec3.lengthSqr();
-            if (d0 < 2.0D) {
-                Entity owner = TameableUtils.getOwnerOf(living);
-                if (owner instanceof Player player) {
-                    player.giveExperiencePoints(experienceorb.getValue());
-                }
-                experienceorb.discard();
-
-            }
-            if (d0 < 64.0D) {
-                double d1 = 1.0D - Math.sqrt(d0) / 8.0D;
-                experienceorb.setDeltaMovement(experienceorb.getDeltaMovement().add(vec3.normalize().scale(d1 * d1 * 0.5D)));
-            }
-        }
-    }
-
-    public static void absorbExpOrbs(LivingEntity living) {
-        if (living.getHealth() < living.getMaxHealth() && !living.level().isClientSide()) {
-            for (ExperienceOrb experienceorb : living.level().getEntitiesOfClass(ExperienceOrb.class, living.getBoundingBox().inflate(3D))) {
-                if (living.getHealth() >= living.getMaxHealth()) {
-                    break;
-                }
-                Vec3 vec3 = new Vec3(living.getX() - experienceorb.getX(), living.getY() + (double) living.getEyeHeight() / 2.0D - experienceorb.getY(), living.getZ() - experienceorb.getZ());
-                double d0 = vec3.lengthSqr();
-                if (d0 < 2.0D) {
-                    if (!living.isDeadOrDying()) {
-
-
-                        float h = living.getHealth() + experienceorb.getValue();
-                        living.setHealth(h);
-
-                        if (h - living.getMaxHealth() > 0) {
-                            // 26.1: ExperienceOrb#setValue 已私有，改为用剩余经验重建经验球
-                            int leftover = (int) Math.floor(h - living.getMaxHealth());
-                            experienceorb.discard();
-                            if (leftover > 0 && living.level() instanceof ServerLevel serverLevel) {
-                                serverLevel.addFreshEntity(new ExperienceOrb(living.level(), experienceorb.getX(), experienceorb.getY(), experienceorb.getZ(), leftover));
-                            }
-                            break;
-                        } else {
-                            experienceorb.discard();
-                        }
-                    }
-
-                }
-                if (d0 < 64.0D) {
-                    double d1 = 1.0D - Math.sqrt(d0) / 8.0D;
-                    experienceorb.setDeltaMovement(experienceorb.getDeltaMovement().add(vec3.normalize().scale(d1 * d1 * 0.5D)));
-                }
-            }
-        }
-    }
-
+    /** 治愈光环相位计时器：&gt;0 施法中、0 待机、&lt;0 冷却（独立 int 附件）。 */
     public static int getHealingAuraTime(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getIntOr(HEALING_AURA_TIME, 0);
+        return PetStateUtils.getHealingAuraTime(enchanted);
     }
 
+    /** 写治愈光环计时器；值不变时直接返回，避免每 tick 空广播。 */
     public static void setHealingAuraTime(LivingEntity enchanted, int time) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putInt(HEALING_AURA_TIME, time);
-        sync(enchanted, tag);
+        PetStateUtils.setHealingAuraTime(enchanted, time);
     }
 
+    /** 音波轰击的下次可施放时间戳（level game time，非倒计时）。 */
     public static long getSonicboomAuraTime(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getLongOr(Sonic_boom_TIME, 0L);
+        return PetStateUtils.getSonicboomAuraTime(enchanted);
     }
 
     public static void setSonicboomAuraTime(LivingEntity enchanted, long time) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putLong(Sonic_boom_TIME, time);
-        sync(enchanted, tag);
+        PetStateUtils.setSonicboomAuraTime(enchanted, time);
     }
 
-
+    /** 治愈光环的标记。 */
     public static boolean getHealingAuraImpulse(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getBooleanOr(HEALING_AURA_IMPULSE, false);
+        return PetStateUtils.getHealingAuraImpulse(enchanted);
     }
 
     public static void setHealingAuraImpulse(LivingEntity enchanted, boolean impulse) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putBoolean(HEALING_AURA_IMPULSE, impulse);
-        sync(enchanted, tag);
+        PetStateUtils.setHealingAuraImpulse(enchanted, impulse);
     }
 
-    public static List<LivingEntity> getAuraHealables(LivingEntity pet) {
-        Predicate<Entity> hurtAndOnTeam = (animal) -> hasSameOwnerAs((LivingEntity) animal, pet) && animal.distanceTo(pet) < 4 && ((LivingEntity) animal).getHealth() < ((LivingEntity) animal).getMaxHealth();
-        return pet.level().getEntitiesOfClass(LivingEntity.class, pet.getBoundingBox().inflate(4, 4, 4), EntitySelector.NO_SPECTATORS.and(hurtAndOnTeam));
-    }
-
+    /** 心理墙冷却倒计时（tick）。 */
     public static int getPsychicWallCooldown(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getIntOr(PSYCHIC_WALL_COOLDOWN, 0);
+        return PetStateUtils.getPsychicWallCooldown(enchanted);
     }
 
     public static void setPsychicWallCooldown(LivingEntity enchanted, int time) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putInt(PSYCHIC_WALL_COOLDOWN, time);
-        sync(enchanted, tag);
+        PetStateUtils.setPsychicWallCooldown(enchanted, time);
     }
 
-    public static void attractAnimals(LivingEntity attractor, int max) {
-        if ((attractor.tickCount + attractor.getId()) % 8 == 0) {
-            Predicate<Entity> notOnTeam = (animal) -> !hasSameOwnerAs((LivingEntity) animal, attractor) && animal.distanceTo(attractor) > 3 + attractor.getBbWidth() * 1.6F;
-            List<Animal> list = attractor.level().getEntitiesOfClass(Animal.class, attractor.getBoundingBox().inflate(16, 8, 16), EntitySelector.NO_SPECTATORS.and(notOnTeam));
-            list.sort(Comparator.comparingDouble(attractor::distanceToSqr));
-            for (int i = 0; i < Math.min(max, list.size()); i++) {
-                Animal e = list.get(i);
-                e.setTarget(null);
-                e.setLastHurtByMob(null);
-                e.getNavigation().moveTo(attractor, 1.1D);
-            }
-
-        }
-    }
-
+    /** 暗影手/引力共用目标槽：存目标实体 id（-1 无）。 */
     public static int getPetAttackTargetID(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return !tag.contains(ATTACK_TARGET_ENTITY) ? -1 : tag.getIntOr(ATTACK_TARGET_ENTITY, 0);
+        return PetStateUtils.getPetAttackTargetID(enchanted);
     }
 
+    /** 把 id 解析为目标实体；id 无效或实体已卸载返回 {@code null}。 */
     @Nullable
     public static Entity getPetAttackTarget(LivingEntity enchanted) {
-        int i = getPetAttackTargetID(enchanted);
-        return i == -1 ? null : enchanted.level().getEntity(i);
+        return PetStateUtils.getPetAttackTarget(enchanted);
     }
 
     public static void setPetAttackTarget(LivingEntity enchanted, int id) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putInt(ATTACK_TARGET_ENTITY, id);
-        sync(enchanted, tag);
+        PetStateUtils.setPetAttackTarget(enchanted, id);
     }
 
-    public static void aggroRandomMonsters(LivingEntity attractor) {
-        if ((attractor.tickCount + attractor.getId()) % 400 == 0) {
-            Predicate<Entity> notOnTeamAndMonster = (animal) -> animal instanceof Enemy && !hasSameOwnerAs((LivingEntity) animal, attractor) && animal.distanceTo(attractor) > 3 + attractor.getBbWidth() * 1.6F;
-            List<Mob> list = attractor.level().getEntitiesOfClass(Mob.class, attractor.getBoundingBox().inflate(20, 8, 20), EntitySelector.NO_SPECTATORS.and(notOnTeamAndMonster));
-            list.sort(Comparator.comparingDouble(attractor::distanceToSqr));
-            if (!list.isEmpty()) {
-                list.get(0).setTarget(attractor);
-            }
-        }
-    }
-
+    /** intimidation（恐吓）剩余恐吓 tick 数；&gt;0 期间只驱赶不重触发。 */
     public static int getIntimidationCooldown(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getIntOr(INTIMIDATION_COOLDOWN, 0);
+        return PetStateUtils.getIntimidationCooldown(enchanted);
     }
 
     public static void setIntimidationCooldown(LivingEntity enchanted, int time) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putInt(INTIMIDATION_COOLDOWN, time);
-        sync(enchanted, tag);
+        PetStateUtils.setIntimidationCooldown(enchanted, time);
     }
 
-    public static void scareRandomMonsters(LivingEntity scary, int level) {
-        boolean interval = (scary.tickCount + scary.getId()) % Math.max(140, 600 - level * 200) == 0;
-        if (interval || scary.hurtTime == 4 || getIntimidationCooldown(scary) > 0) {
-            Predicate<Entity> notOnTeamAndMonster = (animal) -> animal instanceof Monster && !hasSameOwnerAs((LivingEntity) animal, scary) && animal.distanceTo(scary) > 3 + scary.getBbWidth() * 1.6F;
-            List<PathfinderMob> list = scary.level().getEntitiesOfClass(PathfinderMob.class, scary.getBoundingBox().inflate(10 * level, 8 * level, 10 * level), EntitySelector.NO_SPECTATORS.and(notOnTeamAndMonster));
-            list.sort(Comparator.comparingDouble(scary::distanceToSqr));
-            if (!list.isEmpty()) {
-                if (getIntimidationCooldown(scary) > 0 && !interval) {
-                    setIntimidationCooldown(scary, getIntimidationCooldown(scary) - 1);
-                } else {
-                    Vec3 rots = list.get(0).getEyePosition().subtract(scary.getEyePosition()).normalize();
-                    float f = Mth.sqrt((float) (rots.x * rots.x + rots.z * rots.z));
-                    double yRot = Math.atan2(-rots.z, -rots.x) * (double) (180F / (float) Math.PI) + 90F;
-                    double xRot = Math.atan2(-rots.y, f) * (double) (180F / (float) Math.PI);
-                    scary.level().addParticle(PHParticleRegistry.INTIMIDATION, scary.getX(), scary.getY(), scary.getZ(), scary.getId(), xRot, yRot);
-                    setIntimidationCooldown(scary, 70 * level);
-                    if (scary instanceof Mob) {
-                        ((Mob) scary).playAmbientSound();
-                    }
-                }
-                for (PathfinderMob monster : list) {
-                    Vec3 vec = LandRandomPos.getPosAway(monster, 11 * level, 7, scary.position());
-                    if (vec != null) {
-                        monster.getNavigation().moveTo(vec.x, vec.y, vec.z, 1.5D);
-                    }
-                }
-            }
-        }
-    }
-
-    public static boolean couldBeTamed(Entity entity) {
-        return entity instanceof ModifiedToBeTameable || entity instanceof TamableAnimal;
-    }
-
-    public static void destroyRandomPlants(LivingEntity living) {
-        if ((living.tickCount + living.getId()) % 200 == 0) {
-            int range = 2;
-            List<BlockPos> plants = new ArrayList<>();
-            List<BlockPos> grasses = new ArrayList<>();
-            BlockPos blockpos = living.blockPosition();
-            int half = range / 2;
-            RandomSource r = living.getRandom();
-            int maxPlants = 2 + r.nextInt(2);
-            for (int i = 0; i <= half && i >= -half; i = (i <= 0 ? 1 : 0) - i) {
-                for (int j = 0; j <= range && j >= -range; j = (j <= 0 ? 1 : 0) - j) {
-                    for (int k = 0; k <= range && k >= -range; k = (k <= 0 ? 1 : 0) - k) {
-                        BlockPos offset = blockpos.offset(j, i, k);
-                        BlockState state = living.level().getBlockState(offset);
-                        if (!state.isAir() && r.nextInt(4) == 0) {
-                            if (state.is(BlockTags.FLOWERS) || state.is(BlockTags.REPLACEABLE_BY_TREES) || state.is(BlockTags.CROPS)) {
-                                plants.add(offset);
-                            } else if (state.is(BlockTags.DIRT) && !state.is(Blocks.DIRT) && !state.is(Blocks.COARSE_DIRT) || state.is(Blocks.FARMLAND)) {
-                                grasses.add(offset);
-                            }
-                        }
-                    }
-                }
-            }
-            for (BlockPos plant : plants) {
-                living.level().setBlockAndUpdate(plant, Blocks.AIR.defaultBlockState());
-                for (int i = 0; i < 1 + r.nextInt(2); i++) {
-                    living.level().addParticle(PHParticleRegistry.BLIGHT, plant.getX() + r.nextFloat(), plant.getY() + r.nextFloat(), plant.getZ() + r.nextFloat(), 0, 0.08F, 0);
-                }
-            }
-            for (BlockPos dirt : grasses) {
-                living.level().setBlockAndUpdate(dirt, r.nextBoolean() ? Blocks.COARSE_DIRT.defaultBlockState() : Blocks.DIRT.defaultBlockState());
-                for (int i = 0; i < 1 + r.nextInt(2); i++) {
-                    living.level().addParticle(PHParticleRegistry.BLIGHT, dirt.getX() + r.nextFloat(), dirt.getY() + 1, dirt.getZ() + r.nextFloat(), 0, 0.08F, 0);
-                }
-            }
-        }
-    }
-
-    public static void detectRandomOres(LivingEntity attractor, int interval, int range, int effectLength, int maxOres) {
-        int tick = (attractor.tickCount + attractor.getId()) % interval;
-        if (tick <= 30) {
-            attractor.xRotO = attractor.getXRot();
-            attractor.setXRot((float) Math.sin(tick * 0.6F) * 30F);
-            Vec3 look = attractor.getEyePosition().add(attractor.getViewVector(1.0F).scale(attractor.getBbWidth()));
-            for (int i = 0; i < 3; i++) {
-                double x = attractor.getRandomX(2.0F);
-                double y = attractor.position().y;
-                double z = attractor.getRandomZ(2.0F);
-                attractor.level().addParticle(PHParticleRegistry.SNIFF, x, y, z, look.x, look.y, look.z);
-            }
-        }
-        if (tick == 30) {
-            List<BlockPos> ores = new ArrayList<>();
-            BlockPos blockpos = attractor.blockPosition();
-            int half = range / 2;
-            for (int i = 0; i <= half && i >= -half; i = (i <= 0 ? 1 : 0) - i) {
-                for (int j = 0; j <= range && j >= -range; j = (j <= 0 ? 1 : 0) - j) {
-                    for (int k = 0; k <= range && k >= -range; k = (k <= 0 ? 1 : 0) - k) {
-                        BlockPos offset = blockpos.offset(j, i, k);
-                        BlockState state = attractor.level().getBlockState(offset);
-                        if (state.is(ConventionalBlockTags.ORES)) {
-                            if (ores.size() < maxOres) {
-                                ores.add(offset);
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            for (BlockPos ore : ores) {
-                HighlightedBlockEntity highlight = PHEntityRegistry.HIGHLIGHTED_BLOCK.create(attractor.level(), EntitySpawnReason.EVENT);
-                highlight.setPos(Vec3.atBottomCenterOf(ore));
-                highlight.setLifespan(effectLength);
-                highlight.setXRot(0);
-                highlight.setYRot(0);
-               
-                if (attractor.level() instanceof ServerLevel serverLevel) {
-                    serverLevel.addFreshEntity(highlight);
-                }
-            }
-        }
-    }
-
+    /** immunity_frame 剩余无敌 tick；未戴该附魔恒 0。 */
     public static int getImmuneTime(LivingEntity enchanted) {
-        if (hasEnchant(enchanted, ModEnchantments.IMMUNITY_FRAME)) {
-            CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-            return tag.getIntOr(IMMUNITY_TIME_TAG, 0);
-        }
-        return 0;
+        return PetStateUtils.getImmuneTime(enchanted);
     }
 
     public static void setImmuneTime(LivingEntity enchanted, int time) {
-        if (hasEnchant(enchanted, ModEnchantments.IMMUNITY_FRAME)) {
-            CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-            tag.putInt(IMMUNITY_TIME_TAG, time);
-            sync(enchanted, tag);
-        }
+        PetStateUtils.setImmuneTime(enchanted, time);
     }
 
+    /** frost_fang 冻结剩余时间（独立 int 附件，渲染冰冻覆盖层用）。 */
     public static int getFrozenTime(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getIntOr(FROZEN_TIME_TAG, 0);
+        return PetStateUtils.getFrozenTime(enchanted);
     }
 
+    /** 写冻结计时（frost_fang 命中时置 60）；值相等直接返回，避免空广播。 */
     public static void setFrozenTimeTag(LivingEntity enchanted, int time) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putInt(FROZEN_TIME_TAG, time);
-        sync(enchanted, tag);
+        PetStateUtils.setFrozenTimeTag(enchanted, time);
     }
 
-    public static List<LivingEntity> getNearbyHealers(LivingEntity hurtOwner) {
-        Predicate<Entity> healer = (animal) -> hasSameOwnerAs((LivingEntity) animal, hurtOwner) && hasEnchant((LivingEntity) animal, ModEnchantments.HEALING_AURA) && getHealingAuraTime((LivingEntity) animal) == 0;
-        return hurtOwner.level().getEntitiesOfClass(LivingEntity.class, hurtOwner.getBoundingBox().inflate(16, 4, 16), EntitySelector.NO_SPECTATORS.and(healer));
-    }
-
+    /** void_cloud 缓降期间同步给客户端的下落距离。 */
     public static float getFallDistance(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getFloatOr(FALL_DISTANCE_SYNC, 0.0F);
+        return PetStateUtils.getFallDistance(enchanted);
     }
 
     public static void setFallDistance(LivingEntity enchanted, float dist) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putFloat(FALL_DISTANCE_SYNC, dist);
-        sync(enchanted, tag);
-
+        PetStateUtils.setFallDistance(enchanted, dist);
     }
 
+    /** 暗影手出拳间隔倒计时（tick）。 */
     public static int getShadowPunchCooldown(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getIntOr(SHADOW_PUNCH_COOLDOWN, 0);
+        return PetStateUtils.getShadowPunchCooldown(enchanted);
     }
 
     public static void setShadowPunchCooldown(LivingEntity enchanted, int time) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putInt(SHADOW_PUNCH_COOLDOWN, time);
-        sync(enchanted, tag);
+        PetStateUtils.setShadowPunchCooldown(enchanted, time);
     }
 
+    /** 每只暗影手的出拳进度（0..10，数组按附魔等级对应各只手）。 */
     public static int[] getShadowPunchTimes(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getIntArray(SHADOW_PUNCH_TIMES).orElse(new int[0]);
+        return PetStateUtils.getShadowPunchTimes(enchanted);
     }
 
     public static void setShadowPunchTimes(LivingEntity enchanted, int[] times) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putIntArray(SHADOW_PUNCH_TIMES, times);
-        sync(enchanted, tag);
+        PetStateUtils.setShadowPunchTimes(enchanted, times);
     }
 
+    /** 各只暗影手是否处于出拳中（0=收回，1=打出）。 */
     public static void setShadowPunchStriking(LivingEntity enchanted, int[] times) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        tag.putIntArray(SHADOW_PUNCH_STRIKING, times);
-        sync(enchanted, tag);
+        PetStateUtils.setShadowPunchStriking(enchanted, times);
     }
 
     public static int[] getShadowPunchStriking(LivingEntity enchanted) {
-        CompoundTag tag = CitadelEntityData.getOrCreateCitadelTag(enchanted);
-        return tag.getIntArray(SHADOW_PUNCH_STRIKING).orElse(new int[0]);
+        return PetStateUtils.getShadowPunchStriking(enchanted);
     }
 
-    public static boolean isValidTeleporter(LivingEntity owner, Mob animal) {
-        if (hasEnchant(animal, ModEnchantments.TETHERED_TELEPORT)) {
-            if (animal instanceof IComandableMob commandableMob) {
-                return commandableMob.getCommand() == 2;
-            } else if (animal instanceof TamableAnimal tame) {
-                return !tame.isOrderedToSit() && animal.distanceTo(owner) < 10;
-            }
-        }
-        return false;
+    // ==================== 六、行为辅助（附魔效果执行） → PetEnchantmentBehaviorUtils ====================
+
+    /** xp_transfer 附魔：吸附 3 格内经验球给主人（兼容保留，实际走玩家驱动版本）。 */
+    public static void xpTransfer(LivingEntity living) {
+        PetEnchantmentBehaviorUtils.xpTransfer(living);
     }
 
-    public static void applyGlowingEffect(LivingEntity livingEntity, int enchantLevel) {
-        var range = enchantLevel * 15;
-        livingEntity.level().getEntitiesOfClass(LivingEntity.class, new AABB(livingEntity.getX() - range, livingEntity.getY() - range, livingEntity.getZ() - range,
-                livingEntity.getX() + range, livingEntity.getY() + range, livingEntity.getZ() + range)).stream().filter(i -> i instanceof Enemy).forEach((entity) -> entity.addEffect(new MobEffectInstance(MobEffects.GLOWING, 20, 0)));
+    /** rejuvenation 附魔：宠物受伤后用 3 格内经验球回血，溢出经验重建经验球退回。 */
+    public static void absorbExpOrbs(LivingEntity living) {
+        PetEnchantmentBehaviorUtils.absorbExpOrbs(living);
     }
 
-    public static List<LivingEntity> getNearbyMobs(LivingEntity entity, double range) {
-        // 计算范围边界框
-        AABB area = new AABB(
-                entity.getX() - range, entity.getY() - range, entity.getZ() - range,
-                entity.getX() + range, entity.getY() + range, entity.getZ() + range
-        );
-
-        // 获取范围内的活体生物（排除自身）
-        return entity.level().getEntitiesOfClass(LivingEntity.class, area, e ->
-                e != entity && !(e instanceof Player)
-        );
+    /** shepherd 附魔：每 8 tick 把 16 格内最近的动物清仇恨并导航走向宠物。 */
+    public static void attractAnimals(LivingEntity attractor, int max) {
+        PetEnchantmentBehaviorUtils.attractAnimals(attractor, max);
     }
 
+    /** infamy_curse 附魔：每 400 tick 让 20 格内最近的怪物把宠物设为攻击目标。 */
+    public static void aggroRandomMonsters(LivingEntity attractor) {
+        PetEnchantmentBehaviorUtils.aggroRandomMonsters(attractor);
+    }
+
+    /** intimidation 附魔：按等级间隔（或受击时）威吓怪物令其逃离，持续 {@code 70×level} tick。 */
+    public static void scareRandomMonsters(LivingEntity scary, int level) {
+        PetEnchantmentBehaviorUtils.scareRandomMonsters(scary, level);
+    }
+
+    /** blight_curse 附魔：每 200 tick 毁掉周围花草/作物、把草方块退化成泥土/砂土。 */
+    public static void destroyRandomPlants(LivingEntity living) {
+        PetEnchantmentBehaviorUtils.destroyRandomPlants(living);
+    }
+
+    /** ore_scenting 附魔主循环：嗅探动画 + 扫描矿石生成高亮方块实体。 */
+    public static void detectRandomOres(LivingEntity attractor, int interval, int range, int effectLength, int maxOres) {
+        PetEnchantmentBehaviorUtils.detectRandomOres(attractor, interval, range, effectLength, maxOres);
+    }
+
+    /** sonic_boom 附魔的施放入口：5 格内敌对生物 &gt; 3 只时全体施放，否则只打当前目标。 */
     public static void performSonicBook(LivingEntity maid, LivingEntity monster, ServerLevel serverLevel) {
-        var livings = getNearbyMobs(maid, 5.0).stream().filter(i -> i instanceof Enemy).collect(Collectors.toSet());
-        if (livings.size() > 3) {
-            for (var enemy : livings) {
-                sonicBoomAttack(maid, enemy, serverLevel);
-            }
-        } else {
-            sonicBoomAttack(maid, monster, serverLevel);
-        }
+        PetEnchantmentBehaviorUtils.performSonicBook(maid, monster, serverLevel);
     }
 
+    /** 单体音波攻击：粒子串 + 音效 + 10 点 sonic_boom 伤害（按击退抗性衰减击退）。仅服务端调用。 */
     public static void sonicBoomAttack(LivingEntity maid, LivingEntity monster, ServerLevel serverLevel) {
+        PetEnchantmentBehaviorUtils.sonicBoomAttack(maid, monster, serverLevel);
+    }
 
-        Vec3 vec3 = maid.position().add(maid.getAttachments().get(EntityAttachment.WARDEN_CHEST, 0, maid.getYRot()));
-        Vec3 vec32 = monster.getEyePosition().subtract(vec3);
-        Vec3 vec33 = vec32.normalize();
-        int i = Mth.floor(vec32.length()) + 7;
+    /** insight 附魔：给 {@code level×15} 格范围内的敌对生物上 1 秒发光。 */
+    public static void applyGlowingEffect(LivingEntity livingEntity, int enchantLevel) {
+        PetEnchantmentBehaviorUtils.applyGlowingEffect(livingEntity, enchantLevel);
+    }
 
-        for (int j = 1; j < i; j++) {
-            Vec3 vec34 = vec3.add(vec33.scale(j));
-            serverLevel.sendParticles(ParticleTypes.SONIC_BOOM, vec34.x, vec34.y, vec34.z, 1, 0.0, 0.0, 0.0, 0.0);
-        }
+    // ==================== 七、传送与近距离查询 → PetEntityQueryUtils ====================
 
-        maid.playSound(SoundEvents.WARDEN_SONIC_BOOM, 3.0F, 1.0F);
-        if (monster.hurtServer(serverLevel, serverLevel.damageSources().sonicBoom(maid), 10.0F)) {
-            double d = 0.5 * (1.0 - monster.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE));
-            double e = 2.5 * (1.0 - monster.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE));
-            monster.push(vec33.x() * e, vec33.y() * d, vec33.z() * e);
-        }
+    /** tethered_teleport 附魔是否允许这只宠物跟着 owner 一起传送。 */
+    public static boolean isValidTeleporter(LivingEntity owner, Mob animal) {
+        return PetEntityQueryUtils.isValidTeleporter(owner, animal);
+    }
+
+    /** {@code range} 格内的非玩家活体（不含自身），吸血平摊/音波群攻等范围效果的基础查询。 */
+    public static List<LivingEntity> getNearbyMobs(LivingEntity entity, double range) {
+        return PetEntityQueryUtils.getNearbyMobs(entity, range);
+    }
+
+    /** 光环可治疗的目标：4 格内同主人（双向）且未满血的活体，含主人本人。 */
+    public static List<LivingEntity> getAuraHealables(LivingEntity pet) {
+        return PetEntityQueryUtils.getAuraHealables(pet);
+    }
+
+    /** 16 格内「有 healing_aura 且当前空闲」的同主人宠物（受击冲能用）。 */
+    public static List<LivingEntity> getNearbyHealers(LivingEntity hurtOwner) {
+        return PetEntityQueryUtils.getNearbyHealers(hurtOwner);
+    }
+
+    // ==================== 八、disc_jockey / charisma → PetJukeboxUtils ====================
+
+    /** charisma 对主人的交易折扣加成：25 格内自家宠物的 10×等级之和，上限 50。 */
+    public static int getCharismaBonusForOwner(Player player) {
+        return PetJukeboxUtils.getCharismaBonusForOwner(player);
+    }
+
+    /** disc_jockey 唱片机跟随者的 UUID（未设置返回 null），citadel tag 存储。 */
+    @Nullable
+    public static UUID getPetJukeboxUUID(LivingEntity enchanted) {
+        return PetJukeboxUtils.getPetJukeboxUUID(enchanted);
+    }
+
+    public static void setPetJukeboxUUID(LivingEntity enchanted, UUID id) {
+        PetJukeboxUtils.setPetJukeboxUUID(enchanted, id);
+    }
+
+    /** disc_jockey 唱片机当前播放的唱片 ItemStack；未设置返回 EMPTY。 */
+    public static ItemStack getPetJukeboxDisc(LivingEntity enchanted) {
+        return PetJukeboxUtils.getPetJukeboxDisc(enchanted);
+    }
+
+    public static void setPetJukeboxDisc(LivingEntity enchanted, ItemStack stack) {
+        PetJukeboxUtils.setPetJukeboxDisc(enchanted, stack);
     }
 }

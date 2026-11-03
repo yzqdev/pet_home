@@ -10,6 +10,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.RandomSource;
 
+/**
+ * 矿脉嗅探附魔粒子（{@code pet_home:sniff}）：灰色光点从宠物鼻尖飞向嗅到的
+ * 矿石目标点（motion 即目标坐标），飞行中逐渐缩小、淡出。
+ */
 public class ParticleSniff extends SimpleAnimatedParticle {
     private float targetX = 0;
     private float targetY = 0;

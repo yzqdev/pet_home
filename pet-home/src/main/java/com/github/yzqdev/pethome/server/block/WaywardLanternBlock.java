@@ -34,6 +34,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.stream.Stream;
 
+/**
+ * 迷途灯笼方块（含 WATERLOGGED 变体，光 13，防活塞推动）。方块本身无交互逻辑，
+ * 收容/召回由 {@link WaywardLanternBlockEntity} 的服务端 tick 驱动；客户端 {@code animateTick}
+ * 只负责萤火虫与火焰粒子。
+ */
 public class WaywardLanternBlock extends BaseEntityBlock {
 
     private static final VoxelShape SHAPE = Stream.of(
@@ -56,7 +61,7 @@ public class WaywardLanternBlock extends BaseEntityBlock {
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, Boolean.valueOf(false)));
     }
 
-    public VoxelShape getShape(BlockState p_49038_, BlockGetter p_49039_, BlockPos p_49040_, CollisionContext p_49041_) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
@@ -107,8 +112,8 @@ public class WaywardLanternBlock extends BaseEntityBlock {
     }
 
     @org.jetbrains.annotations.Nullable
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level p_152180_, BlockState p_152181_, BlockEntityType<T> p_152182_) {
-        return p_152180_.isClientSide() ? null : createTickerHelper(p_152182_, PHTileEntityRegistry.WAYWARD_LANTERN, WaywardLanternBlockEntity::tick);
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        return level.isClientSide() ? null : createTickerHelper(type, PHTileEntityRegistry.WAYWARD_LANTERN, WaywardLanternBlockEntity::tick);
     }
 
 

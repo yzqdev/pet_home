@@ -16,17 +16,27 @@ import snownee.jade.api.IEntityComponentProvider;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.config.IPluginConfig;
 
+/**
+ * Jade 实体悬浮提示（可选联动，{@code @WailaPlugin} 在 {@code PetHomePlugin} 注册）：
+ * 对准生物时显示三态指令、宠物床位置与项圈附魔列表（数据与 {@code PetInfoHudOverlay}
+ * 同源，读客户端附件同步副本）。枚举单例。
+ */
 public enum PetHomeComponentProvider implements IEntityComponentProvider {
     INSTANCE;
 
+    /** 往 Jade tooltip 追加宠物信息行（仅 LivingEntity 且有内容时）。 */
     @Override
     public void appendTooltip(ITooltip iTooltip, EntityAccessor entityAccessor, IPluginConfig iPluginConfig) {
+        // Jade 按 uid 自动生成 plugin_pet_home.collar_tag 开关，玩家关闭后整段不显示
+        if (!iPluginConfig.get(this)) {
+            return;
+        }
 
         if (entityAccessor.getEntity() instanceof LivingEntity livingEntity) {
             var enchants = TameableUtils.getEnchantDescriptions(livingEntity);
 
             if (livingEntity instanceof IComandableMob cmd && TameableUtils.isTamed(livingEntity)&& PetHomeConfig.trinaryCommandSystem) {
-                iTooltip.add(Component.translatable("message.pet_home.command_" + cmd.getCommand(),livingEntity.getDisplayName() ));
+                iTooltip.add(Component.translatable("message.pet_home.command_" + cmd.getCommand(),livingEntity.getDisplayName() ).withStyle(ChatFormatting.YELLOW));
             }
             var hasPetbed = TameableUtils.getPetBedPos(livingEntity);
             if (hasPetbed != null) {
