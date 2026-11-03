@@ -5,9 +5,14 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
 
+/**
+ * 两栖宠物水中的移动控制器（仿原版 {@code Axolotl/Turtle} 的 SmoothSwimming 类实现）：
+ * MOVE_TO 时按目标向量平滑转向身体并叠加垂直速度分量，使宠物在水中能上下浮沉地游向目标。
+ */
 public class AquaticMoveControl extends MoveControl {
     private final Mob entity;
 
+    /** @param entity 使用该控制器的两栖宠物 */
     public AquaticMoveControl(Mob entity) {
         super(entity);
         this.entity = entity;

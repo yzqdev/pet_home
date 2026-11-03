@@ -14,6 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
+/** 矿脉嗅探高亮方块渲染器：用 outline RenderType 绘制 16³ 立方体模型，套在目标方块外圈（无阴影）。 */
 @Environment(EnvType.CLIENT)
 public class RenderHighlightedBlock extends EntityRenderer<HighlightedBlockEntity> {
 

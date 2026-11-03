@@ -1,7 +1,7 @@
 package com.github.yzqdev.pethome.util;
 
 
-import com.github.yzqdev.pethome.ModConstants;
+import com.github.yzqdev.pethome.PHConstants;
 import com.github.yzqdev.pethome.PetHomeConfig;
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.mojang.authlib.GameProfile;
@@ -19,13 +19,15 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.scores.PlayerTeam;
+import net.minecraft.world.scores.Team;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 /**
- * @author yzqdev
+ * 友军伤害保护判定链（由 {@code EntityHurtHandler.onLivingAttack} 调用）：
+ * 实体白名单 → 物品白名单 → 主人保护（可反弹伤害）→ 同主人宠物互护 → 队伍保护 → 幼崽保护；
+ * 潜行攻击整体绕过。配置值读 {@link PetHomeConfig} 的静态缓存。
  */
 public class FriendlyFireCommon {
 
@@ -39,12 +41,13 @@ public class FriendlyFireCommon {
 
     public static void init() {
 
-       ModConstants.LOG.debug("Protect children = {}",PetHomeConfig.protectChildren);
-        ModConstants.LOG.debug("Protect pets from owner = {}", PetHomeConfig.protectPetsFromOwner);
-        ModConstants.LOG.debug("Protect pets from pets = {}",PetHomeConfig.protectPetsFromPets);
-        ModConstants.LOG.debug("Reflect damage = {}",PetHomeConfig.reflectDamage);
+       PHConstants.LOG.debug("Protect children = {}",PetHomeConfig.protectChildren);
+        PHConstants.LOG.debug("Protect pets from owner = {}", PetHomeConfig.protectPetsFromOwner);
+        PHConstants.LOG.debug("Protect pets from pets = {}",PetHomeConfig.protectPetsFromPets);
+        PHConstants.LOG.debug("Reflect damage = {}",PetHomeConfig.reflectDamage);
     }
 
+    /** 判定命中是否应被取消；取消且攻击者是服务端玩家时按配置弹行动栏提示。 */
     public static boolean preventAttack(Entity target, DamageSource source, float amount) {
 
         final Entity attacker = source.getEntity();
@@ -58,6 +61,7 @@ public class FriendlyFireCommon {
         return preventDamage;
     }
 
+    /** 保护判定主体（顺序见类注释；{@code reflectDamage} 开启时主人打宠物会改为对自己结算等量伤害）。 */
    public  static boolean isProtected(Entity victim, Entity attacker, float amount) {
 
         if (PetHomeConfig.noProtectionEntity!=null&&PetHomeConfig.noProtectionEntity.contains(victim.getType()) ) {
@@ -131,23 +135,25 @@ public class FriendlyFireCommon {
         return false;
     }
 
+    /** 双方队伍互相结盟即视为保护；{@code respectTeamRules} 开启时尊重队伍自身「允许友伤」设置。类型按 Team 接口判定，兼容第三方模组自定义队伍（如 Goety 仆从的 DummyTeam），不假设原版 PlayerTeam。 */
    public  static boolean isOnProtectedTeam(Entity attacker, Entity victim) {
 
-        final PlayerTeam attackerTeam = getEffectiveTeam(attacker);
-        final PlayerTeam victimTeam = getEffectiveTeam(victim);
+        final Team attackerTeam = getEffectiveTeam(attacker);
+        final Team victimTeam = getEffectiveTeam(victim);
         return attackerTeam != null && victimTeam != null && (attackerTeam.isAlliedTo(victimTeam) && victimTeam.isAlliedTo(attackerTeam)) && (!PetHomeConfig.respectTeamRules || !victimTeam.isAllowFriendlyFire());
     }
 
+    /** 取实体生效队伍：自身无队伍时回退到主人的队伍（OwnableEntity 路径，含服务端按 UUID 反查 GameProfile）。 */
     @Nullable
-   public  static PlayerTeam getEffectiveTeam(Entity entity) {
+   public  static Team getEffectiveTeam(Entity entity) {
 
-        final PlayerTeam directTeam = (PlayerTeam) entity.getTeam();
+        final Team directTeam = entity.getTeam();
 
         if (directTeam == null && entity instanceof OwnableEntity ownable && ownable.getOwnerUUID() != null) {
 
             if (ownable.getOwner() != null) {
 
-                return (PlayerTeam) ownable.getOwner().getTeam();
+                return ownable.getOwner().getTeam();
             }
 
             if (entity.level() instanceof ServerLevel server) {
@@ -164,6 +170,7 @@ public class FriendlyFireCommon {
         return directTeam;
     }
 
+    /** 取归属 UUID：OwnableEntity（含 ModifiedToBeTameable 的 Mixin 桥接）或马类（AbstractHorse 不实现该接口）。 */
     @Nullable
    public  static UUID getOwner(Entity entity) {
 

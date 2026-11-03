@@ -13,6 +13,7 @@ import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
+/** 矿石颜色注册表（矿脉嗅探高亮用）：优先取方块 colorizer，失败则从贴图图集求平均色，结果缓存（FALLBACK_BLOCK 为铁矿石兜底）。 */
 @Environment(EnvType.CLIENT)
 public class OreColorRegistry {
 
@@ -37,7 +38,7 @@ public class OreColorRegistry {
                     Color texColour = getAverageColour(getTextureAtlas(stack));
                     color = texColour.getRGB();
                 } catch (NullPointerException e) {
-                    e.printStackTrace();
+                    PetHomeMod.LOGGER.error("Failed to sample ore texture colour", e);
                 }
             }else{
                 color = colorizer;

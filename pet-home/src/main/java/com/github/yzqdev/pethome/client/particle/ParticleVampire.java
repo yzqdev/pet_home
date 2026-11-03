@@ -8,6 +8,7 @@ import net.minecraft.core.particles.SimpleParticleType;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
+/** 吸血（VAMPIRE 附魔）血雾粒子：半透明短寿命粒子，初速快速衰减并随寿命淡出。 */
 public class ParticleVampire extends SimpleAnimatedParticle {
 
     private ParticleVampire(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet sprites) {
@@ -34,7 +35,7 @@ public class ParticleVampire extends SimpleAnimatedParticle {
         return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
 
-    public int getLightColor(float p_107249_) {
+    public int getLightColor(float partialTick) {
         BlockPos blockpos = BlockPos.containing(this.x, this.y, this.z);
         return this.level.hasChunkAt(blockpos) ? LevelRenderer.getLightColor(this.level, blockpos) : 0;
     }

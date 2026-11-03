@@ -14,6 +14,10 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import org.joml.Quaternionf;
 
+/**
+ * 捕网 tooltip 的生物渲染组件（客户端）：在 tooltip 高度内用 {@code InventoryScreen.renderEntityInInventory}
+ * 绘制被装生物的 3D 形象（随时间自转，scissor 裁剪），实体按 NBT 现场重建。
+ */
 public class ClientMobTooltip implements ClientTooltipComponent {
     private final Component name;
     private final CompoundTag entityTag;
@@ -21,6 +25,7 @@ public class ClientMobTooltip implements ClientTooltipComponent {
 
     public ClientMobTooltip(ItemMobTooltip itemMobTooltip) {
 
+        // 从同步来的 NBT 中解析实体 id，取注册表描述作为 tooltip 宽度基准
         var tag = itemMobTooltip.compoundTag();
         String id = tag.getString("id");
         EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(id));

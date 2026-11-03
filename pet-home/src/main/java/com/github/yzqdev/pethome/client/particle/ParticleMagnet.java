@@ -6,6 +6,7 @@ import net.minecraft.core.particles.SimpleParticleType;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
+/** 磁力（MAGNET 附魔）吸附粒子：极短寿命的自发光小粒子，初速迅速衰减，表现"被吸走"的轨迹。 */
 public class ParticleMagnet extends SimpleAnimatedParticle {
 
     private ParticleMagnet(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet sprites) {

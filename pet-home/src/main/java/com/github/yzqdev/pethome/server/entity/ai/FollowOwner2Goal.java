@@ -3,8 +3,8 @@ package com.github.yzqdev.pethome.server.entity.ai;
 
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 
 import net.minecraft.core.BlockPos;
@@ -20,8 +20,15 @@ import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
 
 import java.util.EnumSet;
 
+/**
+ * 三态指令的"跟随"寻路目标（原版 {@code FollowOwnerGoal} 的非 {@code TamableAnimal} 版本）：
+ * 供狐狸 / 兔子 / 美西螈 / 青蛙等经 {@link ModifiedToBeTameable} 扩展驯服的生物使用。
+ * 与原版差异：跟随/停止判定读 Mixin 注入的驯服数据与指令状态；携带"两栖"项圈标签的宠物
+ * 在水中也直接向主人寻路，且传送落点允许是水域。
+ */
 public class FollowOwner2Goal extends Goal {
 
+    /** 承载驯服数据的生物本体，通过 {@link ModifiedToBeTameable} 桥接访问主人与指令状态。 */
     private final Animal tamable;
     private final LevelReader level;
     private final double speedModifier;
@@ -33,6 +40,13 @@ public class FollowOwner2Goal extends Goal {
     private int timeToRecalcPath;
     private float oldWaterCost;
 
+    /**
+     * @param animal        拥有驯服数据的宠物本体
+     * @param speedModifier 寻路速度倍率
+     * @param startDistance 与主人超过该距离（方块数）才开始跟随
+     * @param stopDistance  距主人小于该距离即视为到达，停止寻路
+     * @param flies         传送落点是否允许树叶上方（飞行型宠物为 true）
+     */
     public FollowOwner2Goal(Animal animal, double speedModifier, float startDistance, float stopDistance, boolean flies) {
         this.tamable = animal;
         this.level = animal.level();
@@ -44,15 +58,16 @@ public class FollowOwner2Goal extends Goal {
         this.setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.LOOK));
     }
 
+    /** 仅在指令为"跟随"（2）且距离主人超过 startDistance 时启动；三态指令系统关闭时退化为原版行为。 */
     public boolean canUse() {
-        LivingEntity livingentity = ((ModifedToBeTameable) this.tamable).getTameOwner();
+        LivingEntity livingentity = ((ModifiedToBeTameable) this.tamable).getTameOwner();
         if(tamable instanceof IComandableMob commandableMob && commandableMob.getCommand() != 2 && PetHomeMod.CONFIG.trinaryCommandSystem.get()) {
             return false;
         }else if (livingentity == null) {
             return false;
         } else if (livingentity.isSpectator()) {
             return false;
-        } else if (((ModifedToBeTameable) this.tamable).isStayingStill()) {
+        } else if (((ModifiedToBeTameable) this.tamable).isStayingStill()) {
             return false;
         } else if (this.tamable.distanceToSqr(livingentity) < (double) (this.startDistance * this.startDistance)) {
             return false;
@@ -62,12 +77,13 @@ public class FollowOwner2Goal extends Goal {
         }
     }
 
+    /** 指令切走、寻路完成或进入停留（1）即终止。 */
     public boolean canContinueToUse() {
         if(tamable instanceof IComandableMob commandableMob && commandableMob.getCommand() != 2 && PetHomeMod.CONFIG.trinaryCommandSystem.get()) {
             return false;
         }else if (this.navigation.isDone()) {
             return false;
-        } else if (((ModifedToBeTameable) this.tamable).isStayingStill()) {
+        } else if (((ModifiedToBeTameable) this.tamable).isStayingStill()) {
             return false;
         } else {
             return !(this.tamable.distanceToSqr(this.owner) <= (double) (this.stopDistance * this.stopDistance));
@@ -86,8 +102,10 @@ public class FollowOwner2Goal extends Goal {
         this.tamable.setPathfindingMalus(BlockPathTypes.WATER, this.oldWaterCost);
     }
 
+    /** 每 10 tick 重估一次路径；超过 12 格（144 平方距离）直接传送到主人身边。 */
     public void tick() {
-        if (TameableUtils.hasEnchant(tamable, DIEnchantmentRegistry.AMPHIBIOUS) && tamable.isInWaterOrBubble() && this.tamable.distanceToSqr(this.owner) < 144.0D) {
+        if (TameableUtils.hasEnchant(tamable, PHEnchantmentRegistry.AMPHIBIOUS) && tamable.isInWaterOrBubble() && this.tamable.distanceToSqr(this.owner) < 144.0D) {
+            // 两栖项圈标签：水中时无视常规距离判定，持续向主人寻路
             tamable.getNavigation().moveTo(owner, speedModifier);
         }
         this.tamable.getLookControl().setLookAt(this.owner, 10.0F, (float) this.tamable.getMaxHeadXRot());
@@ -104,6 +122,7 @@ public class FollowOwner2Goal extends Goal {
         }
     }
 
+    /** 在主人周围 7×3×7 范围内随机尝试 10 次找传送落点，找不到则放弃（本 tick 不传送）。 */
     private void teleportToOwner() {
         BlockPos blockpos = this.owner.blockPosition();
 
@@ -119,21 +138,23 @@ public class FollowOwner2Goal extends Goal {
 
     }
 
-    private boolean maybeTeleportTo(int p_25304_, int p_25305_, int p_25306_) {
-        if (Math.abs((double) p_25304_ - this.owner.getX()) < 2.0D && Math.abs((double) p_25306_ - this.owner.getZ()) < 2.0D) {
+    /** 落点校验：不能落在主人 2 格内（避免贴脸传送）；通过后执行传送并清除当前寻路。 */
+    private boolean maybeTeleportTo(int x, int y, int z) {
+        if (Math.abs((double) x - this.owner.getX()) < 2.0D && Math.abs((double) z - this.owner.getZ()) < 2.0D) {
             return false;
-        } else if (!this.canTeleportTo(new BlockPos(p_25304_, p_25305_, p_25306_))) {
+        } else if (!this.canTeleportTo(new BlockPos(x, y, z))) {
             return false;
         } else {
-            this.tamable.moveTo((double) p_25304_ + 0.5D, p_25305_, (double) p_25306_ + 0.5D, this.tamable.getYRot(), this.tamable.getXRot());
+            this.tamable.moveTo((double) x + 0.5D, y, (double) z + 0.5D, this.tamable.getYRot(), this.tamable.getXRot());
             this.navigation.stop();
             return true;
         }
     }
 
+    /** 落点必须可站立且无碰撞；两栖项圈标签允许水域落点，非飞行宠物禁树叶落点（防卡树叶）。 */
     private boolean canTeleportTo(BlockPos pos) {
         BlockPathTypes blockpathtypes = WalkNodeEvaluator.getBlockPathTypeStatic(this.level, pos.mutable());
-        if (TameableUtils.hasEnchant(tamable, DIEnchantmentRegistry.AMPHIBIOUS) && level.isWaterAt(pos)) {
+        if (TameableUtils.hasEnchant(tamable, PHEnchantmentRegistry.AMPHIBIOUS) && level.isWaterAt(pos)) {
             return true;
         }
         if (blockpathtypes != BlockPathTypes.WALKABLE) {
@@ -149,7 +170,7 @@ public class FollowOwner2Goal extends Goal {
         }
     }
 
-    private int randomIntInclusive(int p_25301_, int p_25302_) {
-        return this.tamable.getRandom().nextInt(p_25302_ - p_25301_ + 1) + p_25301_;
+    private int randomIntInclusive(int min, int max) {
+        return this.tamable.getRandom().nextInt(max - min + 1) + min;
     }
 }

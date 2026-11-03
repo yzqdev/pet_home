@@ -19,6 +19,10 @@ import java.util.Random;
  * @since 1.9.0
  * Duplicate of ModelPart class which is not final
  */
+/**
+ * 模型部件基类（原版 ModelPart 的非 final 复制版）：立方体列表 + 子部件树 + 逐顶点变换渲染；
+ * 内部 ModelBox / TexturedQuad / PositionTextureVertex 亦为原版同名类的复制，结构保持一致以便对照移植。
+ */
 @Environment(EnvType.CLIENT)
 public class BasicModelPart {
     public float textureWidth = 64.0F;
@@ -108,7 +112,7 @@ public class BasicModelPart {
         this.addBox(this.textureOffsetX, this.textureOffsetY, x, y, z, width, height, depth, delta, delta, delta, mirrorIn, false);
     }
 
-    private void addBox(int texOffX, int texOffY, float x, float y, float z, float width, float height, float depth, float deltaX, float deltaY, float deltaZ, boolean mirorIn, boolean p_228305_13_) {
+    private void addBox(int texOffX, int texOffY, float x, float y, float z, float width, float height, float depth, float deltaX, float deltaY, float deltaZ, boolean mirorIn, boolean unused) {
         this.cubeList.add(new BasicModelPart.ModelBox(texOffX, texOffY, x, y, z, width, height, depth, deltaX, deltaY, deltaZ, mirorIn, this.textureWidth, this.textureHeight));
     }
 

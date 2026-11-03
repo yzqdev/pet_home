@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.Block;
 
 import java.util.Random;
 
+/** 村民出售指定数量物品、收取绿宝石的基础交易（模组道具的主要售卖渠道）。 */
 public class SellingItemTrade implements VillagerTrades.ItemListing {
     private final ItemStack sellingItem;
     private final int emeraldCount;

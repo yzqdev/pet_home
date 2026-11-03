@@ -2,8 +2,8 @@ package com.github.yzqdev.pethome.server.entity;
 
 import com.github.yzqdev.pethome.server.NbtKeys;
 
-import com.github.yzqdev.pethome.server.misc.DIParticleRegistry;
-import com.github.yzqdev.pethome.server.misc.DISoundRegistry;
+import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
+import com.github.yzqdev.pethome.server.misc.PHSoundRegistry;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -24,6 +24,12 @@ import net.minecraft.world.phys.*;
 import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
+/**
+ * 念力墙（PSYCHIC_WALL）：立在宠物/主人与威胁之间的力场墙——宽度 {@code blockWidth}（等级+1 格）、
+ * 法线朝向 {@code wallDirection}、寿命 {@code lifespan}（等级×100 tick）；出现/消散各 10 tick 的
+ * 包围盒生长动画。阻挡并击退 / 反弹非同阵营实体，投射物调头弹回（友方投射物直接放行）；免疫伤害、
+ * 无重力；施法者死亡时寿命被压到 20 tick 快速消散。包围盒 / 朝向 / 宽度 / 寿命随 NBT 持久化。
+ */
 public class PsychicWallEntity extends Entity {
 
     protected static final EntityDataAccessor<Direction> DIRECTION = SynchedEntityData.defineId(PsychicWallEntity.class, EntityDataSerializers.DIRECTION);
@@ -39,13 +45,14 @@ public class PsychicWallEntity extends Entity {
         super(type, level);
     }
 
+    /** 每 tick：动画期重建包围盒 / 循环音效；服务端同步施法者实体 ID 并处理其死亡；对接触的非同阵营实体施加推力（投射物调头），逐实体 15 tick 反弹去重窗口；寿命倒计时后自毁。 */
     public void tick() {
         super.tick();
         if (this.tickCount <= 10 || this.getLifespan() <= 10) {
             this.setBoundingBox(this.makeBoundingBox());
         } else {
             if (soundLoop % 15 == 0) {
-                this.playSound(DISoundRegistry.PSYCHIC_WALL, 1, random.nextFloat() * 0.3F + 0.9F);
+                this.playSound(PHSoundRegistry.PSYCHIC_WALL, 1, random.nextFloat() * 0.3F + 0.9F);
             }
             soundLoop++;
         }
@@ -93,8 +100,8 @@ public class PsychicWallEntity extends Entity {
                             } else {
                                 vec32 = entityhitresult.getLocation();
                             }
-                            level().addParticle(DIParticleRegistry.PSYCHIC_WALL, vec32.x, vec32.y, vec32.z, this.getWallDirection().get3DDataValue(), 0, 0);
-                            this.playSound(DISoundRegistry.PSYCHIC_WALL_DEFLECT, 1, random.nextFloat() * 0.3F + 0.9F);
+                            level().addParticle(PHParticleRegistry.PSYCHIC_WALL, vec32.x, vec32.y, vec32.z, this.getWallDirection().get3DDataValue(), 0, 0);
+                            this.playSound(PHSoundRegistry.PSYCHIC_WALL_DEFLECT, 1, random.nextFloat() * 0.3F + 0.9F);
                         }
                     }
                 }
@@ -113,6 +120,7 @@ public class PsychicWallEntity extends Entity {
         }
     }
 
+    /** 判定投射物是否由墙主人或其同主人单位发射（友方投射物不反弹，直接穿过）。 */
     private boolean isFiredByAlly(Projectile projectile) {
         Entity owner = this.getCreator();
         if (owner instanceof LivingEntity && projectile.getOwner() != null) {
@@ -200,6 +208,7 @@ public class PsychicWallEntity extends Entity {
     }
 
 
+    /** 解析墙主人：服务端按 UUID 查实体，客户端按同步来的实体 ID 查（两者都经 SynchedEntityData 携带）。 */
     public Entity getCreator() {
         if (!level().isClientSide()) {
             UUID id = getCreatorId();
@@ -218,6 +227,7 @@ public class PsychicWallEntity extends Entity {
         return !this.isSameTeam(entity);
     }
 
+    /** 按朝向与宽度构造墙体 AABB；生长动画期间按 {@code min(lifespan, tickCount)/10} 缩放。 */
     protected AABB makeBoundingBox() {
         Direction direction2 = this.getWallDirection().getOpposite();
         float scale = Math.min(10, Math.min(this.getLifespan(), this.tickCount)) / 10F;
@@ -254,11 +264,12 @@ public class PsychicWallEntity extends Entity {
         return new AABB(this.getX() + minX, this.getY() + minY, this.getZ() + minZ, this.getX() + maxX, this.getY() + maxY, this.getZ() + maxZ);
     }
 
-    public void setPos(double p_20210_, double p_20211_, double p_20212_) {
-        this.setPosRaw(p_20210_, p_20211_, p_20212_);
+    public void setPos(double x, double y, double z) {
+        this.setPosRaw(x, y, z);
         this.setBoundingBox(this.makeBoundingBox());
     }
 
+    /** 朝向 / 宽度数据更新时重算包围盒（客户端渲染与碰撞保持一致）。 */
     public void onSyncedDataUpdated(EntityDataAccessor<?> ac) {
         if (DIRECTION.equals(ac) || BLOCK_WIDTH.equals(ac)) {
             this.setBoundingBox(this.makeBoundingBox());
@@ -266,6 +277,7 @@ public class PsychicWallEntity extends Entity {
         super.onSyncedDataUpdated(ac);
     }
 
+    /** 同阵营（同主人或与主人同盟）实体不被墙阻挡。 */
     public boolean isSameTeam(Entity entity) {
         Entity owner = this.getCreator();
         return owner instanceof LivingEntity && (TameableUtils.hasSameOwnerAs((LivingEntity)owner, entity) || owner.isAlliedTo(entity));

@@ -39,6 +39,7 @@
     "ItemEntityMixin",
     "MobHooksMixin",
     "EntityDismountMixin",
+    "EntityInvoker",
     "EntityMaidMixin",
     "ServerPlayerMixin",
     "AnvilMenuMixin",

@@ -1,0 +1,6 @@
+{
+  "parent": "pet_home:item/net_launcher",
+  "textures": {
+    "core": "pet_home:item/net_launcher_core_overload"
+  }
+}

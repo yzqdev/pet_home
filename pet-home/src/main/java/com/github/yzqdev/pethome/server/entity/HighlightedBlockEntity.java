@@ -12,6 +12,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 
+/**
+ * 矿脉嗅探的高亮框实体：生成在矿石位置，常亮发光（{@code isCurrentlyGlowing}），寿命到期或
+ * 所处方块变为空气时自毁；不持久化（存档方法为空）。
+ */
 public class HighlightedBlockEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> LIFESPAN = SynchedEntityData.defineId(HighlightedBlockEntity.class, EntityDataSerializers.INT);
@@ -20,6 +24,7 @@ public class HighlightedBlockEntity extends Entity {
         super(type, level);
     }
 
+    /** 每 tick：矿石被挖掉或寿命归零即自毁，否则倒计时。 */
     public void tick() {
         super.tick();
         if(this.getBlockState().isAir()){

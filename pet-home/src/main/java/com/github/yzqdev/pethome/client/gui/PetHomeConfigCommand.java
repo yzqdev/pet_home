@@ -8,6 +8,9 @@ import net.minecraft.client.Minecraft;
 import com.mojang.brigadier.CommandDispatcher;
 
 
+/**
+ * 客户端命令 {@code /pet_home_config}：打开 {@link PetHomeConfigScreen}（无父屏）。
+ */
 @Environment(EnvType.CLIENT)
 public final class PetHomeConfigCommand {
 

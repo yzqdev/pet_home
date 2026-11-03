@@ -13,6 +13,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import org.joml.Vector4f;
 
+/** 连锁闪电实体渲染器：在起始实体与自身之间绘制闪电束（视锥判定合并两端包围盒，避免转动视角时闪电消失）。 */
 public class ChainLightningRender extends EntityRenderer<ChainLightningEntity> {
 
     private LightningRender lightningRender = new LightningRender();

@@ -22,6 +22,7 @@ import net.fabricmc.api.Environment;
 
 import java.util.Random;
 
+/** 偏移结界（DEFLECTION_SHIELD 附魔）粒子：CUSTOM 渲染，按物品模型在宠物上方绘制旋转的结界片，淡入→悬浮→淡出。 */
 public class ParticleDeflectionShield extends Particle {
 
     private float xRot;

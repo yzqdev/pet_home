@@ -5,6 +5,7 @@ package com.github.yzqdev.pethome.client.model;
 import com.github.yzqdev.pethome.server.entity.RecallBallEntity;
 import com.google.common.collect.ImmutableList;
 
+/** 矿脉嗅探高亮方块模型：标准 16×16×16 立方体，配合半透明 RenderType 套在目标方块外圈。 */
 public class HighlightedBlockModel extends AdvancedEntityModel<RecallBallEntity> {
     private final AdvancedModelBox box;
 

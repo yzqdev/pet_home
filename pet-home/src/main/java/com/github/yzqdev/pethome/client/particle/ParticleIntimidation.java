@@ -30,6 +30,7 @@ import net.fabricmc.api.Environment;
 
 import java.util.Random;
 
+/** 威慑（INTIMIDATION 附魔）粒子：按实体 id 找到宠物，借用其实体渲染器的模型与贴图，在头顶绘制半透明浮起又下沉的幻影形象（CUSTOM 渲染）。 */
 public class ParticleIntimidation extends Particle {
 
     private float xRot;

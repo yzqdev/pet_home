@@ -9,10 +9,9 @@ import net.fabricmc.api.Environment;
 import java.util.Map;
 
 /**
- * An enhanced ModelBase
- *
- * @author gegy1000
- * @since 1.0.0
+ * 模型库增强基类（自 Citadel 模型库移植，原作者是 gegy1000）：在 {@link BasicEntityModel} 之上提供
+ * 默认姿态记录/复位、面向目标（faceTarget）、链式摆动（chainSwing / chainWave / chainFlap）、
+ * walk / flap / swing / bob 动画原语与渐变插值（progress* 系列），供宠物专属模型复用动画写法。
  */
 @Environment(EnvType.CLIENT)
 public abstract class AdvancedEntityModel<T extends Entity> extends BasicEntityModel<T> {

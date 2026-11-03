@@ -21,6 +21,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(LivingEntity.class)
 public class LivingEntityDamageMixin {
 
+    /** 注入 {@code LivingEntity#tick} 头部：每 tick 生命值校验 + 宠物行为调度（附魔触发 / 指令状态，见 {@code EntityTickHandler}）。 */
     @Inject(method = "tick()V", at = @At("HEAD"))
     private void ph_onLivingTick(CallbackInfo ci) {
         LivingEntity self = (LivingEntity) (Object) this;
@@ -28,6 +29,7 @@ public class LivingEntityDamageMixin {
         EntityTickHandler.onLivingUpdate(self);
     }
 
+    /** 注入 {@code LivingEntity#hurt} 头部（可取消）：拒绝 NaN 伤害；按友军伤害保护改写伤害并分发受击事件（取消 = 无敌）。 */
     @Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
     private void ph_onLivingAttack(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         LivingEntity self = (LivingEntity) (Object) this;
@@ -63,6 +65,7 @@ public class LivingEntityDamageMixin {
         EntityHurtHandler.onLivingDamage(self, source, amount);
     }
 
+    /** 注入 {@code LivingEntity#dropAllDeathLoot} 头部（可取消）：按死亡掉落保护规则取消掉落（如宠物床复活流程需要保留实体数据）。 */
     @Inject(method = "dropAllDeathLoot(Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("HEAD"), cancellable = true)
     private void ph_onLivingDrops(DamageSource source, CallbackInfo ci) {
         LivingEntity self = (LivingEntity) (Object) this;
@@ -71,6 +74,7 @@ public class LivingEntityDamageMixin {
         }
     }
 
+    /** 注入 {@code LivingEntity#randomTeleport} 头部：玩家随机传送（紫颂果 / 末影珍珠）时同样触发"拴魂"宠物随行转移。 */
     @Inject(method = "randomTeleport(DDDZ)Z", at = @At("HEAD"))
     private void ph_onRandomTeleport(double x, double y, double z, boolean broadcast, CallbackInfoReturnable<Boolean> cir) {
         LivingEntity self = (LivingEntity) (Object) this;

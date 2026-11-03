@@ -4,7 +4,7 @@ package com.github.yzqdev.pethome.server.block;
 
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
-import com.github.yzqdev.pethome.server.misc.DISoundRegistry;
+import com.github.yzqdev.pethome.server.misc.PHSoundRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
@@ -37,6 +37,11 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.function.Predicate;
 
+/**
+ * 指令鼓：右键循环切换方块状态 {@code command}（0 游走 / 1 停留 / 2 跟随）并对 32 格半径内
+ * 自己的宠物批量下发；也支持红石信号触发（按 {@code POWERED} 边沿，以下床时记录的放置者身份发令）。
+ * 注意 {@link #use} 下发的是切换<strong>前</strong>的指令值（方块显示的是新值）。
+ */
 public class DrumBlock extends BaseEntityBlock {
 
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
@@ -56,6 +61,7 @@ public class DrumBlock extends BaseEntityBlock {
         return RenderShape.MODEL;
     }
 
+    /** 右键（非潜行）：循环切换指令状态并以旧指令值下发，播放鼓声与音符游戏事件，返回受影响宠物数提示。 */
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult result) {
         if(player.isShiftKeyDown()){
             return InteractionResult.PASS;
@@ -66,12 +72,13 @@ public class DrumBlock extends BaseEntityBlock {
             if(count > 0){
                 player.displayClientMessage(Component.translatable("message.pet_home.drum_command_" + currentCommand, count), true);
             }
-            player.playSound(DISoundRegistry.DRUM, 3, 0.3F + 0.4F * random.nextFloat());
+            player.playSound(PHSoundRegistry.DRUM, 3, 0.3F + 0.4F * random.nextFloat());
             level.gameEvent(player, GameEvent.NOTE_BLOCK_PLAY, pos);
             return InteractionResult.SUCCESS;
         }
     }
 
+    /** 记录放置者 UUID 到方块实体（红石触发时以此身份发令）。 */
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, @org.jetbrains.annotations.Nullable LivingEntity livingEntity, ItemStack stack) {
         BlockEntity blockentity = level.getBlockEntity(pos);
         if (livingEntity != null && blockentity instanceof DrumBlockEntity drum) {
@@ -79,6 +86,7 @@ public class DrumBlock extends BaseEntityBlock {
         }
     }
 
+    /** 批量下发指令：64×64×64 内 issuer 自己的动物——指令宠物（IComandableMob）直接设值；原版宠物同步坐下/起立姿态；全部获得短暂发光标记。 */
     public int issueCommand(Level level, BlockPos pos, int command, UUID issuer){
         int count = 0;
         if(issuer != null){
@@ -104,6 +112,7 @@ public class DrumBlock extends BaseEntityBlock {
         return count;
     }
 
+    /** 红石触发：信号上升沿按 {@code POWERED} 判定，以放置者 UUID 发一次指令。 */
     public void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos pos2, boolean b) {
         boolean flag = level.hasNeighborSignal(pos);
         if (flag != state.getValue(POWERED)) {
@@ -113,7 +122,7 @@ public class DrumBlock extends BaseEntityBlock {
                     uuid = drum.getPlacerUUID();
                 }
                 this.issueCommand(level, pos, state.getValue(COMMAND), uuid);
-                level.playSound(null, pos, DISoundRegistry.DRUM, SoundSource.BLOCKS, 3, 0.3F + 0.4F * random.nextFloat());
+                level.playSound(null, pos, PHSoundRegistry.DRUM, SoundSource.BLOCKS, 3, 0.3F + 0.4F * random.nextFloat());
                 level.gameEvent(null, GameEvent.NOTE_BLOCK_PLAY, pos);
             }
             level.setBlock(pos, state.setValue(POWERED, Boolean.valueOf(flag)), 3);
@@ -121,7 +130,7 @@ public class DrumBlock extends BaseEntityBlock {
     }
 
     public void fallOn(Level level, BlockState state, BlockPos pos, Entity entity, float f) {
-        entity.playSound(DISoundRegistry.DRUM, 3, 0.6F + 0.4F * random.nextFloat());
+        entity.playSound(PHSoundRegistry.DRUM, 3, 0.6F + 0.4F * random.nextFloat());
         super.fallOn(level, state, pos, entity, f);
     }
 

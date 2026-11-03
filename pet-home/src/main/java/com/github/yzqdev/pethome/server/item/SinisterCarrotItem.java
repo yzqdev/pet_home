@@ -19,6 +19,11 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 
+/**
+ * 阴森胡萝卜：可食用（必凋零）。对自家驯服兔子 → 邪恶兔、僵尸马 → 骷髅马——与
+ * {@link RottenAppleItem} 同理，正常流程由 {@code PlayerInteractEntityHandler} 总入口执行，
+ * 本类的 {@link #interactLivingEntity} 是历史重复副本兜底。
+ */
 public class SinisterCarrotItem extends Item {
 
     public SinisterCarrotItem() {

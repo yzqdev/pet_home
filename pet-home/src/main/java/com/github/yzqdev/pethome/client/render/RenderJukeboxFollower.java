@@ -16,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantments;
 
+/** 跟随唱片机实体渲染器：以 GROUND 姿态渲染唱片机物品（附带消失诅咒使其在创造栏不可见，仅作展示模型用），放大 1.8 倍。 */
 public class RenderJukeboxFollower extends EntityRenderer<FollowingJukeboxEntity> {
 
     private ItemStack jukebox = new ItemStack(Items.JUKEBOX);

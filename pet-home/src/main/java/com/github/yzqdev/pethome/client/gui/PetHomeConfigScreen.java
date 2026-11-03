@@ -21,6 +21,11 @@ import java.util.List;
 import java.util.Map;
 
 
+/**
+ * 自研配置的 Tab 单屏设置界面（五个分类：友军保护 / 通用 / 可驯服物种 / 战利品 / 附魔开关）。
+ * 修改即时写入 {@code ConfigValue}（标 dirty），{@link #onClose} 时刷新静态缓存并落盘；
+ * 行控件渲染走剪刀裁剪，滚动不遮 Tab 与完成按钮。入口：ModMenu 配置按钮 / {@code /pet_home_config}。
+ */
 @Environment(EnvType.CLIENT)
 public class PetHomeConfigScreen extends Screen {
     private record Category(String nameKey, List<ConfigEntry> entries) {
@@ -52,6 +57,7 @@ public class PetHomeConfigScreen extends Screen {
         buildCategories();
     }
 
+    /** 构建五个分类的条目（静态块配置与 {@code PetHomeMod.CONFIG} 实例配置混排）；附魔开关页从 {@code enabledEnchantments} 动态生成，标签复用附魔自身的翻译键。 */
     private void buildCategories() {
         List<ConfigEntry> friendly = new ArrayList<>();
         friendly.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_F_PROTECT_OWNER, LangDefinition.GUI_F_PROTECT_OWNER_DESC, PetHomeConfig.PROTECT_PETS_FROM_OWNER));
@@ -76,6 +82,7 @@ public class PetHomeConfigScreen extends Screen {
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_PET_INFO_OVERLAY, LangDefinition.GUI_G_PET_INFO_OVERLAY_DESC, PetHomeMod.CONFIG.petInfoOverlay));
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_PET_INFO_OVERLAY_REQUIRE_SHIFT, LangDefinition.GUI_G_PET_INFO_OVERLAY_REQUIRE_SHIFT_DESC, PetHomeMod.CONFIG.petInfoOverlayRequireShift));
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_PET_INFO_OVERLAY_IGNORE_JADE, LangDefinition.GUI_G_PET_INFO_OVERLAY_IGNORE_JADE_DESC, PetHomeMod.CONFIG.petInfoOverlayIgnoreJade));
+        general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_DEBUG_MODE, LangDefinition.GUI_G_DEBUG_MODE_DESC, PetHomeMod.CONFIG.debugMode));
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_ANIMAL_TAMER, LangDefinition.GUI_G_ANIMAL_TAMER_DESC, PetHomeMod.CONFIG.animalTamerVillager));
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_PET_COMPASS, LangDefinition.GUI_G_PET_COMPASS_DESC, PetHomeMod.CONFIG.petCompassEnable));
         general.add(new ConfigEntry.BooleanEntry(LangDefinition.GUI_G_PET_COMPASS_TP_P, LangDefinition.GUI_G_PET_COMPASS_TP_P_DESC, PetHomeMod.CONFIG.petCompassTeleportPlayerToPet));
@@ -328,6 +335,7 @@ public class PetHomeConfigScreen extends Screen {
         }
     }
 
+    /** 关闭时刷新静态缓存（热路径字段）并落盘（仅 dirty 时写），返回父屏。 */
     @Override
     public void onClose() {
         PetHomeConfig.refreshCachedValues();

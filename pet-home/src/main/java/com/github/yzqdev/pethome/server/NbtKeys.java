@@ -34,7 +34,7 @@ public final class NbtKeys {
     public static final String PLACER_UUID = "PlacerUUID";
     public static final String CHECK_AGAIN_IN = "CheckAgainIn";
 
-    // —— 世界数据 DIWorldData ——
+    // —— 世界数据 PHWorldData ——
     public static final String TIMESTAMP = "Timestamp";
     public static final String ENTITY_TYPE = "EntityType";
     public static final String ENTITY_NAMETAG = "EntityNametag";

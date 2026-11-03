@@ -8,10 +8,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/** 村民好感度加成：CHARISMA（魅力）附魔按周围宠物等级给主人交易折扣（见 {@code TameableUtils.getCharismaBonusForOwner}）。 */
 @Mixin(Villager.class)
 public class VillagerMixin {
 
 
+    /** 注入 {@code Villager#getPlayerReputation} 尾部：在原版好感度上叠加 CHARISMA（魅力）附魔带来的宠物数量加成（正数 = 交易更便宜）。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,

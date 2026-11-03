@@ -8,6 +8,7 @@ import net.minecraft.core.particles.SimpleParticleType;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
+/** 枯萎（BLIGHT 附魔）孢子粒子：半透明贴图粒子，随机初始相位滚动 + 随寿命淡出。 */
 public class ParticleBlight extends SimpleAnimatedParticle {
 
     private float initialRot;
@@ -39,7 +40,7 @@ public class ParticleBlight extends SimpleAnimatedParticle {
         return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
 
-    public int getLightColor(float p_107249_) {
+    public int getLightColor(float partialTick) {
         BlockPos blockpos = new BlockPos((int) this.x, (int) this.y, (int) this.z);
         return this.level.hasChunkAt(blockpos) ? LevelRenderer.getLightColor(this.level, blockpos) : 0;
     }

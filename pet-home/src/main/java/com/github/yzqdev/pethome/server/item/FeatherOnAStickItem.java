@@ -18,6 +18,10 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
+/**
+ * 羽毛钓竿（160 耐久）：右键抛出 {@link FeatherEntity}（落地后把最近的宠物拉到身边），
+ * 再次右键按钓鱼钩规则收回并按损耗掉耐久。
+ */
 public class FeatherOnAStickItem extends Item {
 
     public FeatherOnAStickItem() {
@@ -29,6 +33,7 @@ public class FeatherOnAStickItem extends Item {
         tooltipComponents.add(Component.translatable("tooltips.pet_home.substitute_feather.desc").withStyle(ChatFormatting.GREEN));
     }
 
+    /** 右键：已有抛出的羽毛则收回（按 retrieve 结果掉耐久），否则抛出新的 FeatherEntity（服务端生成实体）。 */
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack itemstack = player.getItemInHand(hand);
         if (player.fishing != null && player.fishing.isAlive()) {

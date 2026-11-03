@@ -20,6 +20,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 
+/** 探测羽毛实体渲染器：直接以 GROUND 姿态渲染原版羽毛物品，面向相机并倾斜 35°。 */
 public class RenderFeather extends EntityRenderer<FeatherEntity> {
 
     private ItemStack feather = new ItemStack(Items.FEATHER);
@@ -101,22 +102,22 @@ public class RenderFeather extends EntityRenderer<FeatherEntity> {
     }
 
     //fishing rod stuff
-    private static float fraction(int p_114691_, int p_114692_) {
-        return (float)p_114691_ / (float)p_114692_;
+    private static float fraction(int numerator, int denominator) {
+        return (float)numerator / (float)denominator;
     }
 
-    private static void stringVertex(float p_174119_, float p_174120_, float p_174121_, VertexConsumer p_174122_, PoseStack.Pose p_174123_, float p_174124_, float p_174125_) {
-        float f = p_174119_ * p_174124_;
-        float f1 = p_174120_ * (p_174124_ * p_174124_ + p_174124_) * 0.5F + 0.25F;
-        float f2 = p_174121_ * p_174124_;
-        float f3 = p_174119_ * p_174125_ - f;
-        float f4 = p_174120_ * (p_174125_ * p_174125_ + p_174125_) * 0.5F + 0.25F - f1;
-        float f5 = p_174121_ * p_174125_ - f2;
+    private static void stringVertex(float x, float y, float z, VertexConsumer consumer, PoseStack.Pose pose, float frac1, float frac2) {
+        float f = x * frac1;
+        float f1 = y * (frac1 * frac1 + frac1) * 0.5F + 0.25F;
+        float f2 = z * frac1;
+        float f3 = x * frac2 - f;
+        float f4 = y * (frac2 * frac2 + frac2) * 0.5F + 0.25F - f1;
+        float f5 = z * frac2 - f2;
         float f6 = Mth.sqrt(f3 * f3 + f4 * f4 + f5 * f5);
         f3 /= f6;
         f4 /= f6;
         f5 /= f6;
-        p_174122_.vertex(p_174123_.pose(), f, f1, f2).color(0, 0, 0, 255).normal(p_174123_.normal(), f3, f4, f5).endVertex();
+        consumer.vertex(pose.pose(), f, f1, f2).color(0, 0, 0, 255).normal(pose.normal(), f3, f4, f5).endVertex();
     }
 
 }

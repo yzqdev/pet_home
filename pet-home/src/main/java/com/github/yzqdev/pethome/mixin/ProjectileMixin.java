@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Projectile.class)
 public class ProjectileMixin {
 
+    /** 注入 {@code Projectile#onHit} 头部（可取消）：弹射物命中宠物时按友军伤害保护规则反弹或跳过命中处理。 */
     @Inject(method = "onHit(Lnet/minecraft/world/phys/HitResult;)V", at = @At("HEAD"), cancellable = true)
     private void ph_onProjectileImpact(HitResult result, CallbackInfo ci) {
         Projectile self = (Projectile) (Object) this;

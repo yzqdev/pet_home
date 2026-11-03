@@ -4,6 +4,7 @@ package com.github.yzqdev.pethome.client.model;
 import com.github.yzqdev.pethome.server.entity.RecallBallEntity;
 import com.google.common.collect.ImmutableList;
 
+/** 往生灯笼召回球（RecallBallEntity）模型：底座 + 顶盖两段，开合动画随召回进度推进（见 {@link #animateBall}）。 */
 public class RecallBallModel extends AdvancedEntityModel<RecallBallEntity> {
     private final AdvancedModelBox bottom;
     private final AdvancedModelBox top;
@@ -32,6 +33,7 @@ public class RecallBallModel extends AdvancedEntityModel<RecallBallEntity> {
         this.resetToDefaultPose();
     }
 
+    /** 开合动画：顶盖仰起 + 底座前倾，收合完成（isFinished）后按开合进度整体缩放至闭合。 */
     public void animateBall(RecallBallEntity entity, float partialTick){
         this.bottom.setShouldScaleChildren(true);
         this.resetToDefaultPose();

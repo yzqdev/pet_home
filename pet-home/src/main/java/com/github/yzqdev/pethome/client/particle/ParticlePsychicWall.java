@@ -17,6 +17,7 @@ import net.fabricmc.api.Environment;
 import java.util.function.Consumer;
 
 
+/** 念力墙（PSYCHIC_WALL 附魔）粒子：CUSTOM 渲染，按墙面朝向双面贴片排布，构成半透明墙体。 */
 public class ParticlePsychicWall extends SimpleAnimatedParticle {
     private final Direction direction;
 
@@ -75,7 +76,7 @@ public class ParticlePsychicWall extends SimpleAnimatedParticle {
         consumer.vertex((double)avector3f[3].x(), (double)avector3f[3].y(), (double)avector3f[3].z()).uv(f6, f5).color(this.rCol, this.gCol, this.bCol, this.alpha).uv2(j).endVertex();
     }
 
-    public int getLightColor(float p_172469_) {
+    public int getLightColor(float partialTick) {
         return 240;
     }
 

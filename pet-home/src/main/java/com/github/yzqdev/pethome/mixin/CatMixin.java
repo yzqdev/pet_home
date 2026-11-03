@@ -24,6 +24,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/**
+ * 猫的三态指令扩展：实现 {@link IComandableMob}（command 经 {@code defineSynchedData} 注入并随 NBT 持久化），右键空手轮换指令。
+ */
 @Mixin(Cat.class)
 public abstract class CatMixin extends TamableAnimal implements IComandableMob {
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(Cat.class, EntityDataSerializers.INT);
@@ -32,6 +35,7 @@ public abstract class CatMixin extends TamableAnimal implements IComandableMob {
         super(type, level);
     }
 
+    /** 注入 {@code Cat#defineSynchedData} 尾部：注册三态指令同步字段（0=游走）。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -41,6 +45,7 @@ public abstract class CatMixin extends TamableAnimal implements IComandableMob {
         this.entityData.define(COMMAND, 0);
     }
 
+    /** 注入 {@code Cat#addAdditionalSaveData} 尾部：指令档位写入 NBT 持久化。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -50,6 +55,7 @@ public abstract class CatMixin extends TamableAnimal implements IComandableMob {
         compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
     }
 
+    /** 注入 {@code Cat#readAdditionalSaveData} 尾部：从 NBT 恢复指令档位。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -59,6 +65,7 @@ public abstract class CatMixin extends TamableAnimal implements IComandableMob {
         this.setCommand(compoundNBT.getInt(NbtKeys.DI_COMMAND));
     }
 
+    /** 注入 {@code Cat#mobInteract} 的原版坐下切换点（可取消）：开启三态指令配置时拦截"空手右键=坐下"，改为轮换指令（游走→停留→跟随）。 */
     @Inject(
             method = {"mobInteract(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"},
             remap = true,

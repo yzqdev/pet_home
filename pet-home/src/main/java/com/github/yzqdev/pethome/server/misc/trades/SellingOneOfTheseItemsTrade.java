@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.Block;
 
 import java.util.Random;
 
+/** 与 {@link SellingItemTrade} 相同，但每次开价从候选集合中随机选一种物品出售（候选可能未取满，见 {@code size()-1}）。 */
 public class SellingOneOfTheseItemsTrade implements VillagerTrades.ItemListing {
     private final ImmutableSet<ItemLike> sellingItems;
     private final int emeraldCount;

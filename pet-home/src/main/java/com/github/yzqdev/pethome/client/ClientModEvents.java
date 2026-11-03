@@ -1,6 +1,7 @@
 package com.github.yzqdev.pethome.client;
 
 import com.github.yzqdev.pethome.PetHomeMod;
+import com.github.yzqdev.pethome.compat.geckolib.GeoOverlayCompat;
 import com.github.yzqdev.pethome.client.render.ChainLightningRender;
 import com.github.yzqdev.pethome.client.render.LayerPetOverlays;
 import com.github.yzqdev.pethome.client.render.RecallBallRender;
@@ -32,8 +33,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 
+/**
+ * 客户端注册中心：实体渲染器、物品模型属性（钓鱼/绑定覆盖）、全生物宠物叠加层、
+ * 捕网 tooltip 渲染组件与附魔书 tooltip 回调。由 {@code PetHomeModClient.onInitializeClient} 依序调用。
+ */
 public class ClientModEvents {
 
+    /** 注册 7 个模组实体的渲染器（捕网用原版 ThrownItemRenderer）。 */
     public static void registerEntityRenderers() {
         EntityRendererRegistry.register(PHEntityRegistry.CHAIN_LIGHTNING, ChainLightningRender::new);
         EntityRendererRegistry.register(PHEntityRegistry.RECALL_BALL, RecallBallRender::new);
@@ -45,6 +51,7 @@ public class ClientModEvents {
         EntityRendererRegistry.register(PHEntityRegistry.NET_ENTITY, ThrownItemRenderer::new);
     }
 
+    /** 物品模型覆盖属性：羽毛钓竿的 cast（抛出/收回姿态）与契约的 bound（绑定发光贴图）。 */
     public static void registerItemProperties() {
         ItemProperties.register(PHItemRegistry.FEATHER_ON_A_STICK, new ResourceLocation("cast"), (stack, lvl, holder, i) -> {
             if (holder == null) {
@@ -61,6 +68,13 @@ public class ClientModEvents {
         ItemProperties.register(PHItemRegistry.DEED_OF_OWNERSHIP, new ResourceLocation("bound"), (stack, lvl, holder, i) -> {
             return DeedOfOwnershipItem.isBound(stack) ? 1 : 0;
         });
+        // 捕网发射器蓄力谓词（模型 overrides 按 pet_home:charge 切换能量核心贴图）
+        ItemProperties.register(PHItemRegistry.NET_LAUNCHER_ITEM, new ResourceLocation(PetHomeMod.MODID, "charge"), (stack, lvl, holder, i) -> {
+            if (holder == null || !holder.isUsingItem() || holder.getUseItem() != stack) {
+                return 0.0F;
+            }
+            return Math.min((stack.getUseDuration() - holder.getUseItemRemainingTicks()) / 20.0F, 1.0F);
+        });
     }
 
     /**
@@ -76,6 +90,11 @@ public class ClientModEvents {
     private static void addLayerIfApplicable(EntityType<? extends LivingEntity> entityType, LivingEntityRenderer renderer,
                                              LivingEntityFeatureRendererRegistrationCallback.RegistrationHelper registrationHelper) {
         if (entityType != EntityType.ENDER_DRAGON && renderer != null) {
+            // GeckoLib 渲染器（原版 layer 挂不上）先走适配层；未装/版本不符时 tryApply 内部降级返回 false
+            if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("geckolib")
+                    && GeoOverlayCompat.tryApply(renderer)) {
+                return;
+            }
             try {
                 registrationHelper.register(new LayerPetOverlays(renderer));
             } catch (Exception e) {

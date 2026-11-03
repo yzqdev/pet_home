@@ -43,6 +43,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * 捕网物品（{@link Type#EMPTY} / {@link Type#HAS_MOB} 两态，不可堆叠）。被抓生物的完整 NBT 存在
+ * 物品根 tag 的 {@code entity_holder} 键（1.20.1 尚无 DataComponent，键名沿用常量
+ * {@code PHDataComponents.ENTITY_HOLDER}）。抓捕见 {@link #interactLivingEntity}、释放见 {@link #useOn}；
+ * 静态工具（{@code containsEntity / getEntityFromStack / canCatchMob…}）与 {@link NetEntity}、
+ * 发射器共用。tooltip 与 {@link #getTooltipImage} 展示被装生物的名字 / 血量 / 渲染。
+ */
 public class NetItem extends Item {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -57,6 +64,7 @@ public class NetItem extends Item {
         return type;
     }
 
+    /** 释放：仅服务端、仅装着生物的网；在点击方块上方重建实体，清空 tag 后消耗网（创造模式返还空网）。 */
     @Override
     @NotNull
     public InteractionResult useOn(UseOnContext context) {
@@ -86,6 +94,7 @@ public class NetItem extends Item {
         return InteractionResult.SUCCESS;
     }
 
+    /** 抓捕：仅服务端、仅空网；通过 {@link #canCatchMob} 校验后把目标存档 NBT 写入 net_has_item 放进背包（放不下掉地上），目标 discard，5 tick 冷却。 */
     @Override
     public @NotNull InteractionResult interactLivingEntity(ItemStack stack, Player player, LivingEntity target, InteractionHand hand) {
         if (target.getCommandSenderWorld()
@@ -141,6 +150,7 @@ public class NetItem extends Item {
     }
 
 
+    /** 装着生物时的物品内嵌渲染组件（物品栏图标上叠加生物画面，客户端 GuiGraphics 消费）。 */
     @Override
     public Optional<TooltipComponent> getTooltipImage(ItemStack stack) {
         if (this.type == Type.EMPTY) {
@@ -160,6 +170,7 @@ public class NetItem extends Item {
         }
     }
 
+    /** 双端兜底取 RegistryAccess：有服务器用服务器的，否则（仅客户端逻辑路径）取客户端世界。 */
     public static RegistryAccess registryAccess() {
         if (ServerRef.get() != null) {
             return ServerRef.get()
@@ -168,6 +179,7 @@ public class NetItem extends Item {
         return ClientHelper.getRegistryAccess();
     }
 
+    /** 被装生物的显示名：优先解析 CustomName JSON（失败降级为类型名并去重告警），否则用类型名。 */
     public static Component getNameFromStoredEntity(ItemStack stack) {
         CompoundTag holder = getEntityData(stack);
         if (holder.contains("CustomName", Tag.TAG_STRING)) {
@@ -238,6 +250,7 @@ public class NetItem extends Item {
         return type == EntityType.PLAYER || PetHomeConfig.mobcatcherBlackList.contains(type);
     }
 
+    /** 抓捕资格：玩家与黑名单（配置 {@code mobcatcherBlacklist}）永远不可抓；开启 {@code mobcatcherOnlyTamableAnimal} 时仅可驯服动物可抓。 */
     public static boolean canCatchMob(Entity livingEntity) {
         var type = livingEntity.getType();
         if (PetHomeConfig.mobcatcherOnlyTamableAnimal) {

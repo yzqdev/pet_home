@@ -17,6 +17,11 @@ import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
+/**
+ * 烂苹果：可食用（必中毒）。对马使用会触发「马 → 僵尸马」转换——正常流程由
+ * {@code PlayerInteractEntityHandler} 的交互总入口拦截执行（此处 {@link #interactLivingEntity}
+ * 是同一逻辑的历史重复副本，仅在入口未消费时兜底，属遗留实现）。
+ */
 public class RottenAppleItem extends Item {
 
     public RottenAppleItem() {

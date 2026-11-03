@@ -28,6 +28,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * 往生球：紧急收回（TOTAL_RECALL）的载体实体。内置被收回宠物的类型 id 与完整实体 NBT
+ * （经 SynchedEntityData 同步给客户端做开合动画）；主人右键打开后球体展开，宠物以
+ * 25% 最大生命（至少 2 点）原地重建；除创造玩家外免疫一切伤害，落地不死（水中上浮、
+ * 掉出世界底部拉回）。已完成释放的球不再写入存档（{@link #shouldBeSaved}）。
+ */
 public class RecallBallEntity extends Entity {
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(RecallBallEntity.class, EntityDataSerializers.OPTIONAL_UUID);
@@ -59,6 +65,7 @@ public class RecallBallEntity extends Entity {
         return !this.isFinished();
     }
 
+    /** 主人右键打开（服务端记 OPENED）；无主（旧档遗留）直接消散。 */
     public InteractionResult interact(Player player, InteractionHand hand) {
         if(!this.isFinished()){
             if(this.getOwnerUUID() == null){
@@ -72,6 +79,7 @@ public class RecallBallEntity extends Entity {
         return InteractionResult.PASS;
     }
 
+    /** 每 tick：自旋与开合动画、水中上浮、传送门粒子；完全打开后服务端按存下的 NBT 重建宠物（血量钳到 25%），释放完成且动画收拢后自毁。 */
     public void tick(){
         super.tick();
         this.setYRot(this.getYRot() + 1);
@@ -118,6 +126,7 @@ public class RecallBallEntity extends Entity {
         return true;
     }
 
+    /** 已完成释放的球不参与存档（重建出的实体接管后续）。 */
     public boolean shouldBeSaved() {
         return !this.isFinished() && super.shouldBeSaved();
     }

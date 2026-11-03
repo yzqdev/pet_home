@@ -35,10 +35,12 @@ public final class PetInfoHudOverlay {
     private PetInfoHudOverlay() {
     }
 
+    /** 注册 HUD 回调（Fabric {@code HudRenderCallback}，逐帧调用；注册无条件，开关在绘制内判定）。 */
     public static void init() {
         HudRenderCallback.EVENT.register(PetInfoHudOverlay::render);
     }
 
+    /** 逐帧绘制：Jade 让位 / 总开关 / Shift / 准星目标依次判定，通过后画顶部居中面板。 */
     private static void render(GuiGraphics graphics, float tickDelta) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) {
@@ -83,6 +85,7 @@ public final class PetInfoHudOverlay {
         }
     }
 
+    /** 面板行内容：名字 / 生命值 / 三态指令 / 宠物床位置 / 项圈附魔列表（数据读本地同步的 citadel tag，不发包）。 */
     private static List<Component> collectLines(LivingEntity pet) {
         List<Component> lines = new ArrayList<>();
         lines.add(Component.literal(pet.getName().getString()).withStyle(ChatFormatting.AQUA));

@@ -11,6 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+/**
+ * 配置界面的单条目模型：标签 / 说明（翻译键）+ 对 {@code ConfigValue} 的读写访问器，
+ * 子类对应控件类型（布尔开关 / 双精度滑条 / 整数滑条 / 字符串列表文本框），均支持恢复默认。
+ */
 public abstract class ConfigEntry {
     /** 每行高度 */
     public static final int ROW_HEIGHT = 24;

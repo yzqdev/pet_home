@@ -8,6 +8,7 @@ import net.minecraft.core.particles.SimpleParticleType;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
+/** 矿脉嗅探嗅迹粒子：灰白色小粒子从宠物笔直飞向目标方块（初速参数携带目标点），表现"嗅到矿"的指向。 */
 public class ParticleSniff extends SimpleAnimatedParticle {
     private float targetX = 0;
     private float targetY = 0;
@@ -46,7 +47,7 @@ public class ParticleSniff extends SimpleAnimatedParticle {
         this.zd *= 0.8;
     }
 
-    public int getLightColor(float p_107249_) {
+    public int getLightColor(float partialTick) {
         BlockPos blockpos = BlockPos.containing(this.x, this.y, this.z);
         return this.level.hasChunkAt(blockpos) ? LevelRenderer.getLightColor(this.level, blockpos) : 0;
     }

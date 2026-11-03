@@ -1,15 +1,15 @@
 package com.github.yzqdev.pethome.server.event;
 
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.entity.ChainLightningEntity;
 import com.github.yzqdev.pethome.server.entity.GiantBubbleEntity;
 import com.github.yzqdev.pethome.server.entity.PHEntityRegistry;
 import com.github.yzqdev.pethome.server.entity.RecallBallEntity;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
-import com.github.yzqdev.pethome.server.misc.DIDamageTypes;
-import com.github.yzqdev.pethome.server.misc.DIParticleRegistry;
-import com.github.yzqdev.pethome.server.misc.DISoundRegistry;
-import com.github.yzqdev.pethome.server.misc.ModEffects;
+import com.github.yzqdev.pethome.server.misc.PHDamageTypes;
+import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
+import com.github.yzqdev.pethome.server.misc.PHSoundRegistry;
+import com.github.yzqdev.pethome.server.misc.PHEffects;
 import com.github.yzqdev.pethome.util.FriendlyFireCommon;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -35,6 +35,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 
+/**
+ * 伤害事件处理核心（替代原 Forge 的 LivingAttackEvent / LivingHurtEvent / LivingDamageEvent 订阅）。
+ * 由 {@code mixin/LivingEntityDamageMixin} 在 {@code LivingEntity#hurt} / {@code actuallyHurt} 处调入，
+ * Mixin 只做转发与取消，全部决策逻辑集中在本类普通静态方法；双端都会进入，各分支内部自判
+ * {@code level().isClientSide()}。
+ */
 public class EntityHurtHandler {
 
     /**
@@ -78,7 +84,10 @@ public class EntityHurtHandler {
     }
 
     /**
-     * event.getEntity()是被攻击的
+     * 受击总入口（{@code LivingEntity#hurt} HEAD，可取消）：依次执行友军伤害保护、
+     * 宠物受击防御附魔（无敌帧 / 烈焰保护 / 两栖溺水与脱水豁免 / 虚空云坠落豁免 / 生命虹吸 /
+     * 紧急收回）、攻击方宠物的攻击附魔（链锁闪电 / 霜冻之牙 / 泡泡束缚 / 吸血 / 传送撕咬），
+     * 最后通知附近治疗光环宠物进入充能。
      */
     public static void onLivingAttack(AttackEvent event) {
         //friendly fire
@@ -90,15 +99,15 @@ public class EntityHurtHandler {
                 trueSource.setLastHurtByMob(null);
             }
         }
-        if (TameableUtils.isTamed(event.getEntity()) && !event.getSource().is(DIDamageTypes.SIPHON)) {
+        if (TameableUtils.isTamed(event.getEntity()) && !event.getSource().is(PHDamageTypes.SIPHON)) {
             boolean flag = false;
             flag = tryImmunityFrame(event, flag);
             flag = tryBlazingProtection(event, flag);
-            if (!flag && (event.getSource().is(DamageTypes.DROWN) || event.getSource().is(DamageTypes.DRY_OUT)) && TameableUtils.hasEnchant(event.getEntity(), DIEnchantmentRegistry.AMPHIBIOUS)) {
+            if (!flag && (event.getSource().is(DamageTypes.DROWN) || event.getSource().is(DamageTypes.DRY_OUT)) && TameableUtils.hasEnchant(event.getEntity(), PHEnchantmentRegistry.AMPHIBIOUS)) {
                 event.setCanceled(true);
                 flag = true;
             }
-            if (!flag && (event.getSource().is(DamageTypes.FALL) || event.getSource().is(DamageTypes.FELL_OUT_OF_WORLD)) && TameableUtils.hasEnchant(event.getEntity(), DIEnchantmentRegistry.VOID_CLOUD)) {
+            if (!flag && (event.getSource().is(DamageTypes.FALL) || event.getSource().is(DamageTypes.FELL_OUT_OF_WORLD)) && TameableUtils.hasEnchant(event.getEntity(), PHEnchantmentRegistry.VOID_CLOUD)) {
                 event.setCanceled(true);
                 flag = true;
             }
@@ -119,9 +128,10 @@ public class EntityHurtHandler {
         }
     }
 
+    /** 无敌帧：首次受击进入 20+20×等级 tick 免疫期，免疫期内再次受击直接取消。 */
     private static boolean tryImmunityFrame(AttackEvent event, boolean flag) {
-        if (TameableUtils.hasEnchant(event.getEntity(), DIEnchantmentRegistry.IMMUNITY_FRAME)) {
-            int level = TameableUtils.getEnchantLevel(event.getEntity(), DIEnchantmentRegistry.IMMUNITY_FRAME);
+        if (TameableUtils.hasEnchant(event.getEntity(), PHEnchantmentRegistry.IMMUNITY_FRAME)) {
+            int level = TameableUtils.getEnchantLevel(event.getEntity(), PHEnchantmentRegistry.IMMUNITY_FRAME);
             if (TameableUtils.getImmuneTime(event.getEntity()) <= 0) {
                 TameableUtils.setImmuneTime(event.getEntity(), 20 + level * 20);
             } else {
@@ -132,8 +142,9 @@ public class EntityHurtHandler {
         return flag;
     }
 
+    /** 烈焰保护：消耗 1 条蓄条抵消本次伤害，点燃并击退非同主人的攻击者（服务端音效/粒子）。 */
     private static boolean tryBlazingProtection(AttackEvent event, boolean flag) {
-        if (TameableUtils.hasEnchant(event.getEntity(), DIEnchantmentRegistry.BLAZING_PROTECTION)) {
+        if (TameableUtils.hasEnchant(event.getEntity(), PHEnchantmentRegistry.BLAZING_PROTECTION)) {
             int bars = TameableUtils.getBlazingProtectionBars(event.getEntity());
             if (bars > 0) {
                 Entity attacker = event.getSource().getEntity();
@@ -148,7 +159,7 @@ public class EntityHurtHandler {
                         attacker.level().addParticle(ParticleTypes.FLAME, event.getEntity().getRandomX(0.8F), event.getEntity().getRandomY(), event.getEntity().getRandomZ(0.8F), 0.0F, 0.0F, 0.0F);
                     }
                 }
-                event.getEntity().playSound(DISoundRegistry.BLAZING_PROTECTION, 1, event.getEntity().getVoicePitch());
+                event.getEntity().playSound(PHSoundRegistry.BLAZING_PROTECTION, 1, event.getEntity().getVoicePitch());
                 TameableUtils.setBlazingProtectionBars(event.getEntity(), bars - 1);
                 TameableUtils.setBlazingProtectionCooldown(event.getEntity(), 600);
             }
@@ -156,27 +167,29 @@ public class EntityHurtHandler {
         return flag;
     }
 
+    /** 生命虹吸：把本次伤害原样转移给 100 格内的主人（0 伤害 SIPHON 占位打在宠物身上取消原伤害）。 */
     private static boolean tryHealthSiphon(AttackEvent event, boolean flag) {
         if (flag) {
             return flag;
         }
-        if (TameableUtils.hasEnchant(event.getEntity(), DIEnchantmentRegistry.HEALTH_SIPHON)) {
+        if (TameableUtils.hasEnchant(event.getEntity(), PHEnchantmentRegistry.HEALTH_SIPHON)) {
             Entity owner = TameableUtils.getOwnerOf(event.getEntity());
             if (owner != null && owner.isAlive() && owner.distanceTo(event.getEntity()) < 100 && owner != event.getEntity()) {
                 owner.hurt(event.getSource(), event.getAmount());
                 event.setCanceled(true);
                 flag = true;
-                event.getEntity().hurt(DIDamageTypes.causeSiphonDamage(owner.level().registryAccess()), 0.0F);
+                event.getEntity().hurt(PHDamageTypes.causeSiphonDamage(owner.level().registryAccess()), 0.0F);
             }
         }
         return flag;
     }
 
+    /** 紧急收回：濒死（本次伤害会打到 2 血以下）时把宠物完整 NBT 收入 {@link RecallBallEntity} 并 discard 原实体，等待落地重建。 */
     private static boolean tryTotalRecall(AttackEvent event, boolean flag) {
         if (flag) {
             return flag;
         }
-        if (TameableUtils.hasEnchant(event.getEntity(), DIEnchantmentRegistry.TOTAL_RECALL) && event.getEntity().getHealth() - event.getAmount() <= 2.0D && !TameableUtils.isZombiePet(event.getEntity())) {
+        if (TameableUtils.hasEnchant(event.getEntity(), PHEnchantmentRegistry.TOTAL_RECALL) && event.getEntity().getHealth() - event.getAmount() <= 2.0D) {
             UUID owner = TameableUtils.getOwnerUUIDOf(event.getEntity());
             if (owner != null) {
                 if (event.getEntity() instanceof Mob mob) {
@@ -203,16 +216,17 @@ public class EntityHurtHandler {
         return flag;
     }
 
+    /** 攻击方为宠物时的攻击附魔分支（链锁闪电 / 霜冻之牙 / 泡泡束缚 / 吸血 / 传送撕咬）。 */
     private static void applyAttackerCombatEnchants(LivingEntity attacker, AttackEvent event) {
         LivingEntity target = event.getEntity();
-        int lightningLevel = TameableUtils.getEnchantLevel(attacker, DIEnchantmentRegistry.CHAIN_LIGHTNING);
-        int bubblingLevel = TameableUtils.getEnchantLevel(attacker, DIEnchantmentRegistry.BUBBLING);
-        int vampireLevel = TameableUtils.getEnchantLevel(attacker, DIEnchantmentRegistry.VAMPIRE);
+        int lightningLevel = TameableUtils.getEnchantLevel(attacker, PHEnchantmentRegistry.CHAIN_LIGHTNING);
+        int bubblingLevel = TameableUtils.getEnchantLevel(attacker, PHEnchantmentRegistry.BUBBLING);
+        int vampireLevel = TameableUtils.getEnchantLevel(attacker, PHEnchantmentRegistry.VAMPIRE);
 
         if (lightningLevel > 0) {
             spawnChainLightning(attacker, target, lightningLevel);
         }
-        if (TameableUtils.hasEnchant(attacker, DIEnchantmentRegistry.FROST_FANG)) {
+        if (TameableUtils.hasEnchant(attacker, PHEnchantmentRegistry.FROST_FANG)) {
             applyFrostFang(attacker, target);
         }
         if (bubblingLevel > 0) {
@@ -221,7 +235,7 @@ public class EntityHurtHandler {
         if (vampireLevel > 0) {
             applyVampire(attacker, target, vampireLevel, event);
         }
-        if (!target.level().isClientSide() && TameableUtils.hasEnchant(attacker, DIEnchantmentRegistry.WARPING_BITE)) {
+        if (!target.level().isClientSide() && TameableUtils.hasEnchant(attacker, PHEnchantmentRegistry.WARPING_BITE)) {
             applyWarpingBite(attacker, target);
         }
     }
@@ -234,7 +248,7 @@ public class EntityHurtHandler {
         lightning.copyPosition(target);
         lightning.setChainsLeft(3 + lightningLevel * 3);
         target.level().addFreshEntity(lightning);
-        target.playSound(DISoundRegistry.CHAIN_LIGHTNING, 1F, 1F);
+        target.playSound(PHSoundRegistry.CHAIN_LIGHTNING, 1F, 1F);
     }
 
     private static void applyFrostFang(LivingEntity attacker, LivingEntity target) {
@@ -257,7 +271,7 @@ public class EntityHurtHandler {
             target.startRiding(bubble, true);
             bubble.setpopsIn(bubblingLevel * 40 + 40);
             target.level().addFreshEntity(bubble);
-            target.playSound(DISoundRegistry.GIANT_BUBBLE_INFLATE, 1F, 1F);
+            target.playSound(PHSoundRegistry.GIANT_BUBBLE_INFLATE, 1F, 1F);
         }
     }
 
@@ -271,7 +285,7 @@ public class EntityHurtHandler {
                     double f2 = target.getY(0.4F + target.getRandom().nextFloat() * 0.2F);
                     double f3 = target.getRandomZ(0.7F);
                     Vec3 motion = attacker.getEyePosition().subtract(f1, f2, f3).normalize().scale(0.2F);
-                    ((ServerLevel) target.level()).sendParticles(DIParticleRegistry.VAMPIRE, f1, f2, f3, 1, motion.x, motion.y, motion.z, 0.2F);
+                    ((ServerLevel) target.level()).sendParticles(PHParticleRegistry.VAMPIRE, f1, f2, f3, 1, motion.x, motion.y, motion.z, 0.2F);
                 }
             }
         }
@@ -308,7 +322,7 @@ public class EntityHurtHandler {
         if (!(source.getEntity() instanceof LivingEntity attacker) || attacker == victim) {
             return amount;
         }
-        if (!TameableUtils.hasEnchant(attacker, DIEnchantmentRegistry.VIOLENT)) {
+        if (!TameableUtils.hasEnchant(attacker, PHEnchantmentRegistry.VIOLENT)) {
             return amount;
         }
         // 同一主人的两只宠物互殴会被友伤保护取消（Forge 版此时不会触发 LivingHurtEvent），
@@ -338,7 +352,7 @@ public class EntityHurtHandler {
                 amount += 5;
             }
         } else if (chance < 0.8) {
-            monster.addEffect(new MobEffectInstance(ModEffects.DRUNK, 20 * 5));
+            monster.addEffect(new MobEffectInstance(PHEffects.DRUNK, 20 * 5));
         } else {
             monster.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20, 50, false, false));
             monster.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 20, 50, false, false));
@@ -360,11 +374,11 @@ public class EntityHurtHandler {
         }
         Entity attacker = source.getEntity();
 
-        if (TameableUtils.hasEnchant(hurtEntity, DIEnchantmentRegistry.CHAOS) && attacker instanceof LivingEntity livingAttacker) {
-            livingAttacker.addEffect(new MobEffectInstance(ModEffects.DRUNK, 120, 1));
+        if (TameableUtils.hasEnchant(hurtEntity, PHEnchantmentRegistry.CHAOS) && attacker instanceof LivingEntity livingAttacker) {
+            livingAttacker.addEffect(new MobEffectInstance(PHEffects.DRUNK, 120, 1));
         }
 
-        int shareLevel = TameableUtils.getEnchantLevel(hurtEntity, DIEnchantmentRegistry.SHARE);
+        int shareLevel = TameableUtils.getEnchantLevel(hurtEntity, PHEnchantmentRegistry.SHARE);
         if (shareLevel > 0 && attacker instanceof LivingEntity) {
             Set<LivingEntity> monsterEntities = TameableUtils.getNearbyMobs(hurtEntity, 20).stream()
                     .filter(i -> i instanceof Enemy).collect(Collectors.toSet());
@@ -374,7 +388,7 @@ public class EntityHurtHandler {
             }
         }
 
-        int paralysisLevel = TameableUtils.getEnchantLevel(hurtEntity, DIEnchantmentRegistry.PARALYSIS);
+        int paralysisLevel = TameableUtils.getEnchantLevel(hurtEntity, PHEnchantmentRegistry.PARALYSIS);
         if (paralysisLevel > 0 && attacker instanceof LivingEntity livingAttacker) {
             livingAttacker.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, paralysisLevel * 20, 100, false, false));
             livingAttacker.addEffect(new MobEffectInstance(MobEffects.DIG_SLOWDOWN, paralysisLevel * 20, 100, false, false));

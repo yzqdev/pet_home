@@ -3,6 +3,7 @@ package com.github.yzqdev.pethome.client.model;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
+/** 纹理 UV 偏移值对象：记录部件在贴图集上的起始坐标（模型代码按名称查询用）。 */
 @Environment(EnvType.CLIENT)
 public class TextureOffset {
     /**

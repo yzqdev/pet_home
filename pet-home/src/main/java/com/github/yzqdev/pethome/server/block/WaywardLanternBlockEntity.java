@@ -3,7 +3,7 @@ package com.github.yzqdev.pethome.server.block;
 import com.github.yzqdev.pethome.server.NbtKeys;
 
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
-import com.github.yzqdev.pethome.server.misc.DIWorldData;
+import com.github.yzqdev.pethome.server.misc.PHWorldData;
 import com.github.yzqdev.pethome.server.misc.LanternRequest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -26,6 +26,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * 迷途灯笼方块实体：对 64 格内玩家的灯笼收容请求（每 200~600 tick 扫一次）按请求记录的
+ * <strong>宠物所在维度</strong>处理——临时强载宠物区块 3×3 邻域（{@code setChunkForced}，
+ * 处理完 / {@code setRemoved} 时精确释放，不留永久强加载）→ 等实体出现 → 传送到灯笼旁
+ * （落点碰撞检测查灯笼维度）并通知主人。每请求独立的等待（200 tick）与尝试（3 轮）计数，
+ * 连续失败记入 {@code abandonedRequests} 本轮跳过；请求本体保留在世界数据里等待下次自愈。
+ */
 public class WaywardLanternBlockEntity extends BlockEntity {
 
     /** 一轮等待实体从强载区块中出现的耐心（tick） */
@@ -51,7 +58,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
     }
 
     public WaywardLanternBlockEntity(BlockPos pos, BlockState state) {
-        super(DITileEntityRegistry.WAYWARD_LANTERN, pos, state);
+        super(PHTileEntityRegistry.WAYWARD_LANTERN, pos, state);
     }
 
     /**
@@ -75,9 +82,10 @@ public class WaywardLanternBlockEntity extends BlockEntity {
         super.setRemoved();
     }
 
+    /** 方块实体 tick：先消化已完成请求（从世界数据移除），空闲期周期扫描新请求，处理期逐请求强载 → 找实体 → 传送（同维度 teleportTo，跨维度走实体重建路径）。 */
     public static void tick(Level level, BlockPos pos, BlockState state, WaywardLanternBlockEntity te) {
         if(!te.finishedRequests.isEmpty()){
-            DIWorldData data = DIWorldData.get(level);
+            PHWorldData data = PHWorldData.get(level);
             te.workingRequests.removeIf(working -> te.finishedRequests.contains(working.request.getPetUUID()));
             if (data != null) {
                 for(UUID uuid: te.finishedRequests){
@@ -91,7 +99,7 @@ public class WaywardLanternBlockEntity extends BlockEntity {
                 te.checkAgainIn--;
             }else{
                 te.checkAgainIn = 200 + level.random.nextInt(400);
-                DIWorldData data = DIWorldData.get(level);
+                PHWorldData data = PHWorldData.get(level);
                 if (data != null) {
                     for (Player player : getPlayers(level, pos)) {
                         for (LanternRequest request : data.getLanternRequestsFor(player.getUUID())) {

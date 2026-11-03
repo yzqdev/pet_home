@@ -2,8 +2,8 @@ package com.github.yzqdev.pethome.server.block;
 
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
-import com.github.yzqdev.pethome.server.misc.DIParticleRegistry;
-import com.github.yzqdev.pethome.server.misc.DITagRegistry;
+import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
+import com.github.yzqdev.pethome.server.misc.PHTagRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -34,6 +34,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;
 
+/**
+ * 宠物床（16 色，含含水变体）：宠物躺入时绑定重生点并冒 ZZZ 粒子；方块实体在次日清晨处理复活请求。
+ * 可被 POI 系统识别为驯兽师村民工作站（POI 登记见 {@code PetHomeMod.onInitialize}）。
+ */
 public class PetBedBlock extends BaseEntityBlock {
 
     private static final VoxelShape COLLIDE_SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 7.0D, 16.0D);
@@ -46,8 +50,9 @@ public class PetBedBlock extends BaseEntityBlock {
         this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, Boolean.valueOf(false)).setValue(FACING, Direction.NORTH));
     }
 
+    /** 实体躺在床内的绑定逻辑：已驯服、未拒绝宠物床且开启 petBedRespawns 的宠物按概率记录床坐标与维度为重生点。 */
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
-        if(TameableUtils.isTamed(entity) && !entity.getType().is(DITagRegistry.REFUSES_PET_BEDS) && !level.isClientSide() && PetHomeMod.CONFIG.petBedRespawns.get()){
+        if(TameableUtils.isTamed(entity) && !entity.getType().is(PHTagRegistry.REFUSES_PET_BEDS) && !level.isClientSide() && PetHomeMod.CONFIG.petBedRespawns.get()){
            if((entity.tickCount + entity.getId()) % 10 == 0 && random.nextInt(6) == 0){
                TameableUtils.setPetBedPos((LivingEntity) entity, pos);
                TameableUtils.setPetBedDimension((LivingEntity) entity, level.dimension().toString());
@@ -59,7 +64,7 @@ public class PetBedBlock extends BaseEntityBlock {
                    double d1 = (1.0F - random.nextFloat()) * 0.6F;
                    double d2 = (1.0F - random.nextFloat()) * 0.6F;
                    double d3 = (1.0F - random.nextFloat()) * 0.6F;
-                   ((ServerLevel)level).sendParticles(DIParticleRegistry.ZZZ, vec3.x + d1, vec3.y + d2, vec3.z + d3, 1,  0, 0,  0, 0.0D);
+                   ((ServerLevel)level).sendParticles(PHParticleRegistry.ZZZ, vec3.x + d1, vec3.y + d2, vec3.z + d3, 1,  0, 0,  0, 0.0D);
                }
            }
         }
@@ -84,11 +89,11 @@ public class PetBedBlock extends BaseEntityBlock {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 
-    public VoxelShape getShape(BlockState p_49038_, BlockGetter p_49039_, BlockPos p_49040_, CollisionContext p_49041_) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SELECT_SHAPE;
     }
 
-    public VoxelShape getCollisionShape(BlockState p_52357_, BlockGetter p_52358_, BlockPos p_52359_, CollisionContext p_52360_) {
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return COLLIDE_SHAPE;
     }
 
@@ -114,9 +119,10 @@ public class PetBedBlock extends BaseEntityBlock {
         return new PetBedBlockEntity(pos, state);
     }
 
+    /** 仅服务端提供方块实体 tick（复活处理在 {@link PetBedBlockEntity#tick}）。 */
     @org.jetbrains.annotations.Nullable
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level p_152180_, BlockState p_152181_, BlockEntityType<T> p_152182_) {
-        return p_152180_.isClientSide() ? null : createTickerHelper(p_152182_, DITileEntityRegistry.PET_BED, PetBedBlockEntity::tick);
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
+        return level.isClientSide() ? null : createTickerHelper(blockEntityType, PHTileEntityRegistry.PET_BED, PetBedBlockEntity::tick);
     }
 }
 

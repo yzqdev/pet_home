@@ -4,7 +4,7 @@ package com.github.yzqdev.pethome.server.block;
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
-import com.github.yzqdev.pethome.server.misc.DIWorldData;
+import com.github.yzqdev.pethome.server.misc.PHWorldData;
 import com.github.yzqdev.pethome.server.misc.RespawnRequest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -21,16 +21,21 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.function.Predicate;
 
+/**
+ * 宠物床方块实体：复活流的执行端。每天第一 tick（{@code dayTime % 24000 == 1}）从
+ * {@link PHWorldData} 取绑定到本床、且维度匹配的 {@link RespawnRequest}，按存档 NBT 重建宠物。
+ */
 public class PetBedBlockEntity extends BlockEntity {
 
     public PetBedBlockEntity(BlockPos pos, BlockState state) {
-        super(DITileEntityRegistry.PET_BED, pos, state);
+        super(PHTileEntityRegistry.PET_BED, pos, state);
     }
 
+    /** 方块实体 tick（由 PetBedBlock.getTicker 提供服务端接线）：次日清晨逐条复活并移除请求。 */
     public static void tick(Level level, BlockPos pos, BlockState state, PetBedBlockEntity blockEntity) {
         long time = level.dayTime() % 24000L;
         if(time == 1){
-            DIWorldData data = DIWorldData.get(level);
+            PHWorldData data = PHWorldData.get(level);
             if(data != null){
                List<RespawnRequest> requestList = data.getRespawnRequestsFor(level, pos);
                for(RespawnRequest request : requestList){
@@ -42,8 +47,9 @@ public class PetBedBlockEntity extends BlockEntity {
         }
     }
 
+    /** 清空绑定到本床的全部复活请求（主人拆除床时调用），逐条向玩家提示「宠物走失」。 */
     public void removeAllRequestsFor(@Nullable Player message){
-        DIWorldData data = DIWorldData.get(level);
+        PHWorldData data = PHWorldData.get(level);
         if(data != null){
             List<RespawnRequest> requestList = data.getRespawnRequestsFor(level, this.getBlockPos());
             for(RespawnRequest request : requestList){
@@ -55,6 +61,7 @@ public class PetBedBlockEntity extends BlockEntity {
         }
     }
 
+    /** 单条复活：按 NBT 重建实体（满血、朝向床朝向、默认停留指令），通知主人，成功返回 true。 */
     private static boolean addAndRemoveEntity(Level level, BlockPos pos, Direction dir, RespawnRequest request) {
         EntityType type = request.getEntityType();
         if(type != null && PetHomeMod.CONFIG.petBedRespawns.get()){
@@ -99,6 +106,7 @@ public class PetBedBlockEntity extends BlockEntity {
         return false;
     }
 
+    /** 重置 10×5×10 范围内绑定到本床的宠物（床被破坏时由 {@code ServerEvent.onBlockBreak} 调用），并通知各主人。 */
     public void resetBedsForNearbyPets() {
         Predicate<Entity> pet = (animal) -> TameableUtils.isTamed(animal) && TameableUtils.getPetBedPos((LivingEntity)animal) != null && TameableUtils.getPetBedPos((LivingEntity)animal).equals(this.getBlockPos());
         List<LivingEntity> list = level.getEntitiesOfClass(LivingEntity.class, new AABB(this.getBlockPos().offset(-10, -5, -10), this.getBlockPos().offset(10, 5, 10)), EntitySelector.NO_SPECTATORS.and(pet));

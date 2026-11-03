@@ -5,6 +5,10 @@ import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 
+/**
+ * 随行唱片机的循环音乐实例（RECORDS 声道、无衰减）：每 tick 跟随实体坐标移动声源，
+ * 实体移除或不再活跃时自停并从 {@code ClientGameEvents.DISC_JOCKEY_SOUND_MAP} 摘除。
+ */
 public class DiscJockeySound  extends AbstractTickableSoundInstance {
     private final FollowingJukeboxEntity box;
     private int ticksExisted = 0;

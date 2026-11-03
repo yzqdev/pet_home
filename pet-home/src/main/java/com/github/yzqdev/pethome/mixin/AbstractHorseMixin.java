@@ -1,8 +1,8 @@
 package com.github.yzqdev.pethome.mixin;
 
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -21,8 +21,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
+/**
+ * 马类（马/驴/骡等）驯服扩展：实现 {@link ModifiedToBeTameable}（桥接原版 isTamed/getOwnerUUID），
+ * 骑乘 tick 支持 AMPHIBIOUS 水上骑行。
+ */
 @Mixin(AbstractHorse.class)
-public abstract class AbstractHorseMixin extends Animal implements ModifedToBeTameable {
+public abstract class AbstractHorseMixin extends Animal implements ModifiedToBeTameable {
 
     @Shadow
     protected float playerJumpPendingScale;
@@ -42,15 +46,16 @@ public abstract class AbstractHorseMixin extends Animal implements ModifedToBeTa
     public abstract void setTamed(boolean tame);
 
     @Shadow
-    public abstract void setIsJumping(boolean p_30656_);
+    public abstract void setIsJumping(boolean jumping);
 
     @Shadow
     public abstract boolean isStanding();
 
     @Shadow @Nullable public abstract UUID getOwnerUUID();
 
-    @Shadow public abstract void setOwnerUUID(@org.jetbrains.annotations.Nullable UUID p_30587_);
+    @Shadow public abstract void setOwnerUUID(@org.jetbrains.annotations.Nullable UUID uuid);
 
+    /** 注入 {@code AbstractHorse#tickRidden} 头部（可取消）：AMPHIBIOUS 马在水中时改为水中骑行操控（转向/浮沉/跳跃上浮），拦截原版骑乘逻辑。 */
     @Inject(
             method = {"tickRidden(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/phys/Vec3;)V"},
             remap = true,
@@ -58,7 +63,7 @@ public abstract class AbstractHorseMixin extends Animal implements ModifedToBeTa
             cancellable = true
     )
     private void di_tickRidden(Player rider, Vec3 vec3, CallbackInfo ci) {
-        if (this.isAlive() && this.isVehicle() && this.isInWaterOrBubble() && TameableUtils.hasEnchant(this, DIEnchantmentRegistry.AMPHIBIOUS)) {
+        if (this.isAlive() && this.isVehicle() && this.isInWaterOrBubble() && TameableUtils.hasEnchant(this, PHEnchantmentRegistry.AMPHIBIOUS)) {
             LivingEntity livingentity = (LivingEntity) this.getControllingPassenger();
             this.setYRot(livingentity.getYRot());
             this.yRotO = this.getYRot();

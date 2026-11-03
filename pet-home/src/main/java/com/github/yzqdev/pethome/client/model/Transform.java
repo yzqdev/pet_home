@@ -4,8 +4,8 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
 /**
- * @author Alexthe666
- * @since 1.0.0
+ * 变换值对象（自 Citadel 模型库移植，原作者是 Alexthe666）：累积旋转与平移偏移，
+ * 供 Tabula 模型加载时把导入姿态换算成部件默认值。
  */
 @Environment(EnvType.CLIENT)
 public class Transform {

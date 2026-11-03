@@ -154,6 +154,8 @@ public class LangDefinition {
         public static String GUI_G_PET_INFO_OVERLAY_REQUIRE_SHIFT_DESC = LangDefinition.configuration("gui.general.pet_info_overlay_require_shift.desc");
         public static String GUI_G_PET_INFO_OVERLAY_IGNORE_JADE = LangDefinition.configuration("gui.general.pet_info_overlay_ignore_jade");
         public static String GUI_G_PET_INFO_OVERLAY_IGNORE_JADE_DESC = LangDefinition.configuration("gui.general.pet_info_overlay_ignore_jade.desc");
+        public static String GUI_G_DEBUG_MODE = LangDefinition.configuration("gui.general.debug_mode");
+        public static String GUI_G_DEBUG_MODE_DESC = LangDefinition.configuration("gui.general.debug_mode.desc");
         public static String GUI_G_ANIMAL_TAMER = LangDefinition.configuration("gui.general.animal_tamer");
         public static String GUI_G_ANIMAL_TAMER_DESC = LangDefinition.configuration("gui.general.animal_tamer.desc");
         public static String GUI_G_PETSTORE_WEIGHT = LangDefinition.configuration("gui.general.petstore_weight");
@@ -233,6 +235,7 @@ public class LangDefinition {
         public static String MESSAGE_REMOVE_RESPAWN = message("remove_respawn");
         public static String MESSAGE_GOODBYE = message("goodbye");
         public static String MESSAGE_ENCHANTMENTS = message("enchantments");
+        public static String MESSAGE_ENCHANT_ERROR = message("enchant_error");
         public static String MESSAGE_SET_OWNER = message("set_owner");
         public static String MESSAGE_WAYWARD_LANTERN_RETURN = message("wayward_lantern_return");
 
@@ -277,8 +280,7 @@ public class LangDefinition {
         public static String ENCHANT_VOID_CLOUD_DESC = enchantment("void_cloud.desc");
         public static String ENCHANT_CHARISMA = enchantment("charisma");
         public static String ENCHANT_CHARISMA_DESC = enchantment("charisma.desc");
-        public static String ENCHANT_UNDEAD_CURSE = enchantment("undead_curse");
-        public static String ENCHANT_UNDEAD_CURSE_DESC = enchantment("undead_curse.desc");
+        // undead_curse 已删除（2026-10-24 定案，fabric 侧 2026-10-25 对齐）
         public static String ENCHANT_INFAMY_CURSE = enchantment("infamy_curse");
         public static String ENCHANT_INFAMY_CURSE_DESC = enchantment("infamy_curse.desc");
         public static String ENCHANT_SHADOW_HANDS = enchantment("shadow_hands");
@@ -362,5 +364,28 @@ public class LangDefinition {
         public static String MESSAGE_PET_COMPASS_RECALLED = message("pet_compass.recalled");
         public static String MESSAGE_PET_COMPASS_RECALL_STARTED = message("pet_compass.recall_started");
         public static String MESSAGE_PET_COMPASS_RECALL_FAILED = message("pet_compass.recall_failed");
+        // 2026-10-25 罗盘 GUI 现代化（compass 包拆分）新增键：失效/收存状态、删除按钮、详情行、宝盒召回提示
+        public static String MESSAGE_PET_COMPASS_DIM_LABEL = message("pet_compass.dim_label");
+        public static String MESSAGE_PET_COMPASS_STATUS_IN_BALL = message("pet_compass.status_in_ball");
+        public static String MESSAGE_PET_COMPASS_STATUS_IN_NET = message("pet_compass.status_in_net");
+        public static String MESSAGE_PET_COMPASS_STATUS_STALE = message("pet_compass.status_stale");
+        public static String MESSAGE_PET_COMPASS_BUTTON_FORGET = message("pet_compass.button_forget");
+        public static String MESSAGE_PET_COMPASS_BUTTON_CONFIRM_FORGET = message("pet_compass.button_confirm_forget");
+        public static String MESSAGE_PET_COMPASS_BALL_RECALLED = message("pet_compass.ball_recalled");
+        public static String MESSAGE_PET_COMPASS_FORGOTTEN = message("pet_compass.forgotten");
+        public static String MESSAGE_PET_COMPASS_HEALTH = message("pet_compass.health");
+        public static String MESSAGE_PET_COMPASS_CMD_0 = message("pet_compass.cmd_0");
+        public static String MESSAGE_PET_COMPASS_CMD_1 = message("pet_compass.cmd_1");
+        public static String MESSAGE_PET_COMPASS_CMD_2 = message("pet_compass.cmd_2");
 
+    public static String ITEM_WHISTLE = item("whistle");
+    public static String TOOLTIP_WHISTLE_DESC = tooltips("whistle.desc");
+    public static String ITEM_FREEDOM_BELL = item("freedom_bell");
+    public static String TOOLTIP_FREEDOM_BELL_DESC = tooltips("freedom_bell.desc");
+    public static String MESSAGE_WHISTLE_SUMMARY = message("whistle_summary");
+    public static String MESSAGE_WHISTLE_NONE = message("whistle_none");
+    public static String ITEM_DEED_OF_OWNERSHIP_DESC2 = item("deed_of_ownership.desc2");
+    public static String MESSAGE_RELEASE_CONFIRM = message("release_confirm");
+    public static String MESSAGE_RELEASED = message("released");
+    public static String ITEM_DEED_OF_OWNERSHIP_BOUND = item("deed_of_ownership.bound");
 }

@@ -4,7 +4,7 @@ import com.github.yzqdev.pethome.server.NbtKeys;
 
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
 import com.github.yzqdev.pethome.PetHomeMod;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 import com.github.yzqdev.pethome.server.entity.ai.*;
 import net.minecraft.Util;
@@ -17,6 +17,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.players.OldUsersConverter;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.AvoidEntityGoal;
 import net.minecraft.world.entity.ai.goal.TemptGoal;
@@ -36,13 +37,18 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * 兔子完全驯服化：实现 {@link ModifiedToBeTameable} + {@link IComandableMob}
+ * （owner/command 经 {@code defineSynchedData} 注入、随 NBT 持久化），重写 AI 目标与邪恶兔变体处理；干草块驯服交互在 {@code PlayerInteractEntityHandler}。
+ */
 @Mixin(Rabbit.class)
-public abstract class RabbitMixin extends Animal implements ModifedToBeTameable, IComandableMob {
+public abstract class RabbitMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 
     @Shadow @Final private static EntityDataAccessor<Integer> DATA_TYPE_ID;
 
@@ -56,6 +62,7 @@ public abstract class RabbitMixin extends Animal implements ModifedToBeTameable,
         super(type, level);
     }
 
+    /** 注入 {@code Rabbit#registerGoals} 尾部：追加宠物 AI（停留 / 跟随 / 主人被打反击 / 主人攻击协同 / 干草块诱惑）；已驯服时移除未驯服行为。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -72,6 +79,7 @@ public abstract class RabbitMixin extends Animal implements ModifedToBeTameable,
         }
     }
 
+    /** 注入 {@code Rabbit#defineSynchedData} 尾部：注册驯服数据同步字段（主人 UUID / 指令 / 驯服标记）。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -83,6 +91,7 @@ public abstract class RabbitMixin extends Animal implements ModifedToBeTameable,
         this.entityData.define(TAMED, false);
     }
 
+    /** 注入 {@code Rabbit#addAdditionalSaveData} 尾部：指令 / 驯服标记 / 主人 UUID 写入 NBT 持久化。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -96,6 +105,7 @@ public abstract class RabbitMixin extends Animal implements ModifedToBeTameable,
         }
     }
 
+    /** 注入 {@code Rabbit#readAdditionalSaveData} 尾部：从 NBT 恢复驯服状态（主人键兼容旧档玩家名字，经 {@code OldUsersConverter} 转换）。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -172,6 +182,7 @@ public abstract class RabbitMixin extends Animal implements ModifedToBeTameable,
         return this.getVariant() == Rabbit.Variant.EVIL && (!this.isTame() || !TameableUtils.hasSameOwnerAs(this, target));
     }
 
+    /** 驯服后移除未驯服行为：停掉并删除逃跑目标（AvoidEntityGoal），删除主动索敌目标（NearestAttackableTargetGoal）。 */
     public void removeUntamedGoals(){
         try {
             this.goalSelector.getAvailableGoals().stream().filter((wrapped) -> {
@@ -188,6 +199,7 @@ public abstract class RabbitMixin extends Animal implements ModifedToBeTameable,
         }
     }
 
+    /** 注入 {@code Rabbit#setVariant} 头部（可取消）：改为邪恶兔时加血量/护甲、装近战与仇恨 AI（未驯服仇视玩家和狼；已驯服从宠）、补杀手兔名字，最后照常写变体字段。 */
     @Inject(
             at = {@At("HEAD")},
             remap = true,
@@ -199,7 +211,9 @@ public abstract class RabbitMixin extends Animal implements ModifedToBeTameable,
         if(type == Rabbit.Variant.EVIL){
             this.getAttribute(Attributes.MAX_HEALTH).setBaseValue(30.0D);
             this.getAttribute(Attributes.ARMOR).setBaseValue(8.0D);
-            this.heal(22.0F);
+            // 不在此处回血：原版 readAdditionalSaveData 会经 setVariant 走到这里，加载期
+            // （worldgen 线程、实体未入 level）发 LivingHealEvent 会让第三方监听器在离线实体上运行；
+            // 且每次 NBT 加载叠加回血等于无限回血。满血由 di_finalizeSpawn 在 spawn 场景补足。
             this.goalSelector.addGoal(4, new RabbitMeleeGoal(this));
             this.targetSelector.addGoal(1, (new HurtByTargetGoal(this)).setAlertOthers());
             if(!this.isTame()){
@@ -215,6 +229,24 @@ public abstract class RabbitMixin extends Animal implements ModifedToBeTameable,
             }
         }
         this.entityData.set(DATA_TYPE_ID, type.id());
+    }
+
+    /**
+     * 注入目标：{@code Rabbit#finalizeSpawn} RETURN。
+     *
+     * <p>spawn 场景（自然生成/刷怪蛋/summon 无 NBT/结构模板放置）补满血：实体构造时血量按普通兔 3 点，
+     * {@code setVariant(EVIL)} 把 MAX_HEALTH 提到 30 后需要覆盖为满血。直接 {@code setHealth} 不发
+     * LivingHealEvent；NBT 加载路径不走 finalizeSpawn，存档血量得以保留。
+     */
+    @Inject(
+            at = {@At("RETURN")},
+            remap = true,
+            method = {"finalizeSpawn(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/world/DifficultyInstance;Lnet/minecraft/world/entity/MobSpawnType;Lnet/minecraft/world/entity/SpawnGroupData;Lnet/minecraft/nbt/CompoundTag;)Lnet/minecraft/world/entity/SpawnGroupData;"}
+    )
+    private void di_finalizeSpawn(CallbackInfoReturnable<SpawnGroupData> cir) {
+        if (this.getVariant() == Rabbit.Variant.EVIL) {
+            this.setHealth(this.getMaxHealth());
+        }
     }
 
     @Override

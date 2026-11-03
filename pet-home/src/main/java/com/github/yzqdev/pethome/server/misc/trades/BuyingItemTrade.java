@@ -11,6 +11,7 @@ import net.minecraft.world.level.ItemLike;
 
 import java.util.Random;
 
+/** 村民收购玩家物品、支付绿宝石的反向交易（如收购项圈标签）。 */
 public class BuyingItemTrade implements VillagerTrades.ItemListing {
     private final Item tradeItem;
     private final int itemCount;
@@ -29,7 +30,7 @@ public class BuyingItemTrade implements VillagerTrades.ItemListing {
     }
 
     public MerchantOffer getOffer(Entity entity, RandomSource rng) {
-        ItemStack lvt_3_1_ = new ItemStack(this.tradeItem, this.itemCount);
-        return new MerchantOffer(lvt_3_1_, new ItemStack(Items.EMERALD, this.emeralds), this.maxUses, this.xpValue, this.priceMultiplier);
+        ItemStack buyingItem = new ItemStack(this.tradeItem, this.itemCount);
+        return new MerchantOffer(buyingItem, new ItemStack(Items.EMERALD, this.emeralds), this.maxUses, this.xpValue, this.priceMultiplier);
     }
 }

@@ -6,7 +6,7 @@ import com.github.yzqdev.pethome.server.NbtKeys;
 
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.particles.ParticleOptions;
@@ -41,10 +41,15 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * 美西螈完全驯服化：实现 {@link ModifiedToBeTameable} + {@link IComandableMob}
+ * （owner/command 经 {@code defineSynchedData} 注入、随 NBT 持久化）；热带鱼桶驯服交互、
+ * 桶装保存/加载携带驯服数据，服务端 AI 注入 follow/stay 活动。
+ */
 @Mixin(Axolotl.class)
-public abstract class AxolotlMixin extends Animal implements ModifedToBeTameable, IComandableMob {
+public abstract class AxolotlMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 
-    @Shadow public abstract void readAdditionalSaveData(CompoundTag p_149145_);
+    @Shadow public abstract void readAdditionalSaveData(CompoundTag compound);
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(Axolotl.class, EntityDataSerializers.INT);

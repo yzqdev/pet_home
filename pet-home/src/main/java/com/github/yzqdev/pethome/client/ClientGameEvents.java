@@ -24,6 +24,11 @@ import java.util.List;
 import java.util.Map;
 
 
+/**
+ * 客户端渲染期数据与音效接线（无事件回调，方法由 Mixin / 实体事件调入）：
+ * 暗影之手的视觉数组、潜行查看宠物时的附魔名牌绘制（经 {@code EntityRendererMixin}）、
+ * 随行唱片机的音乐实例管理。
+ */
 public class ClientGameEvents {
 
     public static final Map<Integer, DiscJockeySound> DISC_JOCKEY_SOUND_MAP = new HashMap<>();
@@ -97,10 +102,12 @@ public class ClientGameEvents {
         }
     }
 
+    /** 服务端每 tick 推来的暗影之手出拳进度数组（EntityTickHandler 调用），渲染层据此画手。 */
     public static void updateVisualDataForMob(Entity entity, int[] arr) {
         shadowPunchRenderData.put(entity, arr);
     }
 
+    /** 随行唱片机实体事件（66=播放 / 67=停止）：按唱片内容创建或停止 {@link DiscJockeySound} 并维护实体→音效映射。 */
     public static void updateEntityStatus(Entity entity, byte updateKind) {
         if (entity instanceof FollowingJukeboxEntity) {
             SoundEvent record = ((FollowingJukeboxEntity) entity).getRecordSound();

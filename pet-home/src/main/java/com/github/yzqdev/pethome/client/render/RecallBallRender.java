@@ -14,6 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import org.joml.Quaternionf;
 
+/** 召回球实体渲染器：随朝向旋转并调用 {@code RecallBallModel#animateBall} 播放开合动画。 */
 public class RecallBallRender extends EntityRenderer<RecallBallEntity> {
 
     private RecallBallModel recallBallModel = new RecallBallModel();

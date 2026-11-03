@@ -16,6 +16,10 @@ import net.minecraft.world.item.trading.MerchantOffer;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 图书馆员附魔书交易的替换实现（原 {@code EnchantBookForEmeralds} 的过滤版）：候选集中剔除
+ * 全部宠物附魔（{@code PetEnchantment}），避免图书馆员卖出本应由项圈 / 驯兽师渠道获得的附魔。
+ */
 public   class EnchantBookForEmeraldsWithoutPet implements VillagerTrades.ItemListing {
         private final int villagerXp;
 

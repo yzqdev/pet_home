@@ -15,6 +15,7 @@ import java.util.*;
 /*
     Lightning bolt effect code used with permission from aidancbrady
  */
+/** 闪电束渲染器（经 aidancbrady 许可使用）：按 BoltOwnerData 维护各闪电所有者的抖动顶点，每 1/3 秒刷新一次随机形态，写入 {@code RenderType.lightning()} 缓冲。 */
 public class LightningRender {
 
     private static final float REFRESH_TIME = 3F;

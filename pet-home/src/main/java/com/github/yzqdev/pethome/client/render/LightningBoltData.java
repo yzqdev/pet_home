@@ -9,6 +9,7 @@ import java.util.*;
 /*
     Lightning bolt effect code used with permission from aidancbrady
  */
+/** 闪电束几何数据（代码经 aidancbrady 许可使用，源自 Mekanism 风格闪电特效）：起点/终点/分段数 + 生成/淡出函数，描述一道闪电的形状参数。 */
 public class LightningBoltData {
 
     private final Random random = new Random();

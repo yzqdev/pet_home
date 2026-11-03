@@ -7,6 +7,7 @@ import net.minecraft.util.Mth;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
+/** 睡眠 ZZZ 粒子：负重力上浮的同时绕出生点螺旋盘旋（正弦轨迹 + 随机相位/方向），随寿命淡出。 */
 public class ParticleZZZ extends SimpleAnimatedParticle {
 
     private float sinOffset;

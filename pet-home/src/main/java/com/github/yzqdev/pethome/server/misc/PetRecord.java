@@ -7,7 +7,7 @@ import java.util.UUID;
 /**
  * 宠物罗盘的宠物档案：以 PetId（宠物永久逻辑身份）为主键，随宠物整个生命周期（含死亡/宠物床复活）不变。
  * Entity UUID 只是「当前实体实例」的定位手段——宠物床复活会生成新实体（新 Entity UUID），PetId 不变，
- * 罗盘始终以 PetId 识别宠物（  核心要求：Entity UUID 表示实体实例，PetId 表示宠物本身）。
+ * 罗盘始终以 PetId 识别宠物：Entity UUID 表示实体实例，PetId 表示宠物本身（实体重建后 UUID 变化而 PetId 不变）。
  */
 public class PetRecord {
 
@@ -31,9 +31,21 @@ public class PetRecord {
     public long lastKnownTime;
     /** 是否存活（死亡等待宠物床复活时为 false，复活 join 时置回 true） */
     public boolean alive;
+    /** 宠物被召回宝盒（total_recall）收存：实体已 discard，宝盒实体位于 (x,y,z)/dimension；宠物重建 join 时清除 */
+    public boolean inBall;
+    /** inBall 期间收存宠物的宝盒实体 UUID（定位宝盒用；"" = 未知/旧存档） */
+    public String ballUuid = "";
+    /** 收存容器种类：{@code recall} = 召回宝盒（TOTAL_RECALL），{@code net} = 生物球（捕网）；旧存档默认 recall */
+    public String ballKind = "recall";
 
     public PetRecord(UUID petId, UUID ownerId, String entityType, String displayName, String dimension,
                      int x, int y, int z, String entityUuid, long lastKnownTime, boolean alive) {
+        this(petId, ownerId, entityType, displayName, dimension, x, y, z, entityUuid, lastKnownTime, alive, false, "", "recall");
+    }
+
+    public PetRecord(UUID petId, UUID ownerId, String entityType, String displayName, String dimension,
+                     int x, int y, int z, String entityUuid, long lastKnownTime, boolean alive,
+                     boolean inBall, String ballUuid, String ballKind) {
         this.petId = petId;
         this.ownerId = ownerId;
         this.entityType = entityType;
@@ -45,6 +57,9 @@ public class PetRecord {
         this.entityUuid = entityUuid;
         this.lastKnownTime = lastKnownTime;
         this.alive = alive;
+        this.inBall = inBall;
+        this.ballUuid = ballUuid;
+        this.ballKind = ballKind;
     }
 
     /** 位置/维度等可变信息用本方法覆盖（petId 不可变） */
@@ -59,8 +74,12 @@ public class PetRecord {
         this.entityUuid = other.entityUuid;
         this.lastKnownTime = other.lastKnownTime;
         this.alive = other.alive;
+        this.inBall = other.inBall;
+        this.ballUuid = other.ballUuid;
+        this.ballKind = other.ballKind;
     }
 
+    /** 序列化到 PHWorldData 存档（键 {@code pet_home_world_data} 的 petRecords 复合表）。 */
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
         tag.putString("PetId", this.petId.toString());
@@ -74,9 +93,13 @@ public class PetRecord {
         tag.putString("EntityUuid", this.entityUuid);
         tag.putLong("LastKnownTime", this.lastKnownTime);
         tag.putBoolean("Alive", this.alive);
+        tag.putBoolean("InBall", this.inBall);
+        tag.putString("BallUuid", this.ballUuid);
+        tag.putString("BallKind", this.ballKind);
         return tag;
     }
 
+    /** 从存档反序列化；PetId/OwnerId 非法 UUID 时返回 null（调用方需跳过坏档）。 */
     public static PetRecord load(CompoundTag tag) {
         try {
             return new PetRecord(
@@ -88,7 +111,10 @@ public class PetRecord {
                     tag.getInt("X"), tag.getInt("Y"), tag.getInt("Z"),
                     tag.getString("EntityUuid"),
                     tag.getLong("LastKnownTime"),
-                    tag.getBoolean("Alive"));
+                    tag.getBoolean("Alive"),
+                    tag.getBoolean("InBall"),
+                    tag.getString("BallUuid"),
+                    tag.contains("BallKind") ? tag.getString("BallKind") : "recall");
         } catch (IllegalArgumentException e) {
             return null;
         }

@@ -6,7 +6,7 @@ import com.github.yzqdev.pethome.config.ConfigSpec;
 import com.github.yzqdev.pethome.config.DoubleValue;
 import com.github.yzqdev.pethome.config.IntValue;
 import com.github.yzqdev.pethome.config.StringListValue;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.enchantment.PetEnchantment;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -22,6 +22,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 
+/**
+ * 全部配置项定义。分两批声明：
+ * <ul>
+ *   <li>静态块：{@code friendly_fire}（友军伤害保护）与捕网两组——以静态常量声明，供任意类直接读取；</li>
+ *   <li>实例字段：{@code general} / {@code loot} / {@code enchantments} 三组——经 {@code PetHomeMod.CONFIG}
+ *       实例访问，客户端 HUD 等 {@code petInfoOverlay*} 开关也在此。</li>
+ * </ul>
+ * {@code [enchantments]} 组在构造时反射枚举 {@link PHEnchantmentRegistry} 的 {@link PetEnchantment}
+ * 静态字段，为每个附魔生成 {@code <注册名>_enabled} 开关。热路径直读的静态缓存字段由
+ * {@link #refreshCachedValues()} 刷新。
+ */
 public class PetHomeConfig {
 
 
@@ -109,6 +120,7 @@ public class PetHomeConfig {
     public final BooleanValue petInfoOverlay;
     public final BooleanValue petInfoOverlayRequireShift;
     public final BooleanValue petInfoOverlayIgnoreJade;
+    public final BooleanValue debugMode;
     public final BooleanValue animalTamerVillager;
     public final IntValue petstoreVillageWeight;
     public final BooleanValue petCompassEnable;
@@ -142,16 +154,17 @@ public class PetHomeConfig {
         swingThroughPets = BUILDER.comment("true if attacks do not register on pets from their owners and go through them to attack a mob behind them").translation("swing_through_pets").define("swing_through_pets", true);
         rottenApple = BUILDER.comment("true if apples can turn into rotten apples if they despawn").translation("rotten_apple").define("rotten_apple", true);
         petBedRespawns = BUILDER.comment("true if mobs can respawn in pet beds the next morning after they die").translation("pet_bed_respawns").define("pet_bed_respawns", true);
-        collarTag = BUILDER.comment("true if collar tag functionality are enabled. If this is disabled, there is no way to enchant mobs!").translation("collar_tags").define("collar_tags", true);
+        collarTag = BUILDER.comment("true if collar tag functionality are enabled. If this is disabled, there is no way to enchant mobs!").translation("collarTag").define("collarTag", true);
         rabbitsScareRavagers = BUILDER.comment("true if rabbits scare ravagers like they used to do").translation("rabbits_scare_ravagers").define("rabbits_scare_ravagers", true);
-        petInfoOverlay = BUILDER.comment("true if aiming the crosshair at your pet and holding shift shows the pet info overlay").translation("pet_info_overlay").define("pet_info_overlay", true);
-        petInfoOverlayRequireShift = BUILDER.comment("true if the pet info overlay is only shown while holding shift (default: shown whenever the crosshair is on your pet)").translation("pet_info_overlay_require_shift").define("pet_info_overlay_require_shift", false);
-        petInfoOverlayIgnoreJade = BUILDER.comment("true if the pet info overlay is shown even when Jade is installed").translation("pet_info_overlay_ignore_jade").define("pet_info_overlay_ignore_jade", false);
+        petInfoOverlay = BUILDER.comment("true if aiming the crosshair at your pet and holding shift shows the pet info overlay").translation("petInfoOverlay").define("petInfoOverlay", true);
+        petInfoOverlayRequireShift = BUILDER.comment("true if the pet info overlay is only shown while holding shift (default: shown whenever the crosshair is on your pet)").translation("petInfoOverlayRequireShift").define("petInfoOverlayRequireShift", false);
+        petInfoOverlayIgnoreJade = BUILDER.comment("true if the pet info overlay is shown even when Jade is installed").translation("petInfoOverlayIgnoreJade").define("petInfoOverlayIgnoreJade", false);
+        debugMode = BUILDER.comment("enable debug logs for troubleshooting (key systems print diagnostic info when on)").translation("debugMode").define("debugMode", false);
         animalTamerVillager = BUILDER.comment("true if animal tamer villagers are enabled. Their work station is a pet bed").translation("animal_tamer_villager").define("animal_tamer_villager", true);
         petstoreVillageWeight = BUILDER.comment("the spawn weight of the pet store in villages, set to 0 to disable it entirely").translation("petstore_village_weight").defineInRange("petstore_village_weight", 17, 0, 1000);
-        petCompassEnable = BUILDER.comment("master switch for the pet compass system").translation("pet_compass_enable").define("pet_compass_enable", true);
-        petCompassTeleportPlayerToPet = BUILDER.comment("allow teleporting the player to the pet").translation("teleport_player_to_pet").define("teleport_player_to_pet", true);
-        petCompassTeleportPetToPlayer = BUILDER.comment("allow teleporting (recalling) the pet to the player").translation("teleport_pet_to_player").define("teleport_pet_to_player", true);
+        petCompassEnable = BUILDER.comment("master switch for the pet compass system").translation("petCompassEnable").define("petCompassEnable", true);
+        petCompassTeleportPlayerToPet = BUILDER.comment("allow teleporting the player to the pet").translation("teleportPlayerToPet").define("teleportPlayerToPet", true);
+        petCompassTeleportPetToPlayer = BUILDER.comment("allow teleporting (recalling) the pet to the player").translation("teleportPetToPlayer").define("teleportPetToPlayer", true);
         BUILDER.pop();
 
         BUILDER.push("loot");
@@ -172,7 +185,7 @@ public class PetHomeConfig {
 
         BUILDER.push("enchantments");
         try {
-            for (Field field : DIEnchantmentRegistry.class.getDeclaredFields()) {
+            for (Field field : PHEnchantmentRegistry.class.getDeclaredFields()) {
                 Object value = field.get(null);
                 if (value instanceof PetEnchantment enchantment) {
                     String registryName = enchantment.getName();
@@ -197,10 +210,12 @@ public class PetHomeConfig {
         refreshCachedValues();
     }
 
+    /** 落盘配置（仅在值被修改时写入）；由服务器 / 客户端退出回调与配置界面关闭时调用。 */
     public static void save() {
         SPEC.save();
     }
 
+    /** 等价于 {@link #load()}（保留 Forge 风格命名的别名）。 */
     public static void onLoad() {
         load();
     }
@@ -213,10 +228,12 @@ public class PetHomeConfig {
         return obj instanceof String name && BuiltInRegistries.ITEM.containsKey(new ResourceLocation(name));
     }
 
+    /** 附魔开关查询：非本模组附魔（非 {@link PetEnchantment}）一律视为启用。 */
     public boolean isEnchantEnabled(Enchantment enchantment) {
         return enchantment instanceof PetEnchantment && isEnchantEnabled(((PetEnchantment) enchantment).getName());
     }
 
+    /** 按注册名查询附魔开关；未登记的名称视为启用。 {@code TameableUtils.getEnchantLevel} 在此被禁用时返回 0 级。 */
     public boolean isEnchantEnabled(String enchantment) {
         BooleanValue entry = enabledEnchantments.get(enchantment);
         return entry == null || entry.get();
@@ -246,6 +263,7 @@ public class PetHomeConfig {
      * 设置界面修改配置后不会触发配置加载事件，需要主动调用本方法让新值立即生效。
      */
     public static void refreshCachedValues() {
+        com.github.yzqdev.pethome.server.entity.TameableUtils.refreshSpeciesGates();
         mobcatcherBlackList = MOBCATCHER_BLACKLIST.get().stream()
                 .map(name -> BuiltInRegistries.ENTITY_TYPE.get(new ResourceLocation(name)))
                 .collect(Collectors.toSet());

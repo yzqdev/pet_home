@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
 
+/** 暗影之手附魔模型：掌 + 三指 + 拇指的手部模型，出拳动画由 {@link #animateShadowHand} 驱动。 */
 public class ShadowHandModel extends AdvancedEntityModel<LivingEntity> {
     private final AdvancedModelBox palm;
     private final AdvancedModelBox finger1;
@@ -70,6 +71,7 @@ public class ShadowHandModel extends AdvancedEntityModel<LivingEntity> {
         AdvancedModelBox.rotateAngleZ = z;
     }
 
+    /** 出拳动画：punch∈[0,0.25] 归一化后驱动手指前伸/手掌前推，左右手镜像（按 handIndex 是否过半判定），闲置时轻微 walk 摆动。 */
     public void animateShadowHand(float punch, int handIndex, int shadowHandCount, float ageInTicks) {
         this.resetToDefaultPose();
         boolean left = handIndex >= shadowHandCount / 2F;

@@ -11,6 +11,7 @@ import net.fabricmc.api.Environment;
 import java.util.HashMap;
 import java.util.Map;
 
+/** 贴图尺寸查询工具：按 ResourceLocation 读取贴图真实宽高并缓存（特效渲染按贴图比例布顶点用）。 */
 @Environment(EnvType.CLIENT)
 public class TextureSizer {
 

@@ -4,6 +4,7 @@ package com.github.yzqdev.pethome.client.model;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.world.entity.LivingEntity;
 
+/** 烈焰庇护（Blazing Bar 火焰条）模型：单根竖条部件，随附魔触发实体的朝向旋转（见 {@link #animateBar}）。 */
 public class BlazingBarModel extends AdvancedEntityModel<LivingEntity> {
     private final AdvancedModelBox bar;
 
@@ -31,6 +32,7 @@ public class BlazingBarModel extends AdvancedEntityModel<LivingEntity> {
         this.resetToDefaultPose();
     }
 
+    /** 按实体 yaw 旋转竖条（渲染器每帧调用）。 */
     public void animateBar(float rotY) {
         this.resetToDefaultPose();
         this.bar.rotateAngleY -= (float)Math.toRadians(rotY);

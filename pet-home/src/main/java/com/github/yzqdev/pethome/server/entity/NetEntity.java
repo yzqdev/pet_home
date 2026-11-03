@@ -20,6 +20,11 @@ import net.minecraft.world.phys.HitResult;
 
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * 捕网投掷物（{@code ThrowableItemProjectile}，仅服务端处理命中）：
+ * 空网命中生物 → 校验 {@code NetItem.canCatchMob} 后把实体完整 NBT 写入 net_has_item 掉落物、目标 discard；
+ * 装着生物的网命中 → 重建实体放到命中点释放；命中方块 → 网本身掉落。飞行中携带的物品堆随实体存档。
+ */
 public class NetEntity extends ThrowableItemProjectile {
 
     private final String entityNbt = "itemNbt";
@@ -57,9 +62,9 @@ public class NetEntity extends ThrowableItemProjectile {
 
 
     /**
-     * Called when this EntityThrowable hits a block or entity.
+     * 命中处理（仅服务端）：按是否装着生物分捕获 / 释放 / 掉落网三路，处理后自毁。
      *
-     * @param result
+     * @param result 命中结果（实体或方块）
      */
     @Override
     protected void onHit(@NotNull HitResult result) {

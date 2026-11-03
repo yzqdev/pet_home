@@ -18,6 +18,7 @@ public class ItemEntityMixin {
     @Shadow
     private int age;
 
+    /** 注入 {@code ItemEntity#tick} 头部（可取消）：替代 Forge ItemExpireEvent——满 6000 tick 过期瞬间交给 {@link ServerEvent#onItemDespawnEvent} 判定是否转为腐烂苹果，是则取消原删除。 */
     @Inject(method = "tick()V", at = @At("HEAD"), cancellable = true)
     private void ph_onItemExpire(CallbackInfo ci) {
         ItemEntity self = (ItemEntity) (Object) this;

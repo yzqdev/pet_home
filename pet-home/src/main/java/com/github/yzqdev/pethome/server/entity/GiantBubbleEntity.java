@@ -2,8 +2,8 @@ package com.github.yzqdev.pethome.server.entity;
 
 import com.github.yzqdev.pethome.server.NbtKeys;
 
-import com.github.yzqdev.pethome.server.misc.DIParticleRegistry;
-import com.github.yzqdev.pethome.server.misc.DISoundRegistry;
+import com.github.yzqdev.pethome.server.misc.PHParticleRegistry;
+import com.github.yzqdev.pethome.server.misc.PHSoundRegistry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -20,6 +20,11 @@ import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
+/**
+ * 巨型泡泡（BUBBLING）载体实体：把目标骑在上面持续上浮（水中更快），{@code popsIn} 到期或被投掷物 /
+ * 虚空伤害击中时破裂释放乘客；无重力、免大部分伤害（本类 hurt 只处理破裂情形）。
+ * 下车被 {@code ServerEvent.onEntityMount} 拦截。
+ */
 public class GiantBubbleEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> POPS_IN = SynchedEntityData.defineId(GiantBubbleEntity.class, EntityDataSerializers.INT);
@@ -28,6 +33,7 @@ public class GiantBubbleEntity extends Entity {
         super(type, level);
     }
 
+    /** 每 tick：上浮、倒数破裂计时、冒气泡粒子；计时归零时 {@link #pop}。 */
     public void tick(){
         super.tick();
         double d = this.isInWater() ? 0.2D : 0.08D;
@@ -36,7 +42,7 @@ public class GiantBubbleEntity extends Entity {
             pop();
         }else{
             this.setpopsIn(this.getPopsIn() - 1);
-            this.level().addParticle(DIParticleRegistry.SIMPLE_BUBBLE, this.getRandomX(1.4F), this.getRandomY(), this.getRandomZ(1.4F), (random.nextFloat() - 0.5F) * 0.3F, -0.1F, (random.nextFloat() - 0.5F) * 0.3F);
+            this.level().addParticle(PHParticleRegistry.SIMPLE_BUBBLE, this.getRandomX(1.4F), this.getRandomY(), this.getRandomZ(1.4F), (random.nextFloat() - 0.5F) * 0.3F, -0.1F, (random.nextFloat() - 0.5F) * 0.3F);
         }
     }
 
@@ -52,10 +58,11 @@ public class GiantBubbleEntity extends Entity {
         return false;
     }
 
+    /** 破裂：音效 + 服务端 GIANT_POP 粒子，弹出手上的目标后自毁。 */
     private void pop() {
-        this.playSound(DISoundRegistry.GIANT_BUBBLE_POP, 1.0F, 1.5F);
+        this.playSound(PHSoundRegistry.GIANT_BUBBLE_POP, 1.0F, 1.5F);
         if(!level().isClientSide()){
-            ((ServerLevel)this.level()).sendParticles(DIParticleRegistry.GIANT_POP, this.getX(), this.getY() + this.getBbHeight() * 0.5F, this.getZ(), 1, 0, 0, 0, 0);
+            ((ServerLevel)this.level()).sendParticles(PHParticleRegistry.GIANT_POP, this.getX(), this.getY() + this.getBbHeight() * 0.5F, this.getZ(), 1, 0, 0, 0, 0);
         }
         this.ejectPassengers();
         this.discard();

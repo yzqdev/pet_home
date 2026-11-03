@@ -7,9 +7,9 @@ import com.github.yzqdev.pethome.server.NbtKeys;
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
 import com.github.yzqdev.pethome.server.entity.IFrog;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.TameableUtils;
-import com.github.yzqdev.pethome.server.misc.DITagRegistry;
+import com.github.yzqdev.pethome.server.misc.PHTagRegistry;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -44,8 +44,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * 青蛙完全驯服化：实现 {@link ModifiedToBeTameable} + {@link IComandableMob} + {@link IFrog}
+ * （owner/command 经 {@code defineSynchedData} 注入、随 NBT 持久化）；蜘蛛眼驯服与右键交互经 {@code IFrog.onFrogInteract} 转入，服务端 AI 注入 follow/stay 活动。
+ */
 @Mixin(Frog.class)
-public abstract class FrogMixin extends Animal implements ModifedToBeTameable, IComandableMob, IFrog {
+public abstract class FrogMixin extends Animal implements ModifiedToBeTameable, IComandableMob, IFrog {
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(Frog.class, EntityDataSerializers.OPTIONAL_UUID);
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(Frog.class, EntityDataSerializers.INT);
@@ -58,6 +62,7 @@ public abstract class FrogMixin extends Animal implements ModifedToBeTameable, I
     @Shadow
     public abstract Brain<Frog> getBrain();
 
+    /** 注入 {@code Frog#defineSynchedData} 尾部：注册驯服数据同步字段（主人 UUID / 指令 / 驯服标记）。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -70,6 +75,7 @@ public abstract class FrogMixin extends Animal implements ModifedToBeTameable, I
     }
 
 
+    /** 注入 {@code Frog#tick} 尾部：首次驯服后把攻击力设为 3（青蛙可战斗化的基础数值，只生效一次）。 */
     @Inject(
             method = {"Lnet/minecraft/world/entity/animal/frog/Frog;tick()V"},
             at = {@At("TAIL")},
@@ -82,6 +88,7 @@ public abstract class FrogMixin extends Animal implements ModifedToBeTameable, I
         }
     }
 
+    /** 注入 {@code Frog#addAdditionalSaveData} 尾部：指令 / 驯服标记 / 主人 UUID 写入 NBT 持久化。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -95,6 +102,7 @@ public abstract class FrogMixin extends Animal implements ModifedToBeTameable, I
         }
     }
 
+    /** 注入 {@code Frog#readAdditionalSaveData} 尾部：从 NBT 恢复驯服状态（主人键兼容旧档玩家名字）。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -195,7 +203,7 @@ public abstract class FrogMixin extends Animal implements ModifedToBeTameable, I
     }
 
     private boolean isTamingItem(ItemStack stack) {
-        return stack.is(DITagRegistry.TAME_FROGS_WITH);
+        return stack.is(PHTagRegistry.TAME_FROGS_WITH);
     }
 
     @Override
@@ -234,6 +242,7 @@ public abstract class FrogMixin extends Animal implements ModifedToBeTameable, I
         return false;
     }
 
+    /** 注入 {@code Frog#customServerAiStep} 尾部：把主人的最近攻击/受击对象写进青蛙目标与 Brain 的 ATTACK_TARGET 记忆（青蛙靠 Brain 驱动索敌，不能只调 setTarget）。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,

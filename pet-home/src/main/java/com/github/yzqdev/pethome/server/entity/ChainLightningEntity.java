@@ -18,6 +18,11 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 链锁闪电（CHAIN_LIGHTNING）特效实体：挂在「施法宠物 → 当前目标」之间，每跳对目标造成 3 点
+ * 闪电伤害并在 8 格内跳向下一个有效敌人（排除施法者、同主人单位、已电过的目标，需视线可见）。
+ * 链由子实体递归扩散（{@code chainsLeft} 递减）；不持久化（存档方法为空），寿命默认 5 tick。
+ */
 public class ChainLightningEntity extends Entity {
 
     private static final EntityDataAccessor<Integer> CREATOR_ID = SynchedEntityData.defineId(ChainLightningEntity.class, EntityDataSerializers.INT);
@@ -42,6 +47,7 @@ public class ChainLightningEntity extends Entity {
         this.entityData.define(DIES_IN, 5);
     }
 
+    /** 每 tick：吸附到当前目标胸口（首跳伤害一次）；服务端寻找下一个链目标生成子闪电；寿命倒计时后自毁。 */
     @Override
     public void tick() {
         super.tick();
@@ -97,6 +103,7 @@ public class ChainLightningEntity extends Entity {
         }     
     }
 
+    /** 生成下一跳的子闪电：继承“已电目标”黑名单与施法者，链数 -1。 */
     private void createLightningAt(Entity closestValid) {
         ChainLightningEntity child = PHEntityRegistry.CHAIN_LIGHTNING.create(this.level());
         child.previouslyShocked = new ArrayList<>(previouslyShocked);
@@ -145,6 +152,7 @@ public class ChainLightningEntity extends Entity {
         return getToEntityID() == -1 ? null : this.level().getEntity(getToEntityID());
     }
 
+    /** 剩余链跳数（数据通道名为 TARGET_COUNT，实际语义是剩余跳数）。 */
     public int getChainsLeft() {
         return this.entityData.get(TARGET_COUNT);
     }
@@ -162,12 +170,12 @@ public class ChainLightningEntity extends Entity {
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag p_20052_) {
+    protected void readAdditionalSaveData(CompoundTag compound) {
 
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag p_20139_) {
+    protected void addAdditionalSaveData(CompoundTag compound) {
 
     }
 }

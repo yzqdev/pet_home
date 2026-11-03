@@ -10,6 +10,11 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
+/**
+ * 项圈标签：宠物附魔的「写入载体」——对宠物右键应用（见 {@code PlayerInteractEntityHandler.applyCollarTag}），
+ * 附魔后留在宠物身上而非物品。可进附魔台 / 铁砧获取附魔（{@code EnchantmentCategory.BREAKABLE}
+ * 需要物品可损耗，见 {@link #canBeDepleted} 的说明），附好魔的项圈再右键挂到宠物上。
+ */
 public class CollarTagItem extends Item {
 
     public CollarTagItem() {

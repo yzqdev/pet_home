@@ -19,6 +19,7 @@ public class ExplosionMixin {
     @Shadow
     private Level level;
 
+    /** 注入 {@code Explosion#explode} 头部（可取消）：爆炸源处在宠物的偏移结界（DEFLECTION_SHIELD）范围内时直接取消爆炸。 */
     @Inject(method = "explode()V", at = @At("HEAD"), cancellable = true)
     private void ph_onExplosionStart(CallbackInfo ci) {
         Explosion self = (Explosion) (Object) this;

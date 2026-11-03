@@ -2,10 +2,10 @@ package com.github.yzqdev.pethome.server.event;
 
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.platform.Triple;
-import com.github.yzqdev.pethome.server.block.DIBlockRegistry;
+import com.github.yzqdev.pethome.server.block.PHBlockRegistry;
 import com.github.yzqdev.pethome.server.block.PetBedBlock;
 import com.github.yzqdev.pethome.server.block.PetBedBlockEntity;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import com.github.yzqdev.pethome.server.entity.*;
 import com.github.yzqdev.pethome.server.item.PHItemRegistry;
 import com.github.yzqdev.pethome.server.misc.*;
@@ -29,7 +29,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.entity.ai.goal.AvoidEntityGoal;
-import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.animal.Rabbit;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Ravager;
@@ -64,14 +63,14 @@ import java.util.function.Predicate;
  */
 public class ServerEvent {
 
-    public static final TargetingConditions ZOMBIE_TARGET = TargetingConditions.forCombat().range(32.0D);
-    //list of pets to be teleported across dimensions, cleared after every tick
+    /** 待跨维度重建传送的宠物队列（实体 + 目标维度 + 主人 UUID）；每 tick 在 {@link #onServerTick} 中消化并清空。 */
     public static List<Triple<Entity, ServerLevel, UUID>> teleportingPets = new ArrayList<>();
 
     private static final Map<Level, CollarTickTracker> COLLAR_TICK_TRACKER_MAP = new HashMap<>();
 
+    /** 初始化村庄相关内容：注入宠物商店结构池元素 + 注册驯兽师村民交易（并过滤图书馆员的宠物附魔书交易）。由 {@code PetHomeMod.onInitialize} 直接调用。 */
     public static void serverStart() {
-        DIVillagePieceRegistry.registerHouses();
+        PHVillagePieceRegistry.registerHouses();
         registerVillagerTrades();
     }
 
@@ -97,7 +96,7 @@ public class ServerEvent {
             }
         }
 
-        VillagerProfession animalTamer = DIVillagerRegistry.ANIMAL_TAMER;
+        VillagerProfession animalTamer = PHVillagerRegistry.ANIMAL_TAMER;
         List<VillagerTrades.ItemListing> level1 = new ArrayList<>();
         List<VillagerTrades.ItemListing> level2 = new ArrayList<>();
         List<VillagerTrades.ItemListing> level3 = new ArrayList<>();
@@ -114,7 +113,7 @@ public class ServerEvent {
         level2.add(new SellingItemTrade(PHItemRegistry.DEED_OF_OWNERSHIP, 3, 1, 2, 7));
         level3.add(new SellingItemTrade(PHItemRegistry.ROTTEN_APPLE, 4, 1, 1, 10));
         level3.add(new SellingRandomEnchantedBook());
-        level3.add(new SellingItemTrade(DIBlockRegistry.DRUM, 2, 3, 7, 11));
+        level3.add(new SellingItemTrade(PHBlockRegistry.DRUM, 2, 3, 7, 11));
         level3.add(new SellingItemTrade(Items.TADPOLE_BUCKET, 6, 1, 4, 13));
         level3.add(new EnchantItemTrade(PHItemRegistry.COLLAR_TAG, 20, 2, 8, 3, 10));
         level4.add(new SellingItemTrade(Items.AXOLOTL_BUCKET, 11, 1, 2, 15));
@@ -132,17 +131,21 @@ public class ServerEvent {
         VillagerTrades.TRADES.put(animalTamer, trades);
     }
 
+    /**
+     * 实体进入世界（Fabric {@code ENTITY_LOAD}，含区块加载 / 维度切换 / 复活）：更新罗盘档案；
+     * HEALTH_BOOST 宠物恢复到离开前保存的“安全血量”；已在线宠物从世界数据中撤销其灯笼收容请求。
+     */
     public static void onEntityJoinWorldEvent(Entity entity) {
         // 宠物罗盘：档案更新（区块加载/维度切换/宠物床复活回到世界——复活实体带着原 PetId，重新绑定 Entity UUID）
         if (entity instanceof LivingEntity living && !living.level().isClientSide() && TameableUtils.isTamed(living)) {
             PetCompassTracker.updateRecord(living);
         }
         if (entity instanceof LivingEntity living && TameableUtils.couldBeTamed(living)) {
-            if (TameableUtils.hasEnchant(living, DIEnchantmentRegistry.HEALTH_BOOST)) {
+            if (TameableUtils.hasEnchant(living, PHEnchantmentRegistry.HEALTH_BOOST)) {
                 living.setHealth((float) Math.max(living.getHealth(), TameableUtils.getSafePetHealth(living)));
             }
             if (living.isAlive() && TameableUtils.isTamed(living)) {
-                DIWorldData data = DIWorldData.get(living.level());
+                PHWorldData data = PHWorldData.get(living.level());
                 if (data != null) {
                     data.removeMatchingLanternRequests(living.getUUID());
                 }
@@ -150,24 +153,30 @@ public class ServerEvent {
         }
     }
 
+    /**
+     * 实体离开世界（Fabric {@code ENTITY_UNLOAD}，区块卸载）：符合 {@code shouldUnloadToLantern}
+     * 的宠物写入 {@link LanternRequest}（含所在维度，供迷途灯笼跨维度找回）；
+     * HEALTH_BOOST 宠物把当前血量存为“安全血量”。
+     */
     public static void onEntityLeaveWorld(Entity entity) {
         if (entity instanceof LivingEntity living) {
             if (!living.level().isClientSide() && living.isAlive() && TameableUtils.isTamed(living) && TameableUtils.shouldUnloadToLantern(living)) {
                 UUID ownerUUID = TameableUtils.getOwnerUUIDOf(entity);
                 String saveName = entity.hasCustomName() ? entity.getCustomName().getString() : "";
-                DIWorldData data = DIWorldData.get(living.level());
+                PHWorldData data = PHWorldData.get(living.level());
                 if (data != null) {
                     LanternRequest request = new LanternRequest(living.getUUID(), BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString(), ownerUUID, living.blockPosition(), entity.level().dayTime(), saveName, entity.level().dimension().location().toString());
                     data.addLanternRequest(request);
                 }
             }
-            if (TameableUtils.couldBeTamed(living) && TameableUtils.hasEnchant(living, DIEnchantmentRegistry.HEALTH_BOOST)) {
+            if (TameableUtils.couldBeTamed(living) && TameableUtils.hasEnchant(living, PHEnchantmentRegistry.HEALTH_BOOST)) {
                 TameableUtils.setSafePetHealth(living, living.getHealth());
             }
 
         }
     }
 
+    /** 该实体的项圈 tick 当前是否放行（换装抑制期返回 false；客户端恒 true）。由项圈渲染 / tick 处调用。 */
     public static boolean canTickCollar(Entity entity){
         if(entity.level().isClientSide()){
             return true;
@@ -177,6 +186,7 @@ public class ServerEvent {
         }
     }
 
+    /** 抑制实体项圈 tick 若干 tick（当前 5 tick），由 {@code PlayerInteractEntityHandler.handleCollarTag} 在换装后调用，避免旧附魔残留渲染/效果闪现。 */
     public static void blockCollarTick(Entity entity){
         if(!entity.level().isClientSide()){
             CollarTickTracker tracker = COLLAR_TICK_TRACKER_MAP.computeIfAbsent(entity.level(), k -> new CollarTickTracker());
@@ -184,6 +194,12 @@ public class ServerEvent {
         }
     }
 
+    /**
+     * 世界 tick（Fabric {@code START_WORLD_TICK}，每个维度都会调入，内部各自判服务端）：
+     * 推进项圈 tick 抑制计时；主世界每 20 tick 处理罗盘召回队列；每 tick 消化
+     * {@link #teleportingPets} 跨维度重建传送（原实体 {@code restoreFrom} 复制到新实例，
+     * 沿 Y 轴寻找无碰撞落点，丢弃旧实体）。
+     */
     public static void onServerTick(Level level) {
         if (!level.isClientSide()) {
             COLLAR_TICK_TRACKER_MAP.computeIfAbsent(level, k -> new CollarTickTracker());
@@ -247,12 +263,12 @@ public class ServerEvent {
                         return true;
                     }
                 }
-                if (TameableUtils.hasEnchant((LivingEntity) hit, DIEnchantmentRegistry.DEFLECTION)) {
+                if (TameableUtils.hasEnchant((LivingEntity) hit, PHEnchantmentRegistry.DEFLECTION)) {
                     float xRot = projectile.getXRot();
                     float yRot = projectile.yRotO;
                     Vec3 vec3 = projectile.position().subtract(hit.position()).normalize().scale(hit.getBbWidth() + 0.5F);
                     Vec3 vec32 = hit.position().add(vec3);
-                    hit.level().addParticle(DIParticleRegistry.DEFLECTION_SHIELD, vec32.x, vec32.y, vec32.z, xRot, yRot, 0.0F);
+                    hit.level().addParticle(PHParticleRegistry.DEFLECTION_SHIELD, vec32.x, vec32.y, vec32.z, xRot, yRot, 0.0F);
                     projectile.setDeltaMovement(projectile.getDeltaMovement().scale(-0.2D));
                     projectile.setYRot(yRot + 180);
                     projectile.setXRot(xRot + 180);
@@ -291,6 +307,7 @@ public class ServerEvent {
         return amount;
     }
 
+    /** 伤害/死亡路径上的防御性校验：血量为 NaN 或负数时归零并记日志，防止异常血量扩散。 */
     public static void validateHealth(LivingEntity entity) {
         if (entity.level().isClientSide()) {
             return;
@@ -307,7 +324,7 @@ public class ServerEvent {
      */
     public static float modifyDamage(LivingEntity entity, net.minecraft.world.damagesource.DamageSource source, float amount) {
         if (source.getEntity() instanceof LivingEntity pet && TameableUtils.isTamed(source.getEntity())) {
-            if (TameableUtils.hasEnchant(pet, DIEnchantmentRegistry.IMMATURITY_CURSE)) {
+            if (TameableUtils.hasEnchant(pet, PHEnchantmentRegistry.IMMATURITY_CURSE)) {
                 return (float) Math.ceil(amount * 0.7F);
             }
         }
@@ -315,11 +332,13 @@ public class ServerEvent {
     }
 
     /**
-     * 替代 Forge LivingDeathEvent。
+     * 替代 Forge LivingDeathEvent（Fabric {@code AFTER_DEATH}）。绑定宠物床的宠物把完整 NBT
+     * 存为 {@link RespawnRequest}（等待宠物床次日复活）；非 {@code TamableAnimal} 的宠物死亡时
+     * 给主人发死亡消息；罗盘档案标记待复活（不删档）。
      */
     public static void onLivingDie(LivingEntity entity, net.minecraft.world.damagesource.DamageSource source) {
         validateHealth(entity);
-        if (TameableUtils.isTamed(entity) && !TameableUtils.isZombiePet(entity)) {
+        if (TameableUtils.isTamed(entity)) {
 
             BlockPos bedPos = TameableUtils.getPetBedPos(entity);
             if (bedPos != null) {
@@ -327,7 +346,7 @@ public class ServerEvent {
                 entity.addAdditionalSaveData(data);
                 String saveName = entity.hasCustomName() ? entity.getCustomName().getString() : "";
                 RespawnRequest request = new RespawnRequest(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString(), TameableUtils.getPetBedDimension(entity), data, bedPos, entity.level().dayTime(), saveName);
-                DIWorldData worldData = DIWorldData.get(entity.level());
+                PHWorldData worldData = PHWorldData.get(entity.level());
                 if (worldData != null) {
                     worldData.addRespawnRequest(request);
                 }
@@ -341,33 +360,6 @@ public class ServerEvent {
 
             // 宠物罗盘：死亡档案保留，仅标记待宠物床复活（ 不因 Entity UUID 消失而删档）
             PetCompassTracker.onPetDeath(entity);
-            if (entity instanceof Mob mob && entity.level().getDifficulty() != Difficulty.PEACEFUL && TameableUtils.hasEnchant(mob, DIEnchantmentRegistry.UNDEAD_CURSE)) {
-                Mob zombieCopy = (Mob) mob.getType().create(mob.level());
-                int id = zombieCopy.getId();
-                Entity owner = TameableUtils.getOwnerOf(mob);
-                CompoundTag livingNbt = new CompoundTag();
-                mob.addAdditionalSaveData(livingNbt);
-                livingNbt.putString("DeathLootTable", BuiltInLootTables.EMPTY.toString());
-                zombieCopy.readAdditionalSaveData(livingNbt);
-                zombieCopy.setId(id);
-                if (zombieCopy instanceof TamableAnimal tamed) {
-                    tamed.setTame(false);
-                    tamed.setOwnerUUID(null);
-                    tamed.setOrderedToSit(false);
-                }
-                if (zombieCopy instanceof ModifedToBeTameable tameable) {
-                    tameable.setTame(false);
-                    tameable.setTameOwnerUUID(null);
-                }
-                if (zombieCopy instanceof IComandableMob commandableMob) {
-                    commandableMob.setCommand(0);
-                }
-                zombieCopy.copyPosition(mob);
-                zombieCopy.setTarget(owner instanceof Player && !((Player) owner).isCreative() ? (Player) owner : mob.level().getNearestPlayer(ZOMBIE_TARGET, mob));
-                mob.level().addFreshEntity(zombieCopy);
-                zombieCopy.setHealth(zombieCopy.getMaxHealth());
-                TameableUtils.setZombiePet(zombieCopy, true);
-            }
         }
     }
 
@@ -379,7 +371,8 @@ public class ServerEvent {
     }
 
     /**
-     * 替代 Forge BlockEvent.BreakEvent。
+     * 替代 Forge BlockEvent.BreakEvent（Fabric {@code PlayerBlockBreakEvents.BEFORE}，服务端）：
+     * 破坏宠物床时清空该床的全部复活请求，并重置附近宠物身上的床绑定。
      */
     public static void onBlockBreak(ServerLevel level, Player player, BlockPos pos,  BlockState state) {
         if (state.getBlock() instanceof PetBedBlock) {
@@ -418,10 +411,10 @@ public class ServerEvent {
         Vec3 center = new Vec3(explosion.x, explosion.y, explosion.z);
         Vec3 bottom = center.add(-dist, -dist, -dist);
         Vec3 top = center.add(dist, dist, dist);
-        Predicate<Entity> defusal = (animal) -> TameableUtils.isTamed(animal) && TameableUtils.hasEnchant((LivingEntity) animal, DIEnchantmentRegistry.DEFUSAL);
+        Predicate<Entity> defusal = (animal) -> TameableUtils.isTamed(animal) && TameableUtils.hasEnchant((LivingEntity) animal, PHEnchantmentRegistry.DEFUSAL);
         boolean flag = false;
         for (LivingEntity defuser : level.getEntitiesOfClass(LivingEntity.class, new AABB(bottom, top), EntitySelector.NO_SPECTATORS.and(defusal))) {
-            float level2 = 10 * TameableUtils.getEnchantLevel(defuser, DIEnchantmentRegistry.DEFUSAL);
+            float level2 = 10 * TameableUtils.getEnchantLevel(defuser, PHEnchantmentRegistry.DEFUSAL);
             if (defuser.distanceToSqr(center) <= level2 * level2) {
                 flag = true;
                 break;
@@ -439,6 +432,7 @@ public class ServerEvent {
         return flag;
     }
 
+    /** 把主人 20 格内"拴魂"（有 validTeleporter 通行证附魔）的宠物带往新位置；跨维度走重建队列（实体卸载后再读回），同维度直接传送。 */
     private static void teleportNearbyPets(Player owner, Vec3 fromPos, Vec3 toPos, Level fromLevel, Level toLevel) {
         double dist = 20;
         boolean removeAndReadd = fromLevel.dimension() != toLevel.dimension();

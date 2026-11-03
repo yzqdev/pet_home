@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Entity.class)
 public class EntityDismountMixin {
 
+    /** 注入 {@code Entity#stopRiding} 头部（可取消）：坐骑是存活的巨型泡泡时拒绝下坐骑请求（泡泡作为宠物移动载具，提前下来会失效）。 */
     @Inject(method = "stopRiding()V", at = @At("HEAD"), cancellable = true)
     private void ph_onDismount(CallbackInfo ci) {
         Entity self = (Entity) (Object) this;

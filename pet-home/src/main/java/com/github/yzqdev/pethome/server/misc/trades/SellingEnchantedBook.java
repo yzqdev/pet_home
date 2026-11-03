@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Block;
 
 import java.util.Random;
 
+/** 出售指定附魔的附魔书（等级 1~maxLevels-1 随机，单级附魔固定 1 级）。 */
 public class SellingEnchantedBook implements VillagerTrades.ItemListing {
     private final Enchantment enchantment;
     private final int emeraldCount;

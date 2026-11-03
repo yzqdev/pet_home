@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(EntityRenderer.class)
 public class EntityRendererMixin {
 
+    /** 注入 {@code EntityRenderer#renderNameTag} 头部（可取消）：按住 Shift 潜行查看宠物时改绘项圈标签附魔列表名牌（返回 true 表示已接管绘制）。 */
     @Inject(method = "renderNameTag(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/network/chat/Component;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", at = @At("HEAD"), cancellable = true)
     private void ph_renderNametag(Entity entity, Component component, PoseStack poseStack, MultiBufferSource buffer, int packedLight, CallbackInfo ci) {
         if (ClientGameEvents.renderNametagEvent(entity, component, poseStack, buffer, packedLight)) {

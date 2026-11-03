@@ -8,6 +8,7 @@ import net.minecraft.core.particles.SimpleParticleType;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
+/** 往生灯笼萤火粒子：向目标点（初速参数携带）飘动并叠加随机游走，随寿命缩小淡出。 */
 public class ParticleLanternBugs extends SimpleAnimatedParticle {
     private float targetX = 0;
     private float targetY = 0;
@@ -45,7 +46,7 @@ public class ParticleLanternBugs extends SimpleAnimatedParticle {
         this.zd *= 0.8;
     }
 
-    public int getLightColor(float p_107249_) {
+    public int getLightColor(float partialTick) {
         BlockPos blockpos = BlockPos.containing(this.x, this.y, this.z);
         return this.level.hasChunkAt(blockpos) ? LevelRenderer.getLightColor(this.level, blockpos) : 0;
     }

@@ -6,7 +6,7 @@ import com.github.yzqdev.pethome.server.NbtKeys;
 
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.server.entity.IComandableMob;
-import com.github.yzqdev.pethome.server.entity.ModifedToBeTameable;
+import com.github.yzqdev.pethome.server.entity.ModifiedToBeTameable;
 import com.github.yzqdev.pethome.server.entity.ai.FollowOwner2Goal;
 import com.github.yzqdev.pethome.server.entity.ai.OwnerHurtTarget2Goal;
 import com.github.yzqdev.pethome.server.entity.ai.Sit2Goal;
@@ -34,14 +34,18 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * 狐狸完全驯服化：实现 {@link ModifiedToBeTameable} + {@link IComandableMob}
+ * （owner/command 经 {@code defineSynchedData} 注入、随 NBT 持久化），重写 AI 目标并接入三态指令交互。
+ */
 @Mixin(Fox.class)
-public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IComandableMob {
+public abstract class FoxMixin extends Animal implements ModifiedToBeTameable, IComandableMob {
 
     @Shadow @Final private static EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_0;
     @Shadow @Final private static EntityDataAccessor<Optional<UUID>> DATA_TRUSTED_ID_1;
     @Shadow abstract void addTrustedUUID(UUID uuid);
-    @Shadow public abstract void setSitting(boolean p_28611_);
-    @Shadow abstract void setSleeping(boolean p_28627_);
+    @Shadow public abstract void setSitting(boolean sitting);
+    @Shadow abstract void setSleeping(boolean sleeping);
 
     private static final EntityDataAccessor<Integer> COMMAND = SynchedEntityData.defineId(Fox.class, EntityDataSerializers.INT);
 
@@ -49,6 +53,7 @@ public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IC
         super(foxType, level);
     }
 
+    /** 注入 {@code Fox#registerGoals} 头部：追加宠物 AI（停留 / 跟随主人 / 主人被打反击）。 */
     @Inject(
             at = {@At("HEAD")},
             remap = true,
@@ -60,6 +65,7 @@ public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IC
         this.targetSelector.addGoal(1, new OwnerHurtTarget2Goal(this));
     }
 
+    /** 注入 {@code Fox#defineSynchedData} 尾部：注册三态指令同步字段（0=游走）。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -69,6 +75,7 @@ public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IC
         this.entityData.define(COMMAND, 0);
     }
 
+    /** 注入 {@code Fox#addAdditionalSaveData} 尾部：指令档位写入 NBT 持久化。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -78,6 +85,7 @@ public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IC
         compoundNBT.putInt(NbtKeys.DI_COMMAND, this.getCommand());
     }
 
+    /** 注入 {@code Fox#readAdditionalSaveData} 尾部：从 NBT 恢复指令档位。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,
@@ -103,6 +111,7 @@ public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IC
 
     }
 
+    /** 注入 {@code Fox#aiStep} 中手持食物 {@code finishUsingItem} 调用前：驯服狐狸吃嘴里食物时按营养×2 回血（比原版"吃掉"更滋养）。 */
     @Inject(
             at = @At(
                     shift = At.Shift.BEFORE,
@@ -119,6 +128,7 @@ public abstract class FoxMixin extends Animal implements ModifedToBeTameable, IC
         }
     }
 
+    /** 注入 {@code Fox#aiStep} 尾部：跟随指令下唤醒狐狸（不睡觉/不坐下），保证"跟随"姿态生效。 */
     @Inject(
             at = {@At("TAIL")},
             remap = true,

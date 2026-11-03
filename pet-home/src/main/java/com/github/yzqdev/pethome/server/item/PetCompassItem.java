@@ -1,6 +1,6 @@
 package com.github.yzqdev.pethome.server.item;
 
-import com.github.yzqdev.pethome.ModConstants;
+import com.github.yzqdev.pethome.PHConstants;
 import com.github.yzqdev.pethome.datagen.LangDefinition;
 import com.github.yzqdev.pethome.network.Networking;
 import net.minecraft.ChatFormatting;
@@ -33,13 +33,13 @@ public class PetCompassItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (level.isClientSide) {
-            Networking.sendMSGToServer(new com.github.yzqdev.pethome.network.PropertiesMessage(ModConstants.petCompassOpen, new CompoundTag(), 0));
+            Networking.sendOpenRequest();
         }
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.translatable(LangDefinition.tooltips("pet_compass.desc")).withStyle(ChatFormatting.GREEN));
+        tooltipComponents.add(Component.translatable(LangDefinition.TOOLTIP_PET_COMPASS_DESC).withStyle(ChatFormatting.GREEN));
     }
 }

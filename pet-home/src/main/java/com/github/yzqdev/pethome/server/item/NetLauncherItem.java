@@ -25,6 +25,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * 捕网发射器：蓄力右键发射捕网投掷物；潜行右键切换「捕获 / 释放」模式（物品名后缀显示）——
+ * 捕获模式发空网抓生物，释放模式从副手→主手→背包找一网装着生物的捕网发射出去释放；
+ * 每次发射消耗 1 点耐久。模式位存于物品 tag 的 {@code release_mode} 键。
+ */
 public class NetLauncherItem extends Item {
 
     public NetLauncherItem(Properties properties) {
@@ -41,9 +46,7 @@ public class NetLauncherItem extends Item {
     }
 
 
-    /**
-     * Called when the player stops using an Item (stops holding the right mouse button).
-     */
+    /** 蓄力结束（仅服务端生成投掷物）：按蓄力时长换算初速（不足 0.1 不发射），按模式发空网或释放装着生物的网。 */
     @Override
     public void releaseUsing(ItemStack stack, Level worldIn, LivingEntity entityLiving, int timeLeft) {
         if (entityLiving instanceof Player player) {
@@ -138,9 +141,7 @@ public class NetLauncherItem extends Item {
         return 72000;
     }
 
-    /**
-     * Called when the equipped item is right clicked.
-     */
+    /** 右键：潜行则切换捕获/释放模式并提示，否则开始蓄力。 */
     @Override
     @NotNull
     public InteractionResultHolder<ItemStack> use(Level worldIn, Player player, @NotNull InteractionHand hand) {
@@ -183,6 +184,7 @@ public class NetLauncherItem extends Item {
 
     //helpers
 
+    /** 释放模式用的找网顺序：先副手、再主手、最后遍历背包，返回第一支装着生物的捕网。 */
     protected ItemStack findNet(Player player) {
         ItemStack stack = player.getMainHandItem();
 

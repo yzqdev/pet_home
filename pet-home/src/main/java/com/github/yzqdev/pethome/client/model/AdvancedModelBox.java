@@ -15,10 +15,9 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
 /**
- * An enhanced RendererModel
- *
- * @author gegy1000
- * @since 1.0.0
+ * 增强型模型部件（原版 ModelPart 的增强替代）：在基础渲染之上支持默认姿态记录与复位（updateDefaultPose /
+ * resetToDefaultPose）、独立缩放（{@code scaleChildren} 决定是否传播给子部件）、纹理偏移与父子链渲染，
+ * 是 AdvancedEntityModel 动画原语的操作对象。
  */
 @Environment(EnvType.CLIENT)
 public class AdvancedModelBox extends BasicModelPart {
@@ -68,42 +67,42 @@ public class AdvancedModelBox extends BasicModelPart {
         this.childModels = new ObjectArrayList();
     }
 
-    public BasicModelPart setTexSize(int p_78787_1_, int p_78787_2_) {
-        this.textureWidth = (float)p_78787_1_;
-        this.textureHeight = (float)p_78787_2_;
+    public BasicModelPart setTexSize(int texWidth, int texHeight) {
+        this.textureWidth = (float)texWidth;
+        this.textureHeight = (float)texHeight;
         return this;
     }
 
-    public BasicModelPart addBox(String p_217178_1_, float p_217178_2_, float p_217178_3_, float p_217178_4_, int p_217178_5_, int p_217178_6_, int p_217178_7_, float p_217178_8_, int p_217178_9_, int p_217178_10_) {
-        this.setTextureOffset(p_217178_9_, p_217178_10_);
-        this.addBox(this.textureOffsetX, this.textureOffsetY, p_217178_2_, p_217178_3_, p_217178_4_, (float)p_217178_5_, (float)p_217178_6_, (float)p_217178_7_, p_217178_8_, p_217178_8_, p_217178_8_, this.mirror, false);
+    public BasicModelPart addBox(String boxName, float x, float y, float z, int width, int height, int depth, float delta, int texOffX, int texOffY) {
+        this.setTextureOffset(texOffX, texOffY);
+        this.addBox(this.textureOffsetX, this.textureOffsetY, x, y, z, (float)width, (float)height, (float)depth, delta, delta, delta, this.mirror, false);
         return this;
     }
 
-    public BasicModelPart addBox(float p_228300_1_, float p_228300_2_, float p_228300_3_, float p_228300_4_, float p_228300_5_, float p_228300_6_) {
-        this.addBox(this.textureOffsetX, this.textureOffsetY, p_228300_1_, p_228300_2_, p_228300_3_, p_228300_4_, p_228300_5_, p_228300_6_, 0.0F, 0.0F, 0.0F, this.mirror, false);
+    public BasicModelPart addBox(float x, float y, float z, float width, float height, float depth) {
+        this.addBox(this.textureOffsetX, this.textureOffsetY, x, y, z, width, height, depth, 0.0F, 0.0F, 0.0F, this.mirror, false);
         return this;
     }
 
-    public BasicModelPart addBox(float p_228304_1_, float p_228304_2_, float p_228304_3_, float p_228304_4_, float p_228304_5_, float p_228304_6_, boolean p_228304_7_) {
-        this.addBox(this.textureOffsetX, this.textureOffsetY, p_228304_1_, p_228304_2_, p_228304_3_, p_228304_4_, p_228304_5_, p_228304_6_, 0.0F, 0.0F, 0.0F, p_228304_7_, false);
+    public BasicModelPart addBox(float x, float y, float z, float width, float height, float depth, boolean mirrorIn) {
+        this.addBox(this.textureOffsetX, this.textureOffsetY, x, y, z, width, height, depth, 0.0F, 0.0F, 0.0F, mirrorIn, false);
         return this;
     }
 
-    public void addBox(float p_228301_1_, float p_228301_2_, float p_228301_3_, float p_228301_4_, float p_228301_5_, float p_228301_6_, float p_228301_7_) {
-        this.addBox(this.textureOffsetX, this.textureOffsetY, p_228301_1_, p_228301_2_, p_228301_3_, p_228301_4_, p_228301_5_, p_228301_6_, p_228301_7_, p_228301_7_, p_228301_7_, this.mirror, false);
+    public void addBox(float x, float y, float z, float width, float height, float depth, float delta) {
+        this.addBox(this.textureOffsetX, this.textureOffsetY, x, y, z, width, height, depth, delta, delta, delta, this.mirror, false);
     }
 
-    public void addBox(float p_228302_1_, float p_228302_2_, float p_228302_3_, float p_228302_4_, float p_228302_5_, float p_228302_6_, float p_228302_7_, float p_228302_8_, float p_228302_9_) {
-        this.addBox(this.textureOffsetX, this.textureOffsetY, p_228302_1_, p_228302_2_, p_228302_3_, p_228302_4_, p_228302_5_, p_228302_6_, p_228302_7_, p_228302_8_, p_228302_9_, this.mirror, false);
+    public void addBox(float x, float y, float z, float width, float height, float depth, float deltaX, float deltaY, float deltaZ) {
+        this.addBox(this.textureOffsetX, this.textureOffsetY, x, y, z, width, height, depth, deltaX, deltaY, deltaZ, this.mirror, false);
     }
 
-    public void addBox(float p_228303_1_, float p_228303_2_, float p_228303_3_, float p_228303_4_, float p_228303_5_, float p_228303_6_, float p_228303_7_, boolean p_228303_8_) {
-        this.addBox(this.textureOffsetX, this.textureOffsetY, p_228303_1_, p_228303_2_, p_228303_3_, p_228303_4_, p_228303_5_, p_228303_6_, p_228303_7_, p_228303_7_, p_228303_7_, p_228303_8_, false);
+    public void addBox(float x, float y, float z, float width, float height, float depth, float delta, boolean mirrorIn) {
+        this.addBox(this.textureOffsetX, this.textureOffsetY, x, y, z, width, height, depth, delta, delta, delta, mirrorIn, false);
     }
 
-    private void addBox(int p_228305_1_, int p_228305_2_, float p_228305_3_, float p_228305_4_, float p_228305_5_, float p_228305_6_, float p_228305_7_, float p_228305_8_, float p_228305_9_, float p_228305_10_, float p_228305_11_, boolean p_228305_12_, boolean p_228305_13_) {
-        this.cubeList.add(new TabulaModelRenderUtils.ModelBox(p_228305_1_, p_228305_2_, p_228305_3_, p_228305_4_, p_228305_5_, p_228305_6_, p_228305_7_, p_228305_8_, p_228305_9_, p_228305_10_, p_228305_11_, p_228305_12_, this.textureWidth, this.textureHeight));
+    private void addBox(int texOffX, int texOffY, float x, float y, float z, float width, float height, float depth, float deltaX, float deltaY, float deltaZ, boolean mirrorIn, boolean unused) {
+        this.cubeList.add(new TabulaModelRenderUtils.ModelBox(texOffX, texOffY, x, y, z, width, height, depth, deltaX, deltaY, deltaZ, mirrorIn, this.textureWidth, this.textureHeight));
     }
 
 
@@ -256,13 +255,13 @@ public class AdvancedModelBox extends BasicModelPart {
                 poseStack.pushPose();
                 this.translateAndRotate(poseStack);
                 this.doRender(poseStack.last(), vertexConsumer, packedLightIn, packedOverlayIn, red, green, blue, alpha);
-                ObjectListIterator var9 = this.childModels.iterator();
+                ObjectListIterator childIterator = this.childModels.iterator();
                 if(!scaleChildren){
                     poseStack.scale(1F / Math.max(this.scaleX, 0.0001F), 1F / Math.max(this.scaleY, 0.0001F) , 1F / Math.max(this.scaleZ, 0.0001F));
                 }
-                while (var9.hasNext()) {
-                    BasicModelPart lvt_10_1_ = (BasicModelPart) var9.next();
-                    lvt_10_1_.render(poseStack, vertexConsumer, packedLightIn, packedOverlayIn, red, green, blue, alpha);
+                while (childIterator.hasNext()) {
+                    BasicModelPart child = (BasicModelPart) childIterator.next();
+                    child.render(poseStack, vertexConsumer, packedLightIn, packedOverlayIn, red, green, blue, alpha);
                 }
 
                 poseStack.popPose();
@@ -270,32 +269,32 @@ public class AdvancedModelBox extends BasicModelPart {
         }
     }
 
-    private void doRender(PoseStack.Pose p_228306_1_, VertexConsumer vertexConsumer, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
-        Matrix4f lvt_9_1_ = p_228306_1_.pose();
-        Matrix3f lvt_10_1_ = p_228306_1_.normal();
-        ObjectListIterator var11 = this.cubeList.iterator();
+    private void doRender(PoseStack.Pose pose, VertexConsumer vertexConsumer, int packedLightIn, int packedOverlayIn, float red, float green, float blue, float alpha) {
+        Matrix4f poseMatrix = pose.pose();
+        Matrix3f normalMatrix = pose.normal();
+        ObjectListIterator cubeIterator = this.cubeList.iterator();
 
-        while(var11.hasNext()) {
-            TabulaModelRenderUtils.ModelBox lvt_12_1_ = (TabulaModelRenderUtils.ModelBox)var11.next();
-            TabulaModelRenderUtils.TexturedQuad[] var13 = lvt_12_1_.quads;
-            int var14 = var13.length;
+        while(cubeIterator.hasNext()) {
+            TabulaModelRenderUtils.ModelBox cube = (TabulaModelRenderUtils.ModelBox)cubeIterator.next();
+            TabulaModelRenderUtils.TexturedQuad[] quads = cube.quads;
+            int quadCount = quads.length;
 
-            for(int var15 = 0; var15 < var14; ++var15) {
-                TabulaModelRenderUtils.TexturedQuad lvt_16_1_ = var13[var15];
-                Vector3f lvt_17_1_ = new Vector3f(lvt_16_1_.normal);
-                lvt_17_1_.mul(lvt_10_1_);
-                float lvt_18_1_ = lvt_17_1_.x();
-                float lvt_19_1_ = lvt_17_1_.y();
-                float lvt_20_1_ = lvt_17_1_.z();
+            for(int quadIndex = 0; quadIndex < quadCount; ++quadIndex) {
+                TabulaModelRenderUtils.TexturedQuad quad = quads[quadIndex];
+                Vector3f quadNormal = new Vector3f(quad.normal);
+                quadNormal.mul(normalMatrix);
+                float normalX = quadNormal.x();
+                float normalY = quadNormal.y();
+                float normalZ = quadNormal.z();
 
-                for(int lvt_21_1_ = 0; lvt_21_1_ < 4; ++lvt_21_1_) {
-                    TabulaModelRenderUtils.PositionTextureVertex lvt_22_1_ = lvt_16_1_.vertexPositions[lvt_21_1_];
-                    float lvt_23_1_ = lvt_22_1_.position.x() / 16.0F;
-                    float lvt_24_1_ = lvt_22_1_.position.y() / 16.0F;
-                    float lvt_25_1_ = lvt_22_1_.position.z() / 16.0F;
-                    Vector4f lvt_26_1_ = new Vector4f(lvt_23_1_, lvt_24_1_, lvt_25_1_, 1.0F);
-                    lvt_26_1_.mul(lvt_9_1_);
-                    vertexConsumer.vertex(lvt_26_1_.x(), lvt_26_1_.y(), lvt_26_1_.z(), red, green, blue, alpha, lvt_22_1_.textureU, lvt_22_1_.textureV, packedOverlayIn, packedLightIn, lvt_18_1_, lvt_19_1_, lvt_20_1_);
+                for(int vertexIndex = 0; vertexIndex < 4; ++vertexIndex) {
+                    TabulaModelRenderUtils.PositionTextureVertex vertex = quad.vertexPositions[vertexIndex];
+                    float vx = vertex.position.x() / 16.0F;
+                    float vy = vertex.position.y() / 16.0F;
+                    float vz = vertex.position.z() / 16.0F;
+                    Vector4f transformed = new Vector4f(vx, vy, vz, 1.0F);
+                    transformed.mul(poseMatrix);
+                    vertexConsumer.vertex(transformed.x(), transformed.y(), transformed.z(), red, green, blue, alpha, vertex.textureU, vertex.textureV, packedOverlayIn, packedLightIn, normalX, normalY, normalZ);
                 }
             }
         }

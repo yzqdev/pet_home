@@ -8,6 +8,7 @@ import net.minecraft.core.particles.SimpleParticleType;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
+/** 巨型泡泡破裂粒子：寿命极短（4 tick）且持续放大，模拟泡泡炸开的"啵"效果。 */
 public class ParticleGiantPop extends SimpleAnimatedParticle {
 
     private ParticleGiantPop(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet sprites) {
@@ -25,7 +26,7 @@ public class ParticleGiantPop extends SimpleAnimatedParticle {
         super.tick();
         this.quadSize = 1.5F + 0.5F * (age / (float)lifetime);
     }
-    public int getLightColor(float p_107249_) {
+    public int getLightColor(float partialTick) {
         BlockPos blockpos = BlockPos.containing(this.x, this.y, this.z);
         return this.level.hasChunkAt(blockpos) ? LevelRenderer.getLightColor(this.level, blockpos) : 0;
     }

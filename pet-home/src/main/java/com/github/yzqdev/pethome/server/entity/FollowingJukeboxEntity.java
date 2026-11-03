@@ -4,7 +4,7 @@ import com.github.yzqdev.pethome.server.NbtKeys;
 
 import com.github.yzqdev.pethome.PetHomeMod;
 import com.github.yzqdev.pethome.client.ClientGameEvents;
-import com.github.yzqdev.pethome.server.enchantment.DIEnchantmentRegistry;
+import com.github.yzqdev.pethome.server.enchantment.PHEnchantmentRegistry;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -31,6 +31,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * 随行唱片机（DISK_JOCKEY，本版特有）：宠物身边环绕飞行、播放其 citadel 数据里挂载唱片的隐形实体。
+ * 由 {@code EntityTickHandler.tickDiskJockey} 保证存在；唱片本体存在宠物身上（{@code PetJukeboxFollowerDisc}），
+ * 本实体经 {@code SynchedEntityData} 同步唱片 ItemStack 与跟随目标；跟随目标丢失或宠物失去
+ * DISK_JOCKEY 附魔时自毁。玩家可右键放入 / 取出唱片。
+ */
 public class FollowingJukeboxEntity extends Entity {
 
     private static final EntityDataAccessor<Optional<UUID>> FOLLOWING_UUID = SynchedEntityData.defineId(FollowingJukeboxEntity.class, EntityDataSerializers.OPTIONAL_UUID);
@@ -40,6 +46,7 @@ public class FollowingJukeboxEntity extends Entity {
         super(type, level);
     }
 
+    /** 每 tick：环绕宠物做圆周运动（距离过远直接吸附）、同步宠物身上的唱片、用实体事件 66/67 通知客户端播放/停止音乐；不再有有效跟随目标时自毁。 */
     public void tick() {
         super.tick();
         Entity following = getFollowing();
@@ -64,7 +71,7 @@ public class FollowingJukeboxEntity extends Entity {
                 } else {
                     this.level().broadcastEntityEvent(this, (byte) 67);
                 }
-                if(following instanceof LivingEntity && !TameableUtils.hasEnchant((LivingEntity) following, DIEnchantmentRegistry.DISK_JOCKEY)){
+                if(following instanceof LivingEntity && !TameableUtils.hasEnchant((LivingEntity) following, PHEnchantmentRegistry.DISK_JOCKEY)){
                     this.setFollowingUUID(null);
                 }
             }else{
@@ -151,6 +158,7 @@ public class FollowingJukeboxEntity extends Entity {
         return true;
     }
 
+    /** 右键交互：手上有唱片则挂到宠物身上（消耗），本体挂着唱片则取出掉落。 */
     public InteractionResult interact(Player player, InteractionHand hand) {
         boolean flag = false;
         ItemStack held = player.getItemInHand(hand);
@@ -171,6 +179,7 @@ public class FollowingJukeboxEntity extends Entity {
     }
 
 
+    /** 客户端实体事件：66 = 有唱片（播放中）、67 = 无唱片（停止），附加音符粒子；转发给 {@code ClientGameEvents.updateEntityStatus} 驱动 DiscJockeySound。 */
     @Environment(EnvType.CLIENT)
     public void handleEntityEvent(byte id) {
         if (id == 66 || id == 67) {

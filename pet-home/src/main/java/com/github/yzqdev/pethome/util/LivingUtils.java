@@ -9,6 +9,7 @@ import net.minecraft.world.phys.AABB;
 
 /** 自 1.21 移植：混乱之脑的怪物目标工具 */
 public class LivingUtils {
+    /** 让一只怪物把另一只怪物设为攻击目标：猪灵走 Brain 记忆，中性生物走 {@code NeutralMob}，其余直接 setTarget。 */
     public static void setAttackTarget(Monster monster, Monster otherMonster) {
         if (monster != null && otherMonster != null && monster != otherMonster) {
             if (monster instanceof AbstractPiglin) {
@@ -25,6 +26,7 @@ public class LivingUtils {
 
     }
 
+    /** 以实体为中心取半径 radius 的正方体检测盒（混乱之脑索敌范围）。 */
     public static AABB getBoundingBoxAroundEntity(Entity entity, double radius) {
         return new AABB(entity.getX() - radius, entity.getY() - radius, entity.getZ() - radius, entity.getX() + radius, entity.getY() + radius, entity.getZ() + radius);
     }

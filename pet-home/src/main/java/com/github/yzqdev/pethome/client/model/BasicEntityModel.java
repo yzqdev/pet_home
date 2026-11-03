@@ -9,6 +9,7 @@ import net.minecraft.world.entity.Entity;
 
 import java.util.function.Function;
 
+/** 模型基类（原版 EntityModel 的非 final 替代）：渲染时按 {@link #parts()} 顺序把全部部件写入顶点缓冲。 */
 public abstract class BasicEntityModel<T extends Entity> extends EntityModel<T> {
     public int textureWidth = 64;
     public int textureHeight = 32;
@@ -17,8 +18,8 @@ public abstract class BasicEntityModel<T extends Entity> extends EntityModel<T> 
         this(RenderType::entityCutoutNoCull);
     }
 
-    protected BasicEntityModel(Function<ResourceLocation, RenderType> p_102613_) {
-        super(p_102613_);
+    protected BasicEntityModel(Function<ResourceLocation, RenderType> renderTypeFunction) {
+        super(renderTypeFunction);
     }
 
     @Override
@@ -31,9 +32,9 @@ public abstract class BasicEntityModel<T extends Entity> extends EntityModel<T> 
     public abstract Iterable<BasicModelPart> parts();
 
     @Override
-    public abstract void setupAnim(T p_102618_, float p_102619_, float p_102620_, float p_102621_, float p_102622_, float p_102623_);
+    public abstract void setupAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch);
 
     @Override
-    public void prepareMobModel(T p_102614_, float p_102615_, float p_102616_, float p_102617_) {
+    public void prepareMobModel(T entity, float limbSwing, float limbSwingAmount, float partialTick) {
     }
 }

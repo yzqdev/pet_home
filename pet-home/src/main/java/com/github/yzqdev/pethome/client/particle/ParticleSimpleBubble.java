@@ -8,6 +8,7 @@ import net.minecraft.core.particles.SimpleParticleType;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
+/** 简易泡泡粒子：负重力上浮、随时间减速，用于巨型泡泡伴随特效。 */
 public class ParticleSimpleBubble extends SimpleAnimatedParticle {
 
     private ParticleSimpleBubble(ClientLevel world, double x, double y, double z, double motionX, double motionY, double motionZ, SpriteSet sprites) {
@@ -33,7 +34,7 @@ public class ParticleSimpleBubble extends SimpleAnimatedParticle {
         return ParticleRenderType.PARTICLE_SHEET_OPAQUE;
     }
 
-    public int getLightColor(float p_107249_) {
+    public int getLightColor(float partialTick) {
         BlockPos blockpos = BlockPos.containing(this.x, this.y, this.z);
         return this.level.hasChunkAt(blockpos) ? LevelRenderer.getLightColor(this.level, blockpos) : 0;
     }

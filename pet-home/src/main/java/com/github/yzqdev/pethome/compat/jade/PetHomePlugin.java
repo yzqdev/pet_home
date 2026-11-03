@@ -6,6 +6,9 @@ import snownee.jade.api.IWailaCommonRegistration;
 import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.WailaPlugin;
 
+/**
+ * Jade 插件入口（{@code @WailaPlugin}）：给全部 LivingEntity 注册宠物提示组件（可选依赖 Jade）。
+ */
 @WailaPlugin
 public class PetHomePlugin implements IWailaPlugin {
 

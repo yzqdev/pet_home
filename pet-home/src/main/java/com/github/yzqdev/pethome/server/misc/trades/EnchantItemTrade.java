@@ -21,6 +21,11 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * 「附魔物品」交易：村民把指定物品（项圈标签）按原版附魔台算法随机附上若干附魔后，
+ * 按附魔花费的等级折算绿宝石价格卖出。候选附魔复刻原版逻辑：含诅咒、不含宝藏附魔
+ * （宠物附魔经 {@code PetEnchantment#canEnchant} 进入候选，仅交易 / 仅战利品类型按各自开关排除）。
+ */
 public class EnchantItemTrade implements VillagerTrades.ItemListing {
     private final ItemStack itemStack;
     private final int enchantXp;

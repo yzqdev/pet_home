@@ -9,12 +9,13 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.UUID;
 
+/** 指令鼓方块实体：仅保存放置者 UUID（红石触发时确定发令者）。 */
 public class DrumBlockEntity extends BlockEntity {
 
     private UUID placerUUID;
 
     public DrumBlockEntity(BlockPos pos, BlockState state) {
-        super(DITileEntityRegistry.DRUM, pos, state);
+        super(PHTileEntityRegistry.DRUM, pos, state);
     }
 
     public UUID getPlacerUUID() {
